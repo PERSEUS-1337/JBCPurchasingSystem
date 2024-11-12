@@ -2,21 +2,27 @@
   "name": "backend-jbc-purchasing-system",
   "version": "1.0.0",
   "description": "This README provides a step-by-step TODO list for setting up the ExpressJS backend for your NextJS frontend application. It covers core features, environment setup, Docker integration, and additional configurations.",
-  "main": "src/index.js",
+  "main": "src/server.ts",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prod": "ts-node src/server.ts",
+    "dev": "nodemon --exec ts-node src/server.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/express": "^5.0.0",
     "@types/node": "^22.9.0",
     "express": "^4.21.1",
     "nodemon": "^3.1.7",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
   }
 }
