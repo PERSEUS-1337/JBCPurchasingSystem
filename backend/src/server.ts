@@ -3,7 +3,10 @@ import dotenv from "dotenv";
 import { MongoClient, Db } from "mongodb";
 
 // Load environment variables
-dotenv.config();
+
+// Determine which .env file to use based on NODE_ENV
+const envFile = `.env.${process.env.NODE_ENV || "development"}`;
+dotenv.config({ path: envFile });
 
 const app: Application = express();
 const port: number = parseInt(process.env.PORT as string, 10) || 3000;
