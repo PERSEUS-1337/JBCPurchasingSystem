@@ -1,37 +1,27 @@
-import express, { Request, Response, Application } from "express";
+// This is where the server initialization happens, right after the app has been initialized
+
 import dotenv from "dotenv";
-import { MongoClient, Db } from "mongodb";
+import app from "./app";
+import { initDb } from "./config/database";
 
 // Load environment variables
-
-// Determine which .env file to use based on NODE_ENV
 const envFile = `.env.${process.env.NODE_ENV || "development"}`;
 dotenv.config({ path: envFile });
 
-const app: Application = express();
 const port: number = parseInt(process.env.PORT as string, 10) || 3000;
+const mongoUri: string = process.env.MONGO_URI as string;
 
-const client = new MongoClient(process.env.MONGO_URI as string);
-let db: Db;
-
-async function connectToDatabase(): Promise<void> {
+// Start the server here
+(async () => {
   try {
-    await client.connect();
-    db = client.db();
+    // Init db connection
+    await initDb(mongoUri);
 
-    console.log("Connected to MongoDB");
-
-    // Setup route that uses db connection
-    app.get("/", (req: Request, res: Response) => {
-      res.send("Hello World");
+    app.listen(port, () => {
+      console.log(`Server running at http://localhost:${port}`);
     });
   } catch (err) {
-    console.error("Failed to connect to MongoDB:", err);
+    console.error("Failed to start application:", err);
+    process.exit(1);
   }
-}
-
-connectToDatabase();
-
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+})();
