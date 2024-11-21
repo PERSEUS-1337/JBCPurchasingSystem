@@ -11,7 +11,7 @@ dotenv.config({ path: envFile });
 const port: number = parseInt(process.env.PORT as string, 10) || 3000;
 const mongoUri: string = process.env.MONGO_URI as string;
 
-// Start the server here
+// Start the server here (Immediately Invoked Function Expression (IIFE))
 (async () => {
   try {
     // Init db connection
