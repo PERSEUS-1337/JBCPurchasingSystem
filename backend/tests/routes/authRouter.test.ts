@@ -11,6 +11,7 @@ describe("Authentication Routes", () => {
             
             expect(response.status).toBe(201);
             expect(response.body.message).toBe("User registered successfully");
+            expect(response.body.token).toBe("mock-jwt-token")
         });
     });
 

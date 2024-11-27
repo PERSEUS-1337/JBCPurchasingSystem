@@ -5,7 +5,7 @@ const router = Router();
 // Mock controllers for authentication routes
 router.post("/register", (req, res) => {
   // Logic for user registration
-  res.status(201).send({ message: "User registered successfully" });
+  res.status(201).send({ message: "User registered successfully", token: "mock-jwt-token" });
 });
 
 router.post("/login", (req, res) => {
