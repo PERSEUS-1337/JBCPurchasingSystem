@@ -8,20 +8,20 @@ import { initDb } from "./config/database";
 const envFile = `.env.${process.env.NODE_ENV || "development"}`;
 dotenv.config({ path: envFile });
 
-const port: number = parseInt(process.env.PORT as string, 10) || 3000;
+const port: number = parseInt(process.env.PORT as string, 10) || 0;
 const mongoUri: string = process.env.MONGO_URI as string;
 
 // Start the server here (Immediately Invoked Function Expression (IIFE))
-(async () => {
-  try {
-    // Init db connection
-    await initDb(mongoUri);
-
-    app.listen(port, () => {
-      console.log(`Server running at http://localhost:${port}`);
-    });
-  } catch (err) {
-    console.error("Failed to start application:", err);
-    process.exit(1);
-  }
-})();
+if (process.env.NODE_ENV !== "test") {
+  (async () => {
+    try {
+      await initDb(mongoUri);
+      app.listen(port, () => {
+        console.log(`Server running at http://localhost:${port}`);
+      });
+    } catch (err) {
+      console.error("Failed to start application:", err);
+      process.exit(1);
+    }
+  })();
+}

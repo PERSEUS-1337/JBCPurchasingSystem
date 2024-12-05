@@ -101,5 +101,5 @@ UserSchema.methods.comparePassword = async function (
 };
 
 // Create and export model
-const User: Model<IUser> = mongoose.model<IUser>("User", UserSchema);
+const User: Model<IUser> = mongoose.model<IUser>("User", UserSchema, "users");
 export default User;

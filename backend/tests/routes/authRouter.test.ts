@@ -123,6 +123,7 @@ describe("Authentication Routes", () => {
   // Existing tests for other routes remain unchanged.
   describe(`POST {apiLogin}`, () => {
     const loginSuccessMsg = "Login successful";
+    const userDoesNotExistmsg = "User does not exist.";
 
     beforeAll(async () => {
       await User.deleteMany({});
@@ -134,9 +135,14 @@ describe("Authentication Routes", () => {
         .post(apiLogin)
         .send(validUser);
 
-      expect(response.status).toBe(200);
-      expect(response.body.message).toBe(loginSuccessMsg);
-      expect(response.body.token).toBe(mockToken);
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual(
+        expect.objectContaining({
+          message: loginSuccessMsg,
+          token: mockToken,
+          username: validUser.username,
+        })
+      );
     });
   });
 

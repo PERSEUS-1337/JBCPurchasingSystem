@@ -1,33 +1,34 @@
 // A dedicated file to handle the database initialization logic, which is why it is placed in the /config folder
 
-import { MongoClient, Db } from "mongodb";
+import mongoose from "mongoose";
 
 // Singleton pattern to reuse the db
-let client: MongoClient;
-let db: Db;
+let isConnected: boolean = false; // track connection state
 
-// Initialize MongoDB connection
-export const initDb = async (uri: string): Promise<Db> => {
-    if (client) {
-        return db;
-    }
+// Initialize MongoDB connection using mongoose
+export const initDb = async (uri: string): Promise<void> => {
+  if (isConnected) {
+    return; // Already connected
+  }
 
-    try {
-        client = new MongoClient(uri);
-        await client.connect();
-        db = client.db();
-        console.log("Connected to MongoDB");
-        return db;
-    } catch (err) {
-        console.error("Failed to connect to MongoDB:", err);
-        throw err;
-    }
+  try {
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 30000, // Increase timeout if needed
+      bufferCommands: false, // Disable buffering
+    });
+
+    isConnected = true; // Mark as connected
+    console.log("Connected to MongoDB via Mongoose");
+  } catch (err) {
+    console.error("Failed to connect to MongoDB:", err);
+    throw err;
+  }
 };
 
-// Export DB instance for use in other files (such as controllers)
-export const getDb = (): Db => {
-    if (!db) {
-        throw new Error("Database not initialized. Call initDb first");
-    }
-    return db;
-}
+// Export mongoose for use in other files (such as controllers)
+export const getDb = (): mongoose.Mongoose => {
+  if (!isConnected) {
+    throw new Error("Database not initialized. Call initDb first");
+  }
+  return mongoose; // Return mongoose instance, which is connected
+};
