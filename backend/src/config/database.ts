@@ -12,10 +12,7 @@ export const initDb = async (uri: string): Promise<void> => {
   }
 
   try {
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 30000, // Increase timeout if needed
-      bufferCommands: false, // Disable buffering
-    });
+    await mongoose.connect(uri);
 
     isConnected = true; // Mark as connected
     console.log("Connected to MongoDB via Mongoose");
