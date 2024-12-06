@@ -77,11 +77,6 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
 UserSchema.pre("save", async function (next) {
   const user: IUser = this as IUser;
 
-  // Check if password is long enough
-  if (user.password && user.password.length < 8) {
-    return next(new Error("Password must be at least 8 characters long."))
-  }
-
   if (!user.isModified("password")) return next();
 
   try {

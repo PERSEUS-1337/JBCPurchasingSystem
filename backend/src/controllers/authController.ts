@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
+import { z } from "zod";
 import User from "../models/userModel";
+import { userSchema, UserInput } from "../middlewares/userValidator";
+import { LoginInput, loginSchema } from "../middlewares/loginValidator";
 
 // TODO: for testing only, will be moved to a centralized file later
 const regSuccessMsg = "User registered successfully";
@@ -13,62 +16,49 @@ const loginSuccessMsg = "Login successful";
 
 const mockToken = "mock-jwt-token";
 
-// Controller for registering a user
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Dynamically get allowed fields from the schema
-    const allowedFields = Object.keys(User.schema.paths);
-    const unexpectedFields = Object.keys(req.body).filter(
-      (field) => !allowedFields.includes(field)
-    );
+    // Validate using Zod (strict mode will reject unexpected fields)
+    const userInput: UserInput = userSchema.parse(req.body);
 
-    if (unexpectedFields.length > 0) {
-      res.status(400).json({
-        message: "Invalid request payload",
-      });
-      return;
-    }
-    console.log(req.body);
-
-    const user = new User(req.body);
+    const user = new User(userInput);
     await user.save();
 
     res.status(201).json({
       message: regSuccessMsg,
-      token: mockToken,
       username: user.username,
     });
 
-    return; //
-  } catch (err: any) {
-    // Handle password length validation error
-    if (err.message && err.message.includes("Password must be at least")) {
-      res.status(400).json({ message: err.message });
-      return;
-    }
-    if (err.name === "ValidationError") {
-      // Handle other validatoin errors
-      res.status(400).json({ message: err.message });
-      return;
-    }
-    if (err.code === 11000) {
-      // Duplicate key error
-      res.status(409).json({ message: userExistsMsg });
-      return;
-    }
-    console.error("Error occured:", err);
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
     return;
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      // Handle validation errors
+      res.status(400).json({
+        message: "Validation failed",
+        errors: err.errors.map((e) => ({
+          path: e.path.join("."),
+          message: e.message,
+        })),
+      });
+    } else if (err.code === 11000) {
+      // Handle duplicate key error
+      res.status(409).json({ message: userExistsMsg });
+    } else {
+      // Log and handle unexpected errors
+      console.error("Unexpected error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
 };
 
 // Controller for logging in a user
 export const login = async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
-
   try {
+    // Validate request body using Zod
+    const userInput: LoginInput = loginSchema.parse(req.body); // This will throw if validation fails
+
+    const { email, password } = userInput;
+
     // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
@@ -76,17 +66,35 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // If user exists, we compare passwords
+    // If user exists, compare passwords
     const isPasswordMatch = await user.comparePassword(password);
     if (!isPasswordMatch) {
       res.status(401).json({ message: "Invalid credentials." });
       return;
     }
-  } catch (err: any) {}
-  res.status(200).send({
-    message: loginSuccessMsg,
-    token: mockToken,
-  });
+
+    // On successful login, return response
+    res.status(200).json({
+      message: "Login successful",
+      token: "mock-jwt-token", // Mock token (replace with actual JWT logic)
+    });
+
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      // Handle validation errors
+      res.status(400).json({
+        message: "Validation failed",
+        errors: err.errors.map((e) => ({
+          path: e.path.join("."),
+          message: e.message,
+        })),
+      });
+    } else {
+      // Handle other errors (user not found, password mismatch, etc.)
+      console.error("Unexpected error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
 };
 
 // Controller for logging out a user
