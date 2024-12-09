@@ -194,7 +194,7 @@ describe("Authentication Routes", () => {
       expect(response.body).toEqual(
         expect.objectContaining({
           message: loginSuccessMsg,
-          token: expect.any(String), // Validate that a token is returned
+          bearer: expect.any(String), // Validate that a token is returned
         })
       );
     });

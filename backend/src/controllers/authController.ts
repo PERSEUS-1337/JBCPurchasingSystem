@@ -3,18 +3,12 @@ import { z } from "zod";
 import User from "../models/userModel";
 import { userSchema, UserInput } from "../middlewares/userValidator";
 import { LoginInput, loginSchema } from "../middlewares/loginValidator";
+import { generateJWT } from "../middlewares/jwtMiddleware";
 
 // TODO: for testing only, will be moved to a centralized file later
 const regSuccessMsg = "User registered successfully";
 const userExistsMsg = "Username already exists";
-const usernameRequiredMsg = "Username is required";
-const passwordRequiredMsg = "Password is required";
-const usernameShortMsg = "Username must be at least 3 characters long";
-const passwordShortMsg = "Password must be at least 8 characters long";
-const invalidRequestMsg = "Invalid request payload";
-const loginSuccessMsg = "Login successful";
 
-const mockToken = "mock-jwt-token";
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -73,12 +67,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const token = await generateJWT(user.id);
+
     // On successful login, return response
     res.status(200).json({
       message: "Login successful",
-      token: "mock-jwt-token", // Mock token (replace with actual JWT logic)
+      bearer: token,
     });
-
   } catch (err: any) {
     if (err instanceof z.ZodError) {
       // Handle validation errors
