@@ -14,7 +14,7 @@ const router = Router();
 
 // Routes for authentication
 router.get("/hello", (req, res) => {
-  res.json({ messge: "This is the public auth route" });
+  res.status(200).json({ messge: "This is the public auth route" });
 });
 router.post("/register", validateRequest(userSchema), register);
 router.post("/login", validateRequest(loginSchema), login);
@@ -22,6 +22,6 @@ router.post("/logout", logout);
 router.get("/refresh", refresh);
 
 router.get("/protected", authenticateJWT, (req, res) => {
-  res.json("This is the auth protected route");
+  res.status(200).json({ message: "This is the auth protected route" });
 });
 export default router;

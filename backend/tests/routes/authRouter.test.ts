@@ -19,10 +19,13 @@ import {
   unexpectedUser,
 } from "./mockUsers";
 import app from "../../src/app";
+import { generateJWT } from "../../src/utils/jwtUtils";
 
 describe("Authentication Routes", () => {
   const apiRegister = "/api/auth/register";
   const apiLogin = "/api/auth/login";
+  const apiProtected = "/api/auth/protected";
+  const apiAuthHello = "/api/auth/hello";
 
   let mongoServer: MongoMemoryServer;
 
@@ -284,6 +287,63 @@ describe("Authentication Routes", () => {
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Token refreshed");
       expect(response.body.token).toBe("new-mock-jwt-token");
+    });
+  });
+
+  describe(`GET ${apiProtected}`, () => {
+    let validToken: string;
+    const invalidToken: string = "invalid-token";
+    const expiredToken: string =
+      "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI2NzUyYTEwZWRjZWExMGQwNjlhNTU5ZGYiLCJpYXQiOjE3MzM4MTU4NDgsImV4cCI6MTczMzgxNjE0OH0.uTFHWMoVXIlV3ERhnLVFEZzfHCVeA77snM8B4KzwCps";
+
+    beforeEach(async () => {
+      await User.deleteMany({}); // Clear any existing data
+      const user = await new User(validUser).save(); // Pre-save the valid user
+      // Generate a valid token for the user
+      validToken = await generateJWT(user.userID);
+    });
+
+    it("should access the protected route successfully with a valid JWT", async () => {
+      const response: Response = await request(app)
+        .get(apiProtected)
+        .set("Authorization", `Bearer ${validToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe("This is the auth protected route");
+    });
+
+    it("should return an error if no token is provided", async () => {
+      const response: Response = await request(app).get(apiProtected);
+
+      expect(response.status).toBe(403); // Forbidden
+      expect(response.body.message).toBe("Access denied, no token provided");
+    });
+
+    it("should return an error if the token is invalid", async () => {
+      const response: Response = await request(app)
+        .get(apiProtected)
+        .set("Authorization", `Bearer ${invalidToken}`);
+
+      expect(response.status).toBe(401); // Unauthorized
+      expect(response.body.message).toBe("Invalid or expired token");
+    });
+
+    it("should return an error if the token is expired", async () => {
+      const response: Response = await request(app)
+        .get(apiProtected)
+        .set("Authorization", `Bearer ${expiredToken}`);
+
+      expect(response.status).toBe(401); // Unauthorized
+      expect(response.body.message).toBe("Invalid or expired token");
+    });
+  });
+
+  describe(`GET ${apiAuthHello}`, () => {
+    it("should access the public auth route to confirm that it exists", async () => {
+      const response: Response = await request(app).get(apiAuthHello);
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe("Invalid or expired token");
     });
   });
 });
