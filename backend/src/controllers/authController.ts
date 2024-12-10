@@ -5,11 +5,6 @@ import { userSchema, UserInput } from "../middlewares/userValidator";
 import { LoginInput, loginSchema } from "../middlewares/loginValidator";
 import { generateJWT } from "../middlewares/jwtMiddleware";
 
-// TODO: for testing only, will be moved to a centralized file later
-const regSuccessMsg = "User registered successfully";
-const userExistsMsg = "Username already exists";
-
-
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     // Validate using Zod (strict mode will reject unexpected fields)
@@ -19,7 +14,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     await user.save();
 
     res.status(201).json({
-      message: regSuccessMsg,
+      message: "User registered successfully",
       username: user.username,
     });
 
@@ -36,11 +31,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       });
     } else if (err.code === 11000) {
       // Handle duplicate key error
-      res.status(409).json({ message: userExistsMsg });
+      res.status(409).json({ message: "Username already exists" });
     } else {
       // Log and handle unexpected errors
-      console.error("Unexpected error:", err);
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: "Internal server error", error: err });
     }
   }
 };
@@ -86,8 +80,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       });
     } else {
       // Handle other errors (user not found, password mismatch, etc.)
-      console.error("Unexpected error:", err);
-      res.status(500).json({ message: "Internal server error" });
+      // console.error("Unexpected error:", err);
+      res.status(500).json({ message: "Internal server error", error: err });
     }
   }
 };

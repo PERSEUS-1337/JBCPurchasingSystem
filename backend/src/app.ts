@@ -11,16 +11,16 @@ app.use(express.json());
 // Use Morgan for logging requests
 app.use(morgan(":method :url :status :response-time ms - :remote-addr"));
 
-// Custom logging middleware for additional details
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(
-    `[${new Date().toISOString()}] ${req.method} request to ${req.url} from ${
-      req.ip
-    }`
-  );
-  console.log(`Headers: ${JSON.stringify(req.headers)}`);
-  next();
-});
+// // Custom logging middleware for additional details
+// app.use((req: Request, res: Response, next: NextFunction) => {
+//   console.log(
+//     `[${new Date().toISOString()}] ${req.method} request to ${req.url} from ${
+//       req.ip
+//     }`
+//   );
+//   console.log(`Headers: ${JSON.stringify(req.headers)}`);
+//   next();
+// });
 
 // Health check route
 app.get("/health", (req: Request, res: Response) => {

@@ -45,10 +45,6 @@ describe("Authentication Routes", () => {
       await User.deleteMany({});
     });
 
-    const regSuccessMsg = "User registered successfully";
-    const userExistsMsg = "Username already exists";
-    const validationFailedMsg = "Validation failed";
-
     it("should register a user successfully", async () => {
       const response: Response = await request(app)
         .post(apiRegister)
@@ -57,7 +53,7 @@ describe("Authentication Routes", () => {
       expect(response.status).toBe(201);
       expect(response.body).toEqual(
         expect.objectContaining({
-          message: regSuccessMsg,
+          message: "User registered successfully",
           username: validUser.username,
         })
       );
@@ -71,7 +67,7 @@ describe("Authentication Routes", () => {
         .send(validUser); // Try registering the same user.
 
       expect(response.status).toBe(409); // Conflict status code.
-      expect(response.body.message).toBe(userExistsMsg);
+      expect(response.body.message).toBe("Username already exists");
     });
 
     it("should return an error if the username is missing", async () => {
@@ -82,7 +78,7 @@ describe("Authentication Routes", () => {
       expect(response.status).toBe(400); // Bad Request
       expect(response.body).toEqual(
         expect.objectContaining({
-          message: validationFailedMsg, // Ensure it matches the expected error type
+          message: "Validation failed", // Ensure it matches the expected error type
           errors: expect.arrayContaining([
             expect.objectContaining({
               path: "username", // The path is empty for unexpected fields
@@ -101,7 +97,7 @@ describe("Authentication Routes", () => {
       expect(response.status).toBe(400); // Bad Request
       expect(response.body).toEqual(
         expect.objectContaining({
-          message: validationFailedMsg, // Ensure it matches the expected error type
+          message: "Validation failed", // Ensure it matches the expected error type
           errors: expect.arrayContaining([
             expect.objectContaining({
               path: "password", // The path is empty for unexpected fields
@@ -120,7 +116,7 @@ describe("Authentication Routes", () => {
       expect(response.status).toBe(400); // Bad Request
       expect(response.body).toEqual(
         expect.objectContaining({
-          message: validationFailedMsg, // Ensure it matches the expected error type
+          message: "Validation failed", // Ensure it matches the expected error type
           errors: expect.arrayContaining([
             expect.objectContaining({
               path: "password", // The path is empty for unexpected fields
@@ -139,7 +135,7 @@ describe("Authentication Routes", () => {
       expect(response.status).toBe(400); // Bad Request
       expect(response.body).toEqual(
         expect.objectContaining({
-          message: validationFailedMsg, // Ensure it matches the expected error type
+          message: "Validation failed", // Ensure it matches the expected error type
           errors: expect.arrayContaining([
             expect.objectContaining({
               path: "", // The path is empty for unexpected fields
@@ -154,7 +150,7 @@ describe("Authentication Routes", () => {
       // Mock a database error or any other unexpected error
       jest
         .spyOn(User.prototype, "save")
-        .mockRejectedValueOnce(new Error("Database error"));
+        .mockRejectedValueOnce(new Error("Unexpected error"));
 
       const response: Response = await request(app)
         .post("/api/auth/register")
@@ -166,7 +162,6 @@ describe("Authentication Routes", () => {
   });
 
   describe(`POST ${apiLogin}`, () => {
-    const loginSuccessMsg = "Login successful";
     const invalidEmailUser = {
       email: "invalid@example.com",
       password: "password123",
@@ -193,7 +188,7 @@ describe("Authentication Routes", () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual(
         expect.objectContaining({
-          message: loginSuccessMsg,
+          message: "Login successful",
           bearer: expect.any(String), // Validate that a token is returned
         })
       );
@@ -257,6 +252,7 @@ describe("Authentication Routes", () => {
         ])
       );
     });
+
     it("should return a 500 error for an unexpected error during login", async () => {
       // Mock a database error or any other unexpected error
       jest
