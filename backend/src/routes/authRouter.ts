@@ -6,6 +6,9 @@ import {
   refresh,
 } from "../controllers/authController";
 import { authenticateJWT } from "../middlewares/jwtMiddleware";
+import { validateRequest } from "../middlewares/validationMiddleware";
+import { loginSchema } from "../validators/loginValidator";
+import { userSchema } from "../validators/userValidator";
 
 const router = Router();
 
@@ -13,8 +16,8 @@ const router = Router();
 router.get("/hello", (req, res) => {
   res.json({ messge: "This is the public auth route" });
 });
-router.post("/register", register);
-router.post("/login", login);
+router.post("/register", validateRequest(userSchema), register);
+router.post("/login", validateRequest(loginSchema), login);
 router.post("/logout", logout);
 router.get("/refresh", refresh);
 

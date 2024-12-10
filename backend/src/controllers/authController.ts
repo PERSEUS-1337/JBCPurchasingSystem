@@ -1,16 +1,23 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import User from "../models/userModel";
-import { userSchema, UserInput } from "../middlewares/userValidator";
-import { LoginInput, loginSchema } from "../middlewares/loginValidator";
-import { generateJWT } from "../middlewares/jwtMiddleware";
+import { userSchema, UserInput } from "../validators/userValidator";
+import { LoginInput, loginSchema } from "../validators/loginValidator";
+import { generateJWT } from "../utils/jwtUtils";
+import { checkDuplicateUser } from "../services/userService";
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Validate using Zod (strict mode will reject unexpected fields)
-    const userInput: UserInput = userSchema.parse(req.body);
+    // Assume already validated by zod middleware
+    const user = new User(req.body);
 
-    const user = new User(userInput);
+    // Check for duplicate username or email
+    const isDuplicate = await checkDuplicateUser(user.username, user.email);
+    if (isDuplicate) {
+      res.status(409).json({ message: "Username or email already exists" });
+      return;
+    }
+
     await user.save();
 
     res.status(201).json({
@@ -20,32 +27,16 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     return;
   } catch (err: any) {
-    if (err instanceof z.ZodError) {
-      // Handle validation errors
-      res.status(400).json({
-        message: "Validation failed",
-        errors: err.errors.map((e) => ({
-          path: e.path.join("."),
-          message: e.message,
-        })),
-      });
-    } else if (err.code === 11000) {
-      // Handle duplicate key error
-      res.status(409).json({ message: "Username already exists" });
-    } else {
-      // Log and handle unexpected errors
-      res.status(500).json({ message: "Internal server error", error: err });
-    }
+    // Log and handle unexpected errors
+    res.status(500).json({ message: "Internal server error", error: err });
   }
 };
 
 // Controller for logging in a user
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Validate request body using Zod
-    const userInput: LoginInput = loginSchema.parse(req.body); // This will throw if validation fails
-
-    const { email, password } = userInput;
+    // Assume that it is already validated with zod middleware
+    const { email, password } = req.body;
 
     // Check if user exists
     const user = await User.findOne({ email });
@@ -69,20 +60,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       bearer: token,
     });
   } catch (err: any) {
-    if (err instanceof z.ZodError) {
-      // Handle validation errors
-      res.status(400).json({
-        message: "Validation failed",
-        errors: err.errors.map((e) => ({
-          path: e.path.join("."),
-          message: e.message,
-        })),
-      });
-    } else {
-      // Handle other errors (user not found, password mismatch, etc.)
-      // console.error("Unexpected error:", err);
-      res.status(500).json({ message: "Internal server error", error: err });
-    }
+    // Handle other errors
+    res.status(500).json({ message: "Internal server error", error: err });
   }
 };
 

@@ -1,24 +1,8 @@
 import { NextFunction, Request, Response } from "express";
-import dotenv from "dotenv";
-import { jwtVerify, SignJWT } from "jose";
-
-// Load environment variables
-const envFile = `.env.${process.env.NODE_ENV || "development"}`;
-dotenv.config({ path: envFile });
+import { jwtVerify } from "jose";
 
 // Secret key (you can store this in environment variables)
 const SECRET_KEY: string = process.env.SECRET_KEY as string;
-
-// Middleware to create JWT (this can be used in your login or register controllers)
-export const generateJWT = async (userId: string) => {
-  const jwt = await new SignJWT({ userId })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("5m") // Set token expiration time
-    .sign(new TextEncoder().encode(SECRET_KEY)); // Signing with the secret key
-
-  return jwt;
-};
 
 // Middleware to authenticate and verify JWT in requests
 export const authenticateJWT = async (
@@ -39,7 +23,8 @@ export const authenticateJWT = async (
       token,
       new TextEncoder().encode(SECRET_KEY)
     );
-    // req.user = payload; // Attach user info to request object for access in controllers
+    req.body = payload; // Attach user info to request object for access in controllers
+    console.log(req.body);
     next();
     return;
   } catch (error) {

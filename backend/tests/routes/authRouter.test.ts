@@ -24,8 +24,6 @@ describe("Authentication Routes", () => {
   const apiRegister = "/api/auth/register";
   const apiLogin = "/api/auth/login";
 
-  const mockToken = "mock-jwt-token";
-
   let mongoServer: MongoMemoryServer;
 
   beforeAll(async () => {
@@ -67,7 +65,7 @@ describe("Authentication Routes", () => {
         .send(validUser); // Try registering the same user.
 
       expect(response.status).toBe(409); // Conflict status code.
-      expect(response.body.message).toBe("Username already exists");
+      expect(response.body.message).toBe("Username or email already exists");
     });
 
     it("should return an error if the username is missing", async () => {
@@ -272,7 +270,7 @@ describe("Authentication Routes", () => {
     it("should logout a user successfully", async () => {
       const response: Response = await request(app)
         .post("/api/auth/logout")
-        .send({ token: mockToken });
+        .send({ token: "mock-jwt-token" });
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Logout successful");
