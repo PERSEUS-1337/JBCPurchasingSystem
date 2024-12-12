@@ -1,8 +1,5 @@
 import { Request, Response } from "express";
-import { z } from "zod";
 import User from "../models/userModel";
-import { userSchema, UserInput } from "../validators/userValidator";
-import { LoginInput, loginSchema } from "../validators/loginValidator";
 import { generateJWT } from "../utils/jwtUtils";
 import { checkDuplicateUser } from "../services/userService";
 
@@ -52,7 +49,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const token = await generateJWT(user.id);
+    const token = await generateJWT(user.userID);
 
     // On successful login, return response
     res.status(200).json({

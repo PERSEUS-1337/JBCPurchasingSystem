@@ -17,16 +17,20 @@ import {
   noPasswordUser,
   weakPasswordUser,
   unexpectedUser,
-} from "./mockUsers";
+  validLoginData,
+  invalidEmailUser,
+  invalidPasswordUser,
+} from "../mockUsers";
 import app from "../../src/app";
 import { generateJWT } from "../../src/utils/jwtUtils";
+import {
+  apiAuthHello,
+  apiLogin,
+  apiProtected,
+  apiRegister,
+} from "../refRoutes";
 
 describe("Authentication Routes", () => {
-  const apiRegister = "/api/auth/register";
-  const apiLogin = "/api/auth/login";
-  const apiProtected = "/api/auth/protected";
-  const apiAuthHello = "/api/auth/hello";
-
   let mongoServer: MongoMemoryServer;
 
   beforeAll(async () => {
@@ -163,19 +167,6 @@ describe("Authentication Routes", () => {
   });
 
   describe(`POST ${apiLogin}`, () => {
-    const invalidEmailUser = {
-      email: "invalid@example.com",
-      password: "password123",
-    };
-    const invalidPasswordUser = {
-      email: validUser.email,
-      password: "wrongpassword",
-    };
-    const validLoginData = {
-      email: validUser.email,
-      password: validUser.password,
-    };
-
     beforeEach(async () => {
       await User.deleteMany({}); // Clear any existing data
       await new User(validUser).save(); // Pre-save the valid user for login tests
@@ -183,7 +174,7 @@ describe("Authentication Routes", () => {
 
     it("should login a user successfully", async () => {
       const response: Response = await request(app)
-        .post("/api/auth/login")
+        .post(apiLogin)
         .send(validLoginData);
 
       expect(response.status).toBe(200);
@@ -197,7 +188,7 @@ describe("Authentication Routes", () => {
 
     it("should return an error if the email is invalid", async () => {
       const response: Response = await request(app)
-        .post("/api/auth/login")
+        .post(apiLogin)
         .send(invalidEmailUser);
 
       expect(response.status).toBe(404);
@@ -206,7 +197,7 @@ describe("Authentication Routes", () => {
 
     it("should return an error if the password is incorrect", async () => {
       const response: Response = await request(app)
-        .post("/api/auth/login")
+        .post(apiLogin)
         .send(invalidPasswordUser);
 
       expect(response.status).toBe(401);
@@ -297,9 +288,8 @@ describe("Authentication Routes", () => {
       "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI2NzUyYTEwZWRjZWExMGQwNjlhNTU5ZGYiLCJpYXQiOjE3MzM4MTU4NDgsImV4cCI6MTczMzgxNjE0OH0.uTFHWMoVXIlV3ERhnLVFEZzfHCVeA77snM8B4KzwCps";
 
     beforeEach(async () => {
-      await User.deleteMany({}); // Clear any existing data
-      const user = await new User(validUser).save(); // Pre-save the valid user
-      // Generate a valid token for the user
+      await User.deleteMany({});
+      const user = await new User(validUser).save(); 
       validToken = await generateJWT(user.userID);
     });
 
@@ -343,7 +333,7 @@ describe("Authentication Routes", () => {
       const response: Response = await request(app).get(apiAuthHello);
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe("Invalid or expired token");
+      expect(response.body.message).toBe("This is the public auth route");
     });
   });
 });

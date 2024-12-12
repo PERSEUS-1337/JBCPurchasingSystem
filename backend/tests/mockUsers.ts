@@ -11,6 +11,18 @@ export const validUser = {
   status: "Active",
 };
 
+export const validUserNoPwd = {
+  userID: "U001",
+  fullname: "Test User",
+  idNumber: "10001",
+  username: "testuser",
+  email: "testuser@example.com",
+  role: "User",
+  position: "Staff",
+  department: "IT",
+  status: "Active",
+};
+
 export const noUsernameUser = {
   userID: "U002",
   fullname: "No Username User",
@@ -73,4 +85,17 @@ export const unexpectedUser = {
   department: "IT",
   status: "Active",
   unexpectedField: "unexpectedValue", // Invalid field
+};
+
+export const validLoginData = {
+  email: validUser.email,
+  password: validUser.password,
+};
+export const invalidEmailUser = {
+  email: "invalid@example.com",
+  password: "password123",
+};
+export const invalidPasswordUser = {
+  email: validUser.email,
+  password: "wrongpassword",
 };

@@ -30,7 +30,9 @@ app.get("/health", (req: Request, res: Response) => {
 });
 
 import authRouter from "./routes/authRouter";
+import userRouter from "./routes/userRouter";
 // Mount the routes here
 app.use("/api/auth", authRouter);
+app.use("/api/user", userRouter)
 
 export default app;
