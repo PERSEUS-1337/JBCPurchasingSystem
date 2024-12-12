@@ -1,5 +1,12 @@
 import request, { Response } from "supertest";
-import { describe, it, expect, beforeAll, afterAll } from "@jest/globals";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+} from "@jest/globals";
 import app from "../../src/app"; // Import your Express app
 import User from "../../src/models/userModel";
 import { validUser, validUserNoPwd } from "../mockUsers";
@@ -7,14 +14,11 @@ import { apiMe } from "../refRoutes";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import { generateJWT } from "../../src/utils/jwtUtils";
-import { beforeEach } from "node:test";
 
 describe("User Routes", () => {
   let validToken: string;
   let nonExistentToken: string;
   const invalidToken: string = "invalid-token";
-  const expiredToken: string =
-    "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI2NzUyYTEwZWRjZWExMGQwNjlhNTU5ZGYiLCJpYXQiOjE3MzM4MTU4NDgsImV4cCI6MTczMzgxNjE0OH0.uTFHWMoVXIlV3ERhnLVFEZzfHCVeA77snM8B4KzwCps";
 
   let mongoServer: MongoMemoryServer;
 
@@ -22,10 +26,6 @@ describe("User Routes", () => {
     mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
-
-    await User.deleteMany({});
-    const user = await new User(validUser).save();
-    validToken = await generateJWT(user.userID);
   });
 
   afterAll(async () => {
@@ -34,13 +34,11 @@ describe("User Routes", () => {
   });
 
   describe(`GET ${apiMe}`, () => {
-    // beforeEach(async () => {
-    //   await User.deleteMany({});
-    //   const user = await new User(validUser).save();
-    //   console.log(user);
-    //   validToken = await generateJWT(user.userID);
-    // });
-
+    beforeEach(async () => {
+      await User.deleteMany({});
+      const user = await new User(validUser).save();
+      validToken = await generateJWT(user.userID);
+    });
     it("should return user details for a valid JWT", async () => {
       const response: Response = await request(app)
         .get(apiMe)
