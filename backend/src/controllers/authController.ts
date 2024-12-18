@@ -74,3 +74,33 @@ export const refresh = (req: Request, res: Response): void => {
     token: "new-mock-jwt-token",
   });
 };
+
+export const changePassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    const userID = req.user; // Assuming `req.user` contains the authenticated user
+    const user = await User.findOne({ userID });
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const isMatch = await user.comparePassword(oldPassword);
+    if (!isMatch) {
+      res.status(400).json({ message: "Old password is incorrect" });
+      return;
+    }
+
+    // Hash and save the new password
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
