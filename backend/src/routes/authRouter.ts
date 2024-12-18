@@ -21,7 +21,9 @@ router.post("/login", validateRequest(loginSchema), login);
 router.post("/logout", logout);
 router.get("/refresh", refresh);
 
+// Protected Routes
 router.get("/protected", authenticateJWT, (req, res) => {
   res.status(200).json({ message: "This is the auth protected route" });
 });
+
 export default router;
