@@ -22,13 +22,16 @@ import {
   invalidPasswordUser,
 } from "../mockUsers";
 import app from "../../src/app";
-import { generateJWT } from "../../src/utils/jwtUtils";
+import { generateJWT } from "../../src/utils/authUtils";
 import {
   apiAuthHello,
+  apiChangePassword,
   apiLogin,
+  apiLogout,
   apiProtected,
   apiRegister,
 } from "../refRoutes";
+import { writeHeapSnapshot } from "v8";
 
 describe("Authentication Routes", () => {
   let mongoServer: MongoMemoryServer;
@@ -211,7 +214,7 @@ describe("Authentication Routes", () => {
       };
 
       const response: Response = await request(app)
-        .post("/api/auth/login")
+        .post(apiLogin)
         .send(invalidEmailFormat);
 
       expect(response.status).toBe(400); // Bad Request
@@ -230,7 +233,7 @@ describe("Authentication Routes", () => {
       const shortPasswordUser = { email: validUser.email, password: "short" };
 
       const response: Response = await request(app)
-        .post("/api/auth/login")
+        .post(apiLogin)
         .send(shortPasswordUser);
 
       expect(response.status).toBe(400); // Bad Request
@@ -252,7 +255,7 @@ describe("Authentication Routes", () => {
         .mockRejectedValueOnce(new Error("Database error"));
 
       const response: Response = await request(app)
-        .post("/api/auth/login")
+        .post(apiLogin)
         .send(validLoginData);
 
       expect(response.status).toBe(500); // Internal server error
@@ -260,7 +263,7 @@ describe("Authentication Routes", () => {
     });
   });
 
-  describe("POST /api/auth/logout", () => {
+  describe(`POST ${apiLogout}`, () => {
     it("should logout a user successfully", async () => {
       const response: Response = await request(app)
         .post("/api/auth/logout")
@@ -268,6 +271,112 @@ describe("Authentication Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Logout successful");
+    });
+  });
+
+  describe(`POST ${apiChangePassword}`, () => {
+    let validToken: string;
+    const invalidToken = "invalid-token";
+    const wrongOldPassword = "WrongOldPassword123";
+    const newPassword = "NewPassword123!";
+
+    beforeEach(async () => {
+      await User.deleteMany({});
+      const user = await new User(validUser).save();
+      validToken = await generateJWT(user.userID);
+    });
+
+    it("should change the password successfully for authenticated users", async () => {
+      const response: Response = await request(app)
+        .post(apiChangePassword)
+        .set("Authorization", `Bearer ${validToken}`)
+        .send({
+          currentPassword: validUser.password,
+          newPassword: newPassword,
+        });
+
+      console.log(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe("Password changed successfully");
+
+      // Verify that the new password works
+      const loginResponse: Response = await request(app).post(apiLogin).send({
+        email: validUser.email,
+        password: "NewPassword123!",
+      });
+
+      expect(loginResponse.status).toBe(200);
+      expect(loginResponse.body.message).toBe("Login successful");
+    });
+
+    it("should return an error if the old password is incorrect", async () => {
+      const response: Response = await request(app)
+        .post(apiChangePassword)
+        .set("Authorization", `Bearer ${validToken}`)
+        .send({
+          currentPassword: wrongOldPassword,
+          newPassword: newPassword,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Old password is incorrect");
+    });
+
+    it("should return an error if the user is not authenticated", async () => {
+      const response: Response = await request(app)
+        .post(apiChangePassword)
+        .send({
+          currentPassword: validUser.password,
+          newPassword: newPassword,
+        });
+
+      expect(response.status).toBe(403);
+      expect(response.body.message).toBe("Access denied, no token provided");
+    });
+
+    it("should return an error if the token is invalid", async () => {
+      const response: Response = await request(app)
+        .post(apiChangePassword)
+        .set("Authorization", `Bearer ${invalidToken}`)
+        .send({
+          currentPassword: validUser.password,
+          newPassword: newPassword,
+        });
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe("Invalid or expired token");
+    });
+
+    it("should return an error if the user is not found", async () => {
+      await User.deleteMany({}); // Simulate no users in the database
+
+      const response: Response = await request(app)
+        .post(apiChangePassword)
+        .set("Authorization", `Bearer ${validToken}`)
+        .send({
+          currentPassword: validUser.password,
+          newPassword: newPassword,
+        });
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe("User not found");
+    });
+
+    it("should return a 500 error for unexpected server issues", async () => {
+      jest
+        .spyOn(User.prototype, "save")
+        .mockRejectedValueOnce(new Error("Unexpected error"));
+
+      const response: Response = await request(app)
+        .post(apiChangePassword)
+        .set("Authorization", `Bearer ${validToken}`)
+        .send({
+          currentPassword: validUser.password,
+          newPassword: newPassword,
+        });
+
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe("Server error");
     });
   });
 
@@ -289,7 +398,7 @@ describe("Authentication Routes", () => {
 
     beforeEach(async () => {
       await User.deleteMany({});
-      const user = await new User(validUser).save(); 
+      const user = await new User(validUser).save();
       validToken = await generateJWT(user.userID);
     });
 

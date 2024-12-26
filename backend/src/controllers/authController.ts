@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import User from "../models/userModel";
-import { generateJWT } from "../utils/jwtUtils";
+import { generateJWT } from "../utils/authUtils";
 import { checkDuplicateUser } from "../services/userService";
+import { jwtVerify } from "jose";
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -80,18 +81,19 @@ export const changePassword = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { oldPassword, newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body;
+    console.log(currentPassword, newPassword);
 
-    const userID = req.user; // Assuming `req.user` contains the authenticated user
+    const { userID } = req.user; // Assuming `req.user` contains the authenticated user
     const user = await User.findOne({ userID });
     if (!user) {
       res.status(404).json({ message: "User not found" });
       return;
     }
 
-    const isMatch = await user.comparePassword(oldPassword);
+    const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
-      res.status(400).json({ message: "Old password is incorrect" });
+      res.status(400).json({ message: "Current password is incorrect" });
       return;
     }
 
@@ -100,7 +102,8 @@ export const changePassword = async (
     await user.save();
 
     res.status(200).json({ message: "Password changed successfully" });
+    return;
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    res.status(500).json({ message: "Server error", error: error });
   }
 };

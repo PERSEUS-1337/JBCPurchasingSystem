@@ -14,7 +14,7 @@ import { validUser, validUserNoPwd } from "../mockUsers";
 import { apiGetUserById, apiMe, apiUserHello } from "../refRoutes";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
-import { generateJWT } from "../../src/utils/jwtUtils";
+import { generateJWT } from "../../src/utils/authUtils";
 
 describe("User Routes", () => {
   let validToken: string;

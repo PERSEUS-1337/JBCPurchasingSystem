@@ -10,10 +10,7 @@ import { authenticateJWT } from "../middlewares/jwtMiddleware";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import { loginSchema } from "../validators/loginValidator";
 import { userSchema } from "../validators/userValidator";
-import {
-  changePasswordSchema,
-  resetPasswordSchema,
-} from "../validators/authValidator";
+import { changePasswordSchema } from "../validators/authValidator";
 
 const router = Router();
 
@@ -33,14 +30,10 @@ router.get("/protected", authenticateJWT, (req, res) => {
 
 // Password Management
 router.post(
-  "/change-password",
+  "/change-pwd",
   authenticateJWT,
   validateRequest(changePasswordSchema),
   changePassword
 ); // Change user password
-// router.post(
-//   "/reset-password",
-//   validateRequest(resetPasswordSchema),
-//   resetPassword
-// ); // Reset password (admin or forgot password)
+
 export default router;
