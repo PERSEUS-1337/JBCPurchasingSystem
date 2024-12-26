@@ -82,7 +82,6 @@ export const changePassword = async (
 ): Promise<void> => {
   try {
     const { currentPassword, newPassword } = req.body;
-    console.log(currentPassword, newPassword);
 
     const { userID } = req.user; // Assuming `req.user` contains the authenticated user
     const user = await User.findOne({ userID });

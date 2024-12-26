@@ -295,7 +295,6 @@ describe("Authentication Routes", () => {
           newPassword: newPassword,
         });
 
-      console.log(response.body);
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Password changed successfully");
 
@@ -319,7 +318,7 @@ describe("Authentication Routes", () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Old password is incorrect");
+      expect(response.body.message).toBe("Current password is incorrect");
     });
 
     it("should return an error if the user is not authenticated", async () => {
