@@ -38,36 +38,43 @@ export const getLoggedInUserDetails = async (
      * Therefore, letting the userID be referenced by the findOne function and use it to find a user
      */
     const { userID } = req.user;
-    const user = await User.findOne({ userID });
+    const user = await User.findOne({ userID }).lean(); // Converts Mongoose document to plain JS object
 
     if (!user) {
       res.status(404).json({ message: "User not found." });
       return;
     }
-    res.status(200).json(user); // Return the user data
+
+    const { password, __v, ...filteredUser } = user; // Exclude sensitive fields
+    res.status(200).json(filteredUser); // Return the user data
   } catch (err: any) {
     res.status(500).json({ message: "Internal server error", error: err });
   }
 };
 
-// Update user by ID
+// TODO: Update function by making sure to exclude fields being edited by users, and only allowed to be edited by the administrator
 export const updateUser = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const { userID } = req.params; // Extract userID from request params
-    const updates = req.body; // Get the updates from the request body
+    const { userID } = req.user;
+    const updates = req.body;
 
     const user = await User.findOneAndUpdate({ userID }, updates, {
       new: true,
-    });
+    }).lean(); // Convert Mongoose Document to plain JS object
     if (!user) {
       res.status(404).json({ message: "User not found." });
       return;
     }
 
-    res.status(200).json({ message: "User updated successfully", user });
+    const { password, __v, ...filteredUser } = user; // Exclude sensitive fields
+
+    res.status(200).json({
+      message: "User details updated successfully",
+      user: filteredUser,
+    });
   } catch (err: any) {
     res.status(500).json({ message: "Internal server error", error: err });
   }

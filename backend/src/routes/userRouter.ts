@@ -3,6 +3,7 @@ import { authenticateJWT } from "../middlewares/jwtMiddleware";
 import {
   getLoggedInUserDetails,
   getUserById,
+  updateUser,
 } from "../controllers/userController";
 
 const router = Router();
@@ -13,5 +14,6 @@ router.get("/hello", (req, res) => {
 
 router.get("/me", authenticateJWT, getLoggedInUserDetails);
 router.get("/:userID", authenticateJWT, getUserById);
+router.post("/update", authenticateJWT, updateUser);
 
 export default router;
