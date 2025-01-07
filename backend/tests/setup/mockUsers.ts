@@ -87,15 +87,4 @@ export const unexpectedUser = {
   unexpectedField: "unexpectedValue", // Invalid field
 };
 
-export const validLoginData = {
-  email: validUser.email,
-  password: validUser.password,
-};
-export const invalidEmailUser = {
-  email: "invalid@example.com",
-  password: "password123",
-};
-export const invalidPasswordUser = {
-  email: validUser.email,
-  password: "wrongpassword",
-};
+

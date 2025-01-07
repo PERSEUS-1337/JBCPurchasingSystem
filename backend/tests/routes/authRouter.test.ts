@@ -8,8 +8,7 @@ import {
   afterAll,
   jest,
 } from "@jest/globals";
-import mongoose from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
+import app from "../../src/app";
 import User from "../../src/models/userModel";
 import {
   validUser,
@@ -17,12 +16,18 @@ import {
   noPasswordUser,
   weakPasswordUser,
   unexpectedUser,
+  shortUsernameUser,
+} from "../setup/mockUsers";
+import {
   validLoginData,
-  invalidEmailUser,
-  invalidPasswordUser,
-} from "../mockUsers";
-import app from "../../src/app";
-import { generateJWT } from "../../src/utils/authUtils";
+  invalidEmailLoginData,
+  invalidPasswordLoginData,
+  nonExistentUserLoginData,
+  expiredToken,
+  invalidToken,
+  validChangePasswordData,
+  wrongOldChangePasswordData,
+} from "../setup/mockData";
 import {
   apiAuthHello,
   apiChangePassword,
@@ -30,21 +35,21 @@ import {
   apiLogout,
   apiProtected,
   apiRegister,
-} from "../refRoutes";
-import { writeHeapSnapshot } from "v8";
+} from "../setup/refRoutes";
+import {
+  connectDB,
+  disconnectDB,
+  preSaveUserAndGenJWT,
+  preSaveValidUser,
+} from "../setup/globalSetupHelper";
 
 describe("Authentication Routes", () => {
-  let mongoServer: MongoMemoryServer;
-
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const uri = mongoServer.getUri();
-    await mongoose.connect(uri);
+    await connectDB();
   });
 
   afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
+    await disconnectDB();
   });
 
   describe(`POST ${apiRegister}`, () => {
@@ -53,108 +58,135 @@ describe("Authentication Routes", () => {
       await User.deleteMany({});
     });
 
-    it("should register a user successfully", async () => {
-      const response: Response = await request(app)
-        .post(apiRegister)
-        .send(validUser);
+    describe("Success Cases", () => {
+      it("register user successfully", async () => {
+        const response: Response = await request(app)
+          .post(apiRegister)
+          .send(validUser);
 
-      expect(response.status).toBe(201);
-      expect(response.body).toEqual(
-        expect.objectContaining({
-          message: "User registered successfully",
-          username: validUser.username,
-        })
-      );
+        expect(response.status).toBe(201);
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            message: "User registered successfully",
+            username: validUser.username,
+          })
+        );
+      });
     });
 
-    it("should not register a user with an existing username", async () => {
-      await new User(validUser).save(); // Pre-save user without actually going through the route.
+    describe("Fail Cases", () => {
+      it("reject duplicate usernames", async () => {
+        await preSaveValidUser();
 
-      const response: Response = await request(app)
-        .post(apiRegister)
-        .send(validUser); // Try registering the same user.
+        const response: Response = await request(app)
+          .post(apiRegister)
+          .send(validUser); // Try registering the same user.
 
-      expect(response.status).toBe(409); // Conflict status code.
-      expect(response.body.message).toBe("Username or email already exists");
+        expect(response.status).toBe(409); // Conflict status code.
+        expect(response.body.message).toBe("Username or email already exists");
+      });
+
+      it("reject missing username", async () => {
+        const response: Response = await request(app)
+          .post(apiRegister)
+          .send(noUsernameUser);
+
+        expect(response.status).toBe(400); // Bad Request
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            message: "Validation failed", // Ensure it matches the expected error type
+            errors: expect.arrayContaining([
+              expect.objectContaining({
+                path: "username", // The path is empty for unexpected fields
+                message: expect.stringContaining("Required"), // Specific error message
+              }),
+            ]),
+          })
+        );
+      });
+
+      it("reject short username", async () => {
+        const response: Response = await request(app)
+          .post(apiRegister)
+          .send(shortUsernameUser);
+
+        expect(response.status).toBe(400); // Bad Request
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            message: "Validation failed",
+            errors: expect.arrayContaining([
+              expect.objectContaining({
+                path: "username",
+                message: expect.stringContaining(
+                  "Username must be at least 3 characters long"
+                ),
+              }),
+            ]),
+          })
+        );
+      });
+
+      it("reject missing password", async () => {
+        const response: Response = await request(app)
+          .post(apiRegister)
+          .send(noPasswordUser);
+
+        expect(response.status).toBe(400); // Bad Request
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            message: "Validation failed", // Ensure it matches the expected error type
+            errors: expect.arrayContaining([
+              expect.objectContaining({
+                path: "password", // The path is empty for unexpected fields
+                message: expect.stringContaining("Required"), // Specific error message
+              }),
+            ]),
+          })
+        );
+      });
+
+      it("reject weak password", async () => {
+        const response: Response = await request(app)
+          .post(apiRegister)
+          .send(weakPasswordUser);
+
+        expect(response.status).toBe(400); // Bad Request
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            message: "Validation failed", // Ensure it matches the expected error type
+            errors: expect.arrayContaining([
+              expect.objectContaining({
+                path: "password", // The path is empty for unexpected fields
+                message: expect.stringContaining("Password must be at least"), // Specific error message
+              }),
+            ]),
+          })
+        );
+      });
+
+      it("reject unexpected fields", async () => {
+        const response: Response = await request(app)
+          .post(apiRegister)
+          .send(unexpectedUser);
+
+        expect(response.status).toBe(400); // Bad Request
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            message: "Validation failed", // Ensure it matches the expected error type
+            errors: expect.arrayContaining([
+              expect.objectContaining({
+                path: "", // The path is empty for unexpected fields
+                message: expect.stringContaining(
+                  "Unrecognized key(s) in object"
+                ), // Specific error message
+              }),
+            ]),
+          })
+        );
+      });
     });
 
-    it("should return an error if the username is missing", async () => {
-      const response: Response = await request(app)
-        .post(apiRegister)
-        .send(noUsernameUser);
-
-      expect(response.status).toBe(400); // Bad Request
-      expect(response.body).toEqual(
-        expect.objectContaining({
-          message: "Validation failed", // Ensure it matches the expected error type
-          errors: expect.arrayContaining([
-            expect.objectContaining({
-              path: "username", // The path is empty for unexpected fields
-              message: expect.stringContaining("Required"), // Specific error message
-            }),
-          ]),
-        })
-      );
-    });
-
-    it("should return an error if the password is missing", async () => {
-      const response: Response = await request(app)
-        .post(apiRegister)
-        .send(noPasswordUser);
-
-      expect(response.status).toBe(400); // Bad Request
-      expect(response.body).toEqual(
-        expect.objectContaining({
-          message: "Validation failed", // Ensure it matches the expected error type
-          errors: expect.arrayContaining([
-            expect.objectContaining({
-              path: "password", // The path is empty for unexpected fields
-              message: expect.stringContaining("Required"), // Specific error message
-            }),
-          ]),
-        })
-      );
-    });
-
-    it("should return an error if the password is too weak", async () => {
-      const response: Response = await request(app)
-        .post(apiRegister)
-        .send(weakPasswordUser);
-
-      expect(response.status).toBe(400); // Bad Request
-      expect(response.body).toEqual(
-        expect.objectContaining({
-          message: "Validation failed", // Ensure it matches the expected error type
-          errors: expect.arrayContaining([
-            expect.objectContaining({
-              path: "password", // The path is empty for unexpected fields
-              message: expect.stringContaining("Password must be at least"), // Specific error message
-            }),
-          ]),
-        })
-      );
-    });
-
-    it("should not allow unexpected fields in the request", async () => {
-      const response: Response = await request(app)
-        .post(apiRegister)
-        .send(unexpectedUser);
-
-      expect(response.status).toBe(400); // Bad Request
-      expect(response.body).toEqual(
-        expect.objectContaining({
-          message: "Validation failed", // Ensure it matches the expected error type
-          errors: expect.arrayContaining([
-            expect.objectContaining({
-              path: "", // The path is empty for unexpected fields
-              message: expect.stringContaining("Unrecognized key(s) in object"), // Specific error message
-            }),
-          ]),
-        })
-      );
-    });
-
-    it("should return a 500 error for an unexpected error during registration", async () => {
+    it("500 error for unexpected error in registraiton", async () => {
       // Mock a database error or any other unexpected error
       jest
         .spyOn(User.prototype, "save")
@@ -170,85 +202,89 @@ describe("Authentication Routes", () => {
   });
 
   describe(`POST ${apiLogin}`, () => {
-    beforeEach(async () => {
-      await User.deleteMany({}); // Clear any existing data
-      await new User(validUser).save(); // Pre-save the valid user for login tests
+    beforeAll(async () => {
+      await preSaveValidUser();
     });
 
-    it("should login a user successfully", async () => {
-      const response: Response = await request(app)
-        .post(apiLogin)
-        .send(validLoginData);
+    describe("Success Cases", () => {
+      it("login user successfully", async () => {
+        const response: Response = await request(app)
+          .post(apiLogin)
+          .send(validLoginData);
 
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual(
-        expect.objectContaining({
-          message: "Login successful",
-          bearer: expect.any(String), // Validate that a token is returned
-        })
-      );
-    });
-
-    it("should return an error if the email is invalid", async () => {
-      const response: Response = await request(app)
-        .post(apiLogin)
-        .send(invalidEmailUser);
-
-      expect(response.status).toBe(404);
-      expect(response.body.message).toBe("User does not exist.");
-    });
-
-    it("should return an error if the password is incorrect", async () => {
-      const response: Response = await request(app)
-        .post(apiLogin)
-        .send(invalidPasswordUser);
-
-      expect(response.status).toBe(401);
-      expect(response.body.message).toBe("Invalid credentials.");
-    });
-
-    it("should return an error if email format is invalid", async () => {
-      const invalidEmailFormat = {
-        email: "invalid-email",
-        password: "password123",
-      };
-
-      const response: Response = await request(app)
-        .post(apiLogin)
-        .send(invalidEmailFormat);
-
-      expect(response.status).toBe(400); // Bad Request
-      expect(response.body.message).toBe("Validation failed");
-      expect(response.body.errors).toEqual(
-        expect.arrayContaining([
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual(
           expect.objectContaining({
-            path: "email",
-            message: "Invalid email format",
-          }),
-        ])
-      );
+            message: "Login successful",
+            bearer: expect.any(String), // Validate that a token is returned
+          })
+        );
+      });
     });
 
-    it("should return an error if password is too short", async () => {
-      const shortPasswordUser = { email: validUser.email, password: "short" };
+    describe("Fail Cases", () => {
+      it("reject NON-EXISTENT user", async () => {
+        const response: Response = await request(app)
+          .post(apiLogin)
+          .send(nonExistentUserLoginData);
 
-      const response: Response = await request(app)
-        .post(apiLogin)
-        .send(shortPasswordUser);
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("User does not exist.");
+      });
 
-      expect(response.status).toBe(400); // Bad Request
-      expect(response.body.message).toBe("Validation failed");
-      expect(response.body.errors).toEqual(
-        expect.arrayContaining([
+      it("reject INCORRECT password", async () => {
+        const response: Response = await request(app)
+          .post(apiLogin)
+          .send(invalidPasswordLoginData);
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Invalid credentials.");
+      });
+
+      it("reject INVALID email format", async () => {
+        const response: Response = await request(app)
+          .post(apiLogin)
+          .send(invalidEmailLoginData);
+
+        expect(response.status).toBe(400); // Bad Request
+        expect(response.body).toEqual(
           expect.objectContaining({
-            path: "password",
-            message: "Password must be at least 8 characters long",
-          }),
-        ])
-      );
+            message: "Validation failed",
+            errors: expect.arrayContaining([
+              expect.objectContaining({
+                path: "email",
+                message: expect.stringContaining("Invalid email format"),
+              }),
+            ]),
+          })
+        );
+      });
+
+      it("reject SHORT password", async () => {
+        const shortPasswordUser = { email: validUser.email, password: "short" };
+
+        const response: Response = await request(app)
+          .post(apiLogin)
+          .send(shortPasswordUser);
+
+        expect(response.status).toBe(400); // Bad Request
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            message: "Validation failed",
+            errors: expect.arrayContaining([
+              expect.objectContaining({
+                path: "password",
+                message: expect.stringContaining(
+                  "Password must be at least 8 characters long"
+                ),
+              }),
+            ]),
+          })
+        );
+      });
     });
 
-    it("should return a 500 error for an unexpected error during login", async () => {
+    it("500 error for unexpected error in login", async () => {
       // Mock a database error or any other unexpected error
       jest
         .spyOn(User, "findOne")
@@ -263,102 +299,120 @@ describe("Authentication Routes", () => {
     });
   });
 
-  describe(`POST ${apiLogout}`, () => {
-    it("should logout a user successfully", async () => {
-      const response: Response = await request(app)
-        .post("/api/auth/logout")
-        .send({ token: "mock-jwt-token" });
+  describe(`GET ${apiProtected}`, () => {
+    let validToken: string;
+    beforeEach(async () => {
+      validToken = await preSaveUserAndGenJWT();
+    });
 
-      expect(response.status).toBe(200);
-      expect(response.body.message).toBe("Logout successful");
+    describe("Success Cases", () => {
+      it("access PROTECTED ROUTE with JWT successfully", async () => {
+        const response: Response = await request(app)
+          .get(apiProtected)
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("This is the auth protected route");
+      });
+    });
+
+    describe("Fail Cases", () => {
+      it("reject MISSING TOKEN provided", async () => {
+        const response: Response = await request(app).get(apiProtected);
+
+        expect(response.status).toBe(403); // Forbidden
+        expect(response.body.message).toBe("Access denied, no token provided");
+      });
+
+      it("reject INVALID token", async () => {
+        const response: Response = await request(app)
+          .get(apiProtected)
+          .set("Authorization", `Bearer ${invalidToken}`);
+
+        expect(response.status).toBe(401); // Unauthorized
+        expect(response.body.message).toBe("Invalid or expired token");
+      });
+
+      it("reject EXPIRED token", async () => {
+        const response: Response = await request(app)
+          .get(apiProtected)
+          .set("Authorization", `Bearer ${expiredToken}`);
+
+        expect(response.status).toBe(401); // Unauthorized
+        expect(response.body.message).toBe("Invalid or expired token");
+      });
     });
   });
 
   describe(`POST ${apiChangePassword}`, () => {
     let validToken: string;
-    const invalidToken = "invalid-token";
-    const wrongOldPassword = "WrongOldPassword123";
-    const newPassword = "NewPassword123!";
 
     beforeEach(async () => {
-      await User.deleteMany({});
-      const user = await new User(validUser).save();
-      validToken = await generateJWT(user.userID);
+      validToken = await preSaveUserAndGenJWT();
     });
 
-    it("should change the password successfully for authenticated users", async () => {
-      const response: Response = await request(app)
-        .post(apiChangePassword)
-        .set("Authorization", `Bearer ${validToken}`)
-        .send({
-          currentPassword: validUser.password,
-          newPassword: newPassword,
+    describe("Success Cases", () => {
+      it("change PASSWORD for AUTH'ed users successfully", async () => {
+        const response: Response = await request(app)
+          .post(apiChangePassword)
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validChangePasswordData);
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("Password changed successfully");
+
+        // Verify that the new password works
+        const loginResponse: Response = await request(app).post(apiLogin).send({
+          email: validUser.email,
+          password: "NewPassword123!",
         });
 
-      expect(response.status).toBe(200);
-      expect(response.body.message).toBe("Password changed successfully");
+        expect(loginResponse.status).toBe(200);
+        expect(loginResponse.body.message).toBe("Login successful");
+      });
+    });
 
-      // Verify that the new password works
-      const loginResponse: Response = await request(app).post(apiLogin).send({
-        email: validUser.email,
-        password: "NewPassword123!",
+    describe("Fail Cases", () => {
+      it("reject WRONG OLD password", async () => {
+        const response: Response = await request(app)
+          .post(apiChangePassword)
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(wrongOldChangePasswordData);
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe("Current password is incorrect");
       });
 
-      expect(loginResponse.status).toBe(200);
-      expect(loginResponse.body.message).toBe("Login successful");
-    });
+      it("reject UNAUTHENTICATED user", async () => {
+        const response: Response = await request(app)
+          .post(apiChangePassword)
+          .send(validChangePasswordData);
 
-    it("should return an error if the old password is incorrect", async () => {
-      const response: Response = await request(app)
-        .post(apiChangePassword)
-        .set("Authorization", `Bearer ${validToken}`)
-        .send({
-          currentPassword: wrongOldPassword,
-          newPassword: newPassword,
-        });
+        expect(response.status).toBe(403);
+        expect(response.body.message).toBe("Access denied, no token provided");
+      });
 
-      expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Current password is incorrect");
-    });
+      it("reject INVALID token", async () => {
+        const response: Response = await request(app)
+          .post(apiChangePassword)
+          .set("Authorization", `Bearer ${invalidToken}`)
+          .send(validChangePasswordData);
 
-    it("should return an error if the user is not authenticated", async () => {
-      const response: Response = await request(app)
-        .post(apiChangePassword)
-        .send({
-          currentPassword: validUser.password,
-          newPassword: newPassword,
-        });
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Invalid or expired token");
+      });
 
-      expect(response.status).toBe(403);
-      expect(response.body.message).toBe("Access denied, no token provided");
-    });
+      it("reject NOT FOUND user", async () => {
+        await User.deleteMany({}); // Simulate no users in the database
 
-    it("should return an error if the token is invalid", async () => {
-      const response: Response = await request(app)
-        .post(apiChangePassword)
-        .set("Authorization", `Bearer ${invalidToken}`)
-        .send({
-          currentPassword: validUser.password,
-          newPassword: newPassword,
-        });
+        const response: Response = await request(app)
+          .post(apiChangePassword)
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validChangePasswordData);
 
-      expect(response.status).toBe(401);
-      expect(response.body.message).toBe("Invalid or expired token");
-    });
-
-    it("should return an error if the user is not found", async () => {
-      await User.deleteMany({}); // Simulate no users in the database
-
-      const response: Response = await request(app)
-        .post(apiChangePassword)
-        .set("Authorization", `Bearer ${validToken}`)
-        .send({
-          currentPassword: validUser.password,
-          newPassword: newPassword,
-        });
-
-      expect(response.status).toBe(404);
-      expect(response.body.message).toBe("User not found");
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("User not found");
+      });
     });
 
     it("should return a 500 error for unexpected server issues", async () => {
@@ -369,16 +423,23 @@ describe("Authentication Routes", () => {
       const response: Response = await request(app)
         .post(apiChangePassword)
         .set("Authorization", `Bearer ${validToken}`)
-        .send({
-          currentPassword: validUser.password,
-          newPassword: newPassword,
-        });
+        .send(validChangePasswordData);
 
       expect(response.status).toBe(500);
       expect(response.body.message).toBe("Server error");
     });
   });
 
+  describe(`GET ${apiAuthHello}`, () => {
+    it("should access the public auth route to confirm that it exists", async () => {
+      const response: Response = await request(app).get(apiAuthHello);
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe("This is the public auth route");
+    });
+  });
+
+  // TODO: Actual Implementation
   describe("GET /api/auth/refresh", () => {
     it("should refresh a user token", async () => {
       const response: Response = await request(app).get("/api/auth/refresh");
@@ -389,59 +450,15 @@ describe("Authentication Routes", () => {
     });
   });
 
-  describe(`GET ${apiProtected}`, () => {
-    let validToken: string;
-    const invalidToken: string = "invalid-token";
-    const expiredToken: string =
-      "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI2NzUyYTEwZWRjZWExMGQwNjlhNTU5ZGYiLCJpYXQiOjE3MzM4MTU4NDgsImV4cCI6MTczMzgxNjE0OH0.uTFHWMoVXIlV3ERhnLVFEZzfHCVeA77snM8B4KzwCps";
-
-    beforeEach(async () => {
-      await User.deleteMany({});
-      const user = await new User(validUser).save();
-      validToken = await generateJWT(user.userID);
-    });
-
-    it("should access the protected route successfully with a valid JWT", async () => {
+  // TODO: Actual Implementation
+  describe(`POST ${apiLogout}`, () => {
+    it("should logout a user successfully", async () => {
       const response: Response = await request(app)
-        .get(apiProtected)
-        .set("Authorization", `Bearer ${validToken}`);
+        .post("/api/auth/logout")
+        .send({ token: "mock-jwt-token" });
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe("This is the auth protected route");
-    });
-
-    it("should return an error if no token is provided", async () => {
-      const response: Response = await request(app).get(apiProtected);
-
-      expect(response.status).toBe(403); // Forbidden
-      expect(response.body.message).toBe("Access denied, no token provided");
-    });
-
-    it("should return an error if the token is invalid", async () => {
-      const response: Response = await request(app)
-        .get(apiProtected)
-        .set("Authorization", `Bearer ${invalidToken}`);
-
-      expect(response.status).toBe(401); // Unauthorized
-      expect(response.body.message).toBe("Invalid or expired token");
-    });
-
-    it("should return an error if the token is expired", async () => {
-      const response: Response = await request(app)
-        .get(apiProtected)
-        .set("Authorization", `Bearer ${expiredToken}`);
-
-      expect(response.status).toBe(401); // Unauthorized
-      expect(response.body.message).toBe("Invalid or expired token");
-    });
-  });
-
-  describe(`GET ${apiAuthHello}`, () => {
-    it("should access the public auth route to confirm that it exists", async () => {
-      const response: Response = await request(app).get(apiAuthHello);
-
-      expect(response.status).toBe(200);
-      expect(response.body.message).toBe("This is the public auth route");
+      expect(response.body.message).toBe("Logout successful");
     });
   });
 });

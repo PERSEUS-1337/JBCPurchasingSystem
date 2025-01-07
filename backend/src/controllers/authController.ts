@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import User from "../models/userModel";
 import { generateJWT } from "../utils/authUtils";
 import { checkDuplicateUser } from "../services/userService";
-import { jwtVerify } from "jose";
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -63,12 +62,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// Controller for logging out a user
 export const logout = (req: Request, res: Response): void => {
   res.status(200).send({ message: "Logout successful" });
 };
 
-// Controller for refreshing tokens
 export const refresh = (req: Request, res: Response): void => {
   res.status(200).send({
     message: "Token refreshed",

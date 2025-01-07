@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
 import bcrypt from "bcrypt";
 import User from "../../src/models/userModel";
 import {
@@ -11,39 +10,27 @@ import {
   it,
   jest,
 } from "@jest/globals";
-
-let mongoServer: MongoMemoryServer;
-
-beforeAll(async () => {
-  // Start the MongoMemoryServer
-  mongoServer = await MongoMemoryServer.create();
-  const uri = mongoServer.getUri();
-  await mongoose.connect(uri);
-});
-
-beforeEach(async () => {
-  // This syntax ensures that we are safely coding within typescript, making sure that it exists first before anything else
-  const db = mongoose.connection.db;
-  if (db) {
-    const collections = await db.collections();
-    for (let collection of collections) {
-      await collection.deleteMany({});
-    }
-  }
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
-});
+import { connectDB, disconnectDB, dropDB } from "../setup/globalSetupHelper";
 
 describe("Mongoose Model Validation: User", () => {
-  it("should require required fields", async () => {
+  beforeAll(async () => {
+    await connectDB();
+  });
+
+  beforeEach(async () => {
+    await dropDB();
+  });
+
+  afterAll(async () => {
+    await disconnectDB();
+  });
+
+  it("require REQUIRED fields", async () => {
     const user = new User({}); // Missing required fields
     await expect(user.validate()).rejects.toThrow(); // Rejects the user since it has missing details
   });
 
-  it("should save a user with valid fields", async () => {
+  it("save user with VALID fields", async () => {
     const user = new User({
       userID: "U123",
       fullname: "John Doe",
@@ -62,7 +49,7 @@ describe("Mongoose Model Validation: User", () => {
     expect(savedUser.email).toBe("johndoe@example.com");
   });
 
-  it("should set default dateCreated to now", async () => {
+  it("default DATECREATED to now()", async () => {
     const user = new User({
       userID: "U456",
       fullname: "Jane Doe",
@@ -80,7 +67,7 @@ describe("Mongoose Model Validation: User", () => {
     expect(savedUser.dateCreated.getTime()).toBeLessThanOrEqual(Date.now()); // We compare the date created to the latest date available
   });
 
-  it("should hash the password before saving", async () => {
+  it("successfully HASH password", async () => {
     const user = new User({
       userID: "U123",
       fullname: "John Doe",
@@ -101,7 +88,7 @@ describe("Mongoose Model Validation: User", () => {
     expect(await bcrypt.compare("plaintextpassword", user.password)).toBe(true); // Check if the hash matches
   });
 
-  it("should handle errors during password hashing", async () => {
+  it("reject PASSWORD HASH errors", async () => {
     // Mock bcrypt.genSalt to throw an error
     jest.spyOn(bcrypt, "genSalt").mockImplementationOnce(() => {
       throw new Error("Salt generation failed");
@@ -126,7 +113,7 @@ describe("Mongoose Model Validation: User", () => {
     jest.restoreAllMocks();
   });
 
-  it("should correctly compare passwords", async () => {
+  it("successfully COMPARE passwords", async () => {
     const user = new User({
       userID: "U123",
       fullname: "John Doe",
@@ -150,7 +137,7 @@ describe("Mongoose Model Validation: User", () => {
     expect(isNotMatch).toBe(false);
   });
 
-  it("should skip password hashing if the password is not modified", async () => {
+  it("skip HASH if password is unmodified", async () => {
     const user = new User({
       userID: "U123",
       fullname: "John Doe",
@@ -177,7 +164,7 @@ describe("Mongoose Model Validation: User", () => {
     expect(user.password).toBe(hashedPassword);
   });
 
-  it("should reject invalid status", async () => {
+  it("reject INVALID status", async () => {
     const user = new User({
       userID: "U456",
       fullname: "Jane Doe",
