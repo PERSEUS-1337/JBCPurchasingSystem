@@ -1,0 +1,33 @@
+services:
+  backend:
+    image: "jbc/purchasing-system/backend:0.1"
+    build:
+      context: ./backend
+    command: npm run dev
+    networks:
+      - app-network
+
+  frontend:
+    image: "jbc/purchasing-system/frontend:0.1"
+    build:
+      context: ./frontend
+    depends_on:
+      - backend
+    command: npm run start
+    ports:
+      - "3000:3000" # Expose the frontend directly
+    networks:
+      - app-network
+
+  nginx:
+    build: ./proxy
+    ports:
+      - "80:80" # NGINX focuses only on backend routing
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

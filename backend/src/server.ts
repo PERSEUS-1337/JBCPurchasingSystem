@@ -1,34 +1,27 @@
-import express, { Request, Response, Application } from "express";
+// This is where the server initialization happens, right after the app has been initialized
+
 import dotenv from "dotenv";
-import { MongoClient, Db } from "mongodb";
+import app from "./app";
+import { initDb } from "./config/database";
 
 // Load environment variables
-dotenv.config();
+const envFile = `.env.${process.env.NODE_ENV || "development"}`;
+dotenv.config({ path: envFile });
 
-const app: Application = express();
-const port: number = parseInt(process.env.PORT as string, 10) || 3000;
+const port: number = parseInt(process.env.PORT as string, 10) || 0;
+const mongoUri: string = process.env.MONGO_URI as string;
 
-const client = new MongoClient(process.env.MONGO_URI as string);
-let db: Db;
-
-async function connectToDatabase(): Promise<void> {
-  try {
-    await client.connect();
-    db = client.db();
-
-    console.log("Connected to MongoDB");
-
-    // Setup route that uses db connection
-    app.get("/", (req: Request, res: Response) => {
-      res.send("Hello World");
-    });
-  } catch (err) {
-    console.error("Failed to connect to MongoDB:", err);
-  }
+// Start the server here (Immediately Invoked Function Expression (IIFE))
+if (process.env.NODE_ENV !== "test") {
+  (async () => {
+    try {
+      await initDb(mongoUri);
+      app.listen(port, () => {
+        console.log(`Server running at http://localhost:${port}`);
+      });
+    } catch (err) {
+      console.error("Failed to start application:", err);
+      process.exit(1);
+    }
+  })();
 }
-
-connectToDatabase();
-
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
