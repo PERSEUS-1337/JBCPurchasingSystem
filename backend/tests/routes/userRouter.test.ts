@@ -22,6 +22,7 @@ import {
   connectDB,
   disconnectDB,
   preSaveUserAndGenJWT,
+  preSaveValidUser,
 } from "../setup/globalSetupHelper";
 import { invalidToken } from "../setup/mockData";
 
@@ -93,9 +94,7 @@ describe("User Routes", () => {
 
   describe(`GET ${apiGetUserById(":userID")}`, () => {
     beforeEach(async () => {
-      await User.deleteMany({});
-      const user = await new User(validUser).save();
-      validToken = await generateJWT(user.userID);
+      await preSaveValidUser();
     });
 
     it("should get a user's details by ID in params", async () => {

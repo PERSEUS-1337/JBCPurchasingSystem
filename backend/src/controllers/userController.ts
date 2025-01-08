@@ -1,26 +1,6 @@
 import { Request, Response } from "express";
 import User from "../models/userModel"; // Import the user model
 
-// Get user by ID
-export const getUserById = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { userID } = req.params; // Extract userID from request params
-
-    const user = await User.findOne({ userID });
-    if (!user) {
-      res.status(404).json({ message: "User not found." });
-      return;
-    }
-
-    res.status(200).json(user); // Return the user data
-  } catch (err: any) {
-    res.status(500).json({ message: "Internal server error", error: err });
-  }
-};
-
 export const getLoggedInUserDetails = async (
   req: Request,
   res: Response
@@ -47,6 +27,26 @@ export const getLoggedInUserDetails = async (
 
     const { password, __v, ...filteredUser } = user; // Exclude sensitive fields
     res.status(200).json(filteredUser); // Return the user data
+  } catch (err: any) {
+    res.status(500).json({ message: "Internal server error", error: err });
+  }
+};
+
+// Get user by ID
+export const getUserById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { userID } = req.params; // Extract userID from request params
+
+    const user = await User.findOne({ userID });
+    if (!user) {
+      res.status(404).json({ message: "User not found." });
+      return;
+    }
+
+    res.status(200).json(user); // Return the user data
   } catch (err: any) {
     res.status(500).json({ message: "Internal server error", error: err });
   }

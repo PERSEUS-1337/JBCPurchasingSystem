@@ -24,7 +24,7 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
       type: String,
       required: true,
       unique: true,
-    }, // Primary Key
+    },
     fullname: {
       type: String,
       required: true,
@@ -51,6 +51,21 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
     role: {
       type: String,
       required: true,
+      enum: [
+        "Super Administrator",
+        "Administrator",
+        "Manager",
+        "Staff",
+        "Auditor",
+        "Requester",
+        "Approver",
+        "Purchaser",
+        "Inventory Clerk",
+        "Accountant",
+        "Project Lead",
+        "Guest",
+      ],
+      default: "Staff",
     },
     position: {
       type: String,
@@ -62,15 +77,15 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
     },
     dateCreated: {
       type: Date,
-      default: Date.now, // Auto-sets to current date
+      default: Date.now,
     },
     status: {
       type: String,
       required: true,
-      enum: ["Active", "Inactive"], // We can enforce specific values
+      enum: ["Active", "Inactive"],
     },
   },
-  { strict: true } // Disallow extra / unexpected fields from pushing through db
+  { strict: true }
 );
 
 // Pre-hook to hash password before saving
