@@ -4,6 +4,7 @@ import {
   getLoggedInUserDetails,
   getUserById,
   updateUser,
+  viewUser,
 } from "../controllers/userController";
 
 const router = Router();
@@ -14,6 +15,7 @@ router.get("/hello", (req, res) => {
 
 router.get("/me", authenticateJWT, getLoggedInUserDetails);
 router.get("/:userID", authenticateJWT, getUserById);
+router.get("/:userID", authenticateJWT, viewUser)
 router.post("/update", authenticateJWT, updateUser);
 
 export default router;

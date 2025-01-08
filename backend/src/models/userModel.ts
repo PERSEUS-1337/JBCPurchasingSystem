@@ -1,7 +1,7 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 import bcrypt from "bcrypt";
 
-// Interface for User Document
+// Extend IUser with custom instance methods
 export interface IUser extends Document {
   userID: string; // Primary Key
   fullname: string;
@@ -14,8 +14,13 @@ export interface IUser extends Document {
   department: string;
   dateCreated: Date;
   status: string;
-  comparePassword(candidatePassword: string): Promise<boolean>; // Method to compare passwords
+
+  // Instance methods
+  comparePassword(candidatePassword: string): Promise<boolean>;
+  getPublicProfile(): Promise<Partial<IUser>>;
+  getAdminView(): Promise<Partial<IUser>>;
 }
+
 
 // Then, define the schema
 const UserSchema: Schema<IUser> = new Schema<IUser>(
@@ -103,12 +108,33 @@ UserSchema.pre("save", async function (next) {
   }
 });
 
-// Add method for password comparison
+// Secure User Schema POST Methods
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
+
+// Secure User Schema GET Methods
+UserSchema.methods.getPublicProfile = async function (): Promise<
+  Partial<IUser>
+> {
+  const { password, __v, ...secureData } = this.toObject();
+  return secureData;
+};
+
+UserSchema.methods.getAdminView = async function (): Promise<Partial<IUser>> {
+  const { __v, ...secureData } = this.toObject(); // Exclude Mongoose version key
+  return secureData; // Admin sees all except version
+};
+
+// // Static Method for Role-Specific Filtering
+// UserSchema.statics.filterByRole = async function (
+//   role: string
+// ): Promise<Partial<IUser>[]> {
+//   const users = await this.find({ role });
+//   return users.map((user) => user.getPublicProfile());
+// };
 
 // Create and export model
 const User: Model<IUser> = mongoose.model<IUser>("User", UserSchema, "users");
