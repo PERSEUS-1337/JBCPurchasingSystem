@@ -17,10 +17,10 @@ export interface IUser extends Document {
 
   // Instance methods
   comparePassword(candidatePassword: string): Promise<boolean>;
-  getPublicProfile(): Promise<Partial<IUser>>;
+  isSuperAdmin(): Promise<boolean>;
+  getPersonalProfile(): Promise<Partial<IUser>>;
   getAdminView(): Promise<Partial<IUser>>;
 }
-
 
 // Then, define the schema
 const UserSchema: Schema<IUser> = new Schema<IUser>(
@@ -115,16 +115,22 @@ UserSchema.methods.comparePassword = async function (
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Secure User Schema GET Methods
-UserSchema.methods.getPublicProfile = async function (): Promise<
+UserSchema.methods.isSuperAdmin = async function (): Promise<boolean> {
+  return this.role === "Super Administrator";
+};
+
+// GET Methods
+UserSchema.methods.getPersonalProfile = async function (): Promise<
   Partial<IUser>
 > {
-  const { password, __v, ...secureData } = this.toObject();
+  // User sees all except version and password
+  const { _id, userID, role, password, status, __v, ...secureData } =
+    this.toObject();
   return secureData;
 };
 
 UserSchema.methods.getAdminView = async function (): Promise<Partial<IUser>> {
-  const { __v, ...secureData } = this.toObject(); // Exclude Mongoose version key
+  const { _id, __v, ...secureData } = this.toObject(); // Exclude Mongoose version key
   return secureData; // Admin sees all except version
 };
 

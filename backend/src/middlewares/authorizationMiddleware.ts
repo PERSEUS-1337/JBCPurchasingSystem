@@ -3,7 +3,7 @@ import { jwtVerify } from "jose";
 
 const SECRET_KEY: string = process.env.SECRET_KEY as string;
 
-export const authenticateJWT = async (
+export const authorizeJWT = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -24,8 +24,23 @@ export const authenticateJWT = async (
     next();
     return;
   } catch (err: any) {
-    // console.log(err);
     res.status(401).json({ message: "Invalid or expired token", error: err });
     return;
   }
+};
+
+export const authorizeSuperAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const user = req.user; // Assume `req.user` is set by `authenticateJWT`
+
+  if (!user || user.isSuperAdmin()) {
+    res.status(403).json({ message: "Access denied. Admins only." });
+    return;
+  }
+
+  next(); // Proceed to the next middleware or controller
+  return;
 };

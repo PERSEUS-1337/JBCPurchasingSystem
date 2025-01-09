@@ -1,3 +1,28 @@
+export const validSuperAdminUser = {
+  userID: "U999",
+  fullname: "Super Admin User",
+  idNumber: "99999",
+  username: "superadmin",
+  email: "superadmin@example.com",
+  password: "password123",
+  role: "Super Administrator",
+  position: "Staff",
+  department: "IT",
+  status: "Active",
+};
+
+export const expectedSuperAdminView = {
+  userID: "U999",
+  fullname: "Super Admin User",
+  idNumber: "99999",
+  username: "superadmin",
+  email: "superadmin@example.com",
+  role: "Super Administrator",
+  position: "Staff",
+  department: "IT",
+  status: "Active",
+};
+
 export const validUser = {
   userID: "U001",
   fullname: "Test User",
@@ -5,10 +30,19 @@ export const validUser = {
   username: "testuser",
   email: "testuser@example.com",
   password: "password123",
-  role: "User",
+  role: "Staff",
   position: "Staff",
   department: "IT",
   status: "Active",
+};
+
+export const expectedPersonalProfileView = {
+  fullname: "Test User",
+  idNumber: "10001",
+  username: "testuser",
+  email: "testuser@example.com",
+  position: "Staff",
+  department: "IT",
 };
 
 export const validUserNoPwd = {
@@ -17,7 +51,7 @@ export const validUserNoPwd = {
   idNumber: "10001",
   username: "testuser",
   email: "testuser@example.com",
-  role: "User",
+  role: "Staff",
   position: "Staff",
   department: "IT",
   status: "Active",
@@ -29,7 +63,7 @@ export const noUsernameUser = {
   idNumber: "10002",
   email: "nousername@example.com",
   password: "password123",
-  role: "User",
+  role: "Staff",
   position: "Staff",
   department: "IT",
   status: "Active",
@@ -41,7 +75,7 @@ export const noPasswordUser = {
   idNumber: "10003",
   username: "nopassword",
   email: "nopassword@example.com",
-  role: "User",
+  role: "Staff",
   position: "Staff",
   department: "Finance",
   status: "Active",
@@ -54,7 +88,7 @@ export const weakPasswordUser = {
   username: "weakpassword",
   email: "weakpassword@example.com",
   password: "123", // Weak password
-  role: "User",
+  role: "Staff",
   position: "Staff",
   department: "Marketing",
   status: "Active",
@@ -67,7 +101,7 @@ export const shortUsernameUser = {
   username: "a", // Too short
   email: "shortusername@example.com",
   password: "password123",
-  role: "User",
+  role: "Staff",
   position: "Intern",
   department: "HR",
   status: "Active",
@@ -80,11 +114,22 @@ export const unexpectedUser = {
   username: "testuser3",
   email: "unexpected@example.com",
   password: "password123",
-  role: "User",
+  role: "Guest",
   position: "Staff",
   department: "IT",
   status: "Active",
   unexpectedField: "unexpectedValue", // Invalid field
 };
 
-
+export const invalidStatusUser = {
+  userID: "U001",
+  fullname: "Test User",
+  idNumber: "10001",
+  username: "testuser",
+  email: "testuser@example.com",
+  password: "password123",
+  role: "Staff",
+  position: "Staff",
+  department: "IT",
+  status: "invalid-status",
+};

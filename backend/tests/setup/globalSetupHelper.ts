@@ -1,7 +1,7 @@
 import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import User from "../../src/models/userModel";
-import { validUser } from "./mockUsers";
+import { validSuperAdminUser, validUser } from "./mockUsers";
 import { generateJWT } from "../../src/utils/authUtils";
 
 let mongoServer: MongoMemoryServer;
@@ -27,8 +27,20 @@ export const preSaveValidUser = async () => {
   await new User(validUser).save();
 };
 
+export const preSaveSuperAdminUser = async () => {
+  await User.deleteMany({});
+  await new User(validUser).save();
+
+}
+
 export const preSaveUserAndGenJWT = async (): Promise<string> => {
   await User.deleteMany({});
   const user = await new User(validUser).save();
+  return await generateJWT(user.userID);
+};
+
+export const preSaveSuperAdminAndGenJWT = async (): Promise<string> => {
+  await User.deleteMany({});
+  const user = await new User(validSuperAdminUser).save();
   return await generateJWT(user.userID);
 };

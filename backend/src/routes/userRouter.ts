@@ -1,11 +1,10 @@
 import { Router } from "express";
-import { authenticateJWT } from "../middlewares/jwtMiddleware";
 import {
-  getLoggedInUserDetails,
-  getUserById,
-  updateUser,
   viewUser,
+  viewUserByID,
+  updateUser,
 } from "../controllers/userController";
+import { authorizeJWT, authorizeSuperAdmin } from "../middlewares/authorizationMiddleware";
 
 const router = Router();
 
@@ -13,9 +12,8 @@ router.get("/hello", (req, res) => {
   res.status(200).json({ message: "This is the public user route" });
 });
 
-router.get("/me", authenticateJWT, getLoggedInUserDetails);
-router.get("/:userID", authenticateJWT, getUserById);
-router.get("/:userID", authenticateJWT, viewUser)
-router.post("/update", authenticateJWT, updateUser);
+router.get("/me", authorizeJWT, viewUser);
+router.get("/:userID", authorizeJWT, authorizeSuperAdmin, viewUserByID);
+router.post("/update", authorizeJWT, updateUser);
 
 export default router;

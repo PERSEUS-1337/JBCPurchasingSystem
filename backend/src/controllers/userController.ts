@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import User, { IUser } from "../models/userModel"; // Import the user model
+import User from "../models/userModel"; // Import the user model
 
-export const getLoggedInUserDetails = async (
+export const viewUser = async (
   req: Request,
   res: Response
 ): Promise<void> => {
@@ -25,57 +25,29 @@ export const getLoggedInUserDetails = async (
       return;
     }
 
-    const { password, __v, ...filteredUser } = user; // Exclude sensitive fields
-    res.status(200).json(filteredUser); // Return the user data
+    // const { password, __v, ...filteredUser } = user; // Exclude sensitive fields
+    res.status(200).json(user.getPersonalProfile()); // Return the user data
   } catch (err: any) {
     res.status(500).json({ message: "Internal server error", error: err });
   }
 };
 
-// Get user by ID
-export const getUserById = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const viewUserByID = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userID } = req.params; // Extract userID from request params
-
-    const user = await User.findOne({ userID });
-    if (!user) {
-      res.status(404).json({ message: "User not found." });
-      return;
-    }
-
-    res.status(200).json(user); // Return the user data
-  } catch (err: any) {
-    res.status(500).json({ message: "Internal server error", error: err });
-  }
-};
-
-export const viewUser = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { userID } = req.params; // Assume userID is passed in URL
+    const { userID } = req.params;
     const requestingUser = req.user; // User making the request (from JWT middleware)
 
-    const user = await User.findById(userID);
-
-    if (!user) {
-      res.status(404).json({ message: "User not found" });
-      return;
-    }
-
-    // Return different views based on role
     if (requestingUser.role === "Super Administrator") {
-      const adminView = await user.getAdminView()
-      res.status(200).json(adminView);
-      // return res.status(200)
-    } else if (requestingUser.userID === userID) {
-      const publicProfile = await user.getPublicProfile();
-      res.status(200).json(publicProfile);
-      // return; 
+      const user = await User.findOne({ userID }).lean();
+  
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
+
+      res.status(200).json(user.getAdminView());
     } else {
       res.status(403).json({ message: "Unauthorized access" });
-      // return; 
     }
   } catch (err: any) {
     res
@@ -103,7 +75,6 @@ export const viewUser = async (req: Request, res: Response): Promise<void> => {
 //       .json({ message: "Internal server error", error: err.message });
 //   }
 // };
-
 
 // TODO: Update function by making sure to exclude fields being edited by users, and only allowed to be edited by the administrator
 export const updateUser = async (
