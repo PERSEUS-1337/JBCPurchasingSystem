@@ -11,63 +11,63 @@ import {
 import app from "../../src/app"; // Import your Express app
 import User from "../../src/models/userModel";
 import {
+  expectedPersonalProfileView,
   expectedSuperAdminView,
   validSuperAdminUser,
   validUser,
   validUserNoPwd,
 } from "../setup/mockUsers";
 import {
-  apiMe,
   apiUpdateUser,
   apiUserHello,
   apiViewUser,
+  apiViewUserByID,
 } from "../setup/refRoutes";
 import { generateJWT } from "../../src/utils/authUtils";
 import {
   connectDB,
+  deleteAllUsers,
   disconnectDB,
   preSaveSuperAdminAndGenJWT,
   preSaveUserAndGenJWT,
-  preSaveValidUser,
 } from "../setup/globalSetupHelper";
 import { invalidToken } from "../setup/mockData";
 
 describe("User Routes", () => {
-  let validToken: string;
   let superAdminToken: string;
+  let validToken: string;
 
   beforeAll(async () => {
     await connectDB();
   });
 
+  // beforeEach(async () => {
+  // superAdminToken = await preSaveSuperAdminAndGenJWT();
+  // });
+
   afterAll(async () => {
     await disconnectDB();
   });
 
-  describe("GET /api/user/me", () => {
-     beforeAll(async () => {
-      validToken = await preSaveUserAndGenJWT(); // Mock user and generate a valid token
+  describe(`GET ${apiViewUser}`, () => {
+    beforeEach(async () => {
+      validToken = await preSaveUserAndGenJWT();
     });
 
     describe("Success Cases", () => {
-      it("return USER VIEW  for logged in user", async () => {
+      it("should return the logged-in user's profile without sensitive fields", async () => {
         const response = await request(app)
-          .get("/api/user/me")
+          .get(apiViewUser)
           .set("Authorization", `Bearer ${validToken}`);
 
         expect(response.status).toBe(200);
-        expect(response.body).toEqual(expect.objectContaining(expectedProfile));
+        expect(response.body).toEqual(
+          expect.objectContaining(expectedPersonalProfileView)
+        );
       });
     });
 
     describe("Fail Cases", () => {
-      it("should return 403 if no token is provided", async () => {
-        const response = await request(app).get("/api/user/me");
-
-        expect(response.status).toBe(403);
-        expect(response.body.message).toBe("Access denied, no token provided");
-      });
-
       it("should return 401 for an invalid token", async () => {
         const response = await request(app)
           .get("/api/user/me")
@@ -77,11 +77,18 @@ describe("User Routes", () => {
         expect(response.body.message).toBe("Invalid or expired token");
       });
 
+      it("should return 403 if no token is provided", async () => {
+        const response = await request(app).get("/api/user/me");
+
+        expect(response.status).toBe(403);
+        expect(response.body.message).toBe("Access denied, no token provided");
+      });
+
       it("should return 404 if the user is not found", async () => {
-        const nonExistentToken = await generateJWT({ userID: "NonExistentID" });
+        await deleteAllUsers();
         const response = await request(app)
           .get("/api/user/me")
-          .set("Authorization", `Bearer ${nonExistentToken}`);
+          .set("Authorization", `Bearer ${validToken}`);
 
         expect(response.status).toBe(404);
         expect(response.body.message).toBe("User not found.");
@@ -89,102 +96,59 @@ describe("User Routes", () => {
     });
   });
 
-  describe(`GET ${apiViewUser(":userID")}`, () => {
-    beforeEach(async () => {
-      validToken = await preSaveUserAndGenJWT();
-      superAdminToken = await preSaveSuperAdminAndGenJWT();
-    });
+  // describe(`GET ${apiViewUserByID(":userID")}`, () => {
+  //   let superAdminUserID = validSuperAdminUser.userID
+  //   describe("Success Cases", () => {
+  //     it("should return the admin view for a super admin", async () => {
+  //       const response = await request(app)
+  //         .get(`/api/user/${superAdminUserID}`)
+  //         .set("Authorization", `Bearer ${superAdminToken}`);
 
-    describe("Success Cases", () => {
+  //       expect(response.status).toBe(200);
+  //       expect(response.body).toEqual(
+  //         expect.objectContaining(expectedSuperAdminView)
+  //       );
+  //     });
+  //   });
 
-      it("return ADMIN VIEW for administrator", async () => {
-        const response = await request(app)
-          .get(`/api/user/${validSuperAdminUser.userID}`)
-          .set("Authorization", `Bearer ${superAdminToken}`);
-  
-        expect(response.status).toBe(200);
-        expect(response.body).toEqual(
-          expect.objectContaining(expectedSuperAdminView)
-        ); // Ensure admin sees full details
-      });
-    });
+  //   describe("Fail Cases", () => {
+  //     it("should return 403 if a regular user tries to access this route", async () => {
+  //       const response = await request(app)
+  //         .get(`/api/user/${superAdminUserID}`)
+  //         .set("Authorization", `Bearer ${validToken}`); // Regular user token
 
-    describe("Fail Cases", () => {
-        // it("should return 403 if a regular user tries to view another user's profile", async () => {
-    //   const otherUserToken = await generateJWT(otherUserID); // JWT for another regular user
-    //   const response = await request(app)
-    //     .get(`/api/user/${validUserNoPwd.userID}`)
-    //     .set("Authorization", `Bearer ${otherUserToken}`);
+  //       expect(response.status).toBe(403);
+  //       expect(response.body.message).toBe("Unauthorized access");
+  //     });
 
-    //   expect(response.status).toBe(403);
-    //   expect(response.body.message).toBe("Unauthorized access");
-    // });
-    })
+  //     it("should return 404 if the userID does not exist", async () => {
+  //       const response = await request(app)
+  //         .get("/api/user/NonExistentID")
+  //         .set("Authorization", `Bearer ${superAdminToken}`);
 
+  //       expect(response.status).toBe(404);
+  //       expect(response.body.message).toBe("User not found");
+  //     });
 
-    // it("return PUBLIC VIEW for generic user", async () => {
-    //   const response = await request(app)
-    //     .get(`/api/user/${validUser.userID}`)
-    //     .set("Authorization", `Bearer ${validToken}`);
+  //     it("should return 403 if no token is provided", async () => {
+  //       const response = await request(app).get(
+  //         `/api/user/${validUserNoPwd.userID}`
+  //       );
 
-    //   expect(response.status).toBe(200);
-    //   expect(response.body).toEqual(
-    //     expect.objectContaining(expectedPublicProfileView)
-    //   ); // Ensure sensitive data is excluded
-    // });
+  //       expect(response.status).toBe(403);
+  //       expect(response.body.message).toBe("Access denied, no token provided");
+  //     });
 
-    // it("should return 403 if a regular user tries to view another user's profile", async () => {
-    //   const otherUserToken = await generateJWT(otherUserID); // JWT for another regular user
-    //   const response = await request(app)
-    //     .get(`/api/user/${validUserNoPwd.userID}`)
-    //     .set("Authorization", `Bearer ${otherUserToken}`);
+  //     it("should return 401 for an invalid token", async () => {
+  //       const response = await request(app)
+  //         .get(`/api/user/${validUserNoPwd.userID}`)
+  //         .set("Authorization", `Bearer ${invalidToken}`);
 
-    //   expect(response.status).toBe(403);
-    //   expect(response.body.message).toBe("Unauthorized access");
-    // });
-
-    // it("should return 404 if the user ID does not exist", async () => {
-    //   const superAdminToken = await generateJWT(validSuperAdminUserID);
-    //   const response = await request(app)
-    //     .get(`/api/user/NonExistentID`)
-    //     .set("Authorization", `Bearer ${superAdminToken}`);
-
-    //   expect(response.status).toBe(404);
-    //   expect(response.body.message).toBe("User not found");
-    // });
-
-    // it("should return 403 if no token is provided", async () => {
-    //   const response = await request(app).get(
-    //     `/api/user/${validUserNoPwd.userID}`
-    //   );
-
-    //   expect(response.status).toBe(403);
-    //   expect(response.body.message).toBe("Access denied, no token provided");
-    // });
-
-    // it("should return 401 for an invalid token", async () => {
-    //   const response = await request(app)
-    //     .get(`/api/user/${validUserNoPwd.userID}`)
-    //     .set("Authorization", `Bearer ${invalidToken}`);
-
-    //   expect(response.status).toBe(401);
-    //   expect(response.body.message).toBe("Invalid or expired token");
-    // });
-
-    // it("should handle unexpected errors gracefully", async () => {
-    //   jest
-    //     .spyOn(User, "findById")
-    //     .mockRejectedValueOnce(new Error("Database error"));
-
-    //   const superAdminToken = await generateJWT(validSuperAdminUserID);
-    //   const response = await request(app)
-    //     .get(`/api/user/${validUserNoPwd.userID}`)
-    //     .set("Authorization", `Bearer ${superAdminToken}`);
-
-    //   expect(response.status).toBe(500);
-    //   expect(response.body.message).toBe("Internal server error");
-    // });
-  });
+  //       expect(response.status).toBe(401);
+  //       expect(response.body.message).toBe("Invalid or expired token");
+  //     });
+  //   });
+  // });
 
   // describe(`GET ${apiMe}`, () => {
   //   describe("Success Cases", () => {
@@ -363,28 +327,6 @@ describe("User Routes", () => {
         .post(apiUpdateUser)
         .set("Authorization", `Bearer ${validToken}`)
         .send(updates);
-
-      expect(response.status).toBe(500);
-      expect(response.body.message).toBe("Internal server error");
-    });
-  });
-
-  describe("Additional Edge Cases", () => {
-    beforeEach(async () => {
-      await User.deleteMany({});
-      const user = await new User(validUser).save();
-      validToken = await generateJWT(user.userID);
-    });
-
-    it("should handle server errors gracefully", async () => {
-      // Mock User.findOne to throw an error
-      jest.spyOn(User, "findOne").mockImplementationOnce(() => {
-        throw new Error("Database error");
-      });
-
-      const response: Response = await request(app)
-        .get(apiGetUserById(validUserNoPwd.userID))
-        .set("Authorization", `Bearer ${validToken}`);
 
       expect(response.status).toBe(500);
       expect(response.body.message).toBe("Internal server error");

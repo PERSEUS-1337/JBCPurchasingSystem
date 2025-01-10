@@ -18,15 +18,16 @@ export const viewUser = async (
      * Therefore, letting the userID be referenced by the findOne function and use it to find a user
      */
     const { userID } = req.user;
-    const user = await User.findOne({ userID }).lean(); // Converts Mongoose document to plain JS object
-
+    const user = await User.findOne({ userID }); // Converts Mongoose document to plain JS object
+  
     if (!user) {
       res.status(404).json({ message: "User not found." });
       return;
     }
 
     // const { password, __v, ...filteredUser } = user; // Exclude sensitive fields
-    res.status(200).json(user.getPersonalProfile()); // Return the user data
+    const data = await user.getPersonalProfile();
+    res.status(200).json(data); // Return the user data
   } catch (err: any) {
     res.status(500).json({ message: "Internal server error", error: err });
   }
@@ -38,7 +39,7 @@ export const viewUserByID = async (req: Request, res: Response): Promise<void> =
     const requestingUser = req.user; // User making the request (from JWT middleware)
 
     if (requestingUser.role === "Super Administrator") {
-      const user = await User.findOne({ userID }).lean();
+      const user = await User.findOne({ userID });
   
       if (!user) {
         res.status(404).json({ message: "User not found" });

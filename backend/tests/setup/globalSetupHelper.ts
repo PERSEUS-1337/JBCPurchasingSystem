@@ -30,8 +30,7 @@ export const preSaveValidUser = async () => {
 export const preSaveSuperAdminUser = async () => {
   await User.deleteMany({});
   await new User(validUser).save();
-
-}
+};
 
 export const preSaveUserAndGenJWT = async (): Promise<string> => {
   await User.deleteMany({});
@@ -43,4 +42,8 @@ export const preSaveSuperAdminAndGenJWT = async (): Promise<string> => {
   await User.deleteMany({});
   const user = await new User(validSuperAdminUser).save();
   return await generateJWT(user.userID);
+};
+
+export const deleteAllUsers = async () => {
+  await User.deleteMany({});
 };

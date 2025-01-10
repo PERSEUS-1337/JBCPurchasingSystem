@@ -22,6 +22,26 @@ export interface IUser extends Document {
   getAdminView(): Promise<Partial<IUser>>;
 }
 
+export const roleList: string[] = [
+  "Super Administrator",
+  "Administrator",
+  "Manager",
+  "Staff",
+  "Auditor",
+  "Requester",
+  "Approver",
+  "Purchaser",
+  "Inventory Clerk",
+  "Accountant",
+  "Project Lead",
+  "Guest",
+  "Staff",
+];
+export const superAdmin = "Super Administrator";
+export const defaultRole = "Staff";
+export const statusList: string[] = ["Active", "Inactive"];
+export const defaultStatus = "Active";
+
 // Then, define the schema
 const UserSchema: Schema<IUser> = new Schema<IUser>(
   {
@@ -56,21 +76,8 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
     role: {
       type: String,
       required: true,
-      enum: [
-        "Super Administrator",
-        "Administrator",
-        "Manager",
-        "Staff",
-        "Auditor",
-        "Requester",
-        "Approver",
-        "Purchaser",
-        "Inventory Clerk",
-        "Accountant",
-        "Project Lead",
-        "Guest",
-      ],
-      default: "Staff",
+      enum: roleList,
+      default: defaultRole,
     },
     position: {
       type: String,
@@ -87,7 +94,8 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
     status: {
       type: String,
       required: true,
-      enum: ["Active", "Inactive"],
+      enum: statusList,
+      default: defaultStatus,
     },
   },
   { strict: true }
@@ -116,7 +124,7 @@ UserSchema.methods.comparePassword = async function (
 };
 
 UserSchema.methods.isSuperAdmin = async function (): Promise<boolean> {
-  return this.role === "Super Administrator";
+  return this.role === superAdmin;
 };
 
 // GET Methods
