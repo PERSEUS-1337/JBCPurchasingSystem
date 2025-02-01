@@ -1,23 +1,24 @@
 import { NextFunction, Request, Response } from "express";
-import { ZodError, ZodSchema } from "zod";
+import { ZodSchema } from "zod";
 
 export const validateRequest =
   (schema: ZodSchema) => (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // Validate the request body and assign it to req.body
-      req.body = schema.parse(req.body);
-      next(); // Proceed to the next middleware or controller
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res.status(400).json({
-          message: "Validation failed",
-          errors: error.errors.map((e) => ({
-            path: e.path.join("."),
-            message: e.message,
-          })),
-        });
-      } else {
-        next(error); // Pass non-validation errors to the error handler
-      }
+    const result = schema.safeParse(req.body);
+
+    if (!result.success) {
+      // console.log(result.error); // Log validation errors
+
+      res.status(400).json({
+        message: "Validation failed",
+        errors: result.error.errors.map((e) => ({
+          path: e.path.join("."),
+          message: e.message,
+        })),
+      });
+      return;
     }
+
+    req.body = result.data; // Assign the validated data to req.body
+    // console.log(result)
+    next(); // Proceed to the next middleware or controller
   };

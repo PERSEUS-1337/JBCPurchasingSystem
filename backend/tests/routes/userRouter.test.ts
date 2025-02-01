@@ -56,9 +56,9 @@ describe("User Routes", () => {
 
         // Validate the response against the schema
         const validation = userProfileViewSchema.safeParse(response.body.data);
-        if (!validation.success) {
-          console.error("Validation errors:", validation.error.issues);
-        }
+        // if (!validation.success) {
+        //   console.error("Validation errors:", validation.error.issues);
+        // }
         expect(validation.success).toBe(true);
       });
     });
@@ -130,9 +130,6 @@ describe("User Routes", () => {
         const validation = userProfileAdminViewSchema.safeParse(
           response.body.data
         );
-        if (!validation.success) {
-          console.error("Validation errors:", validation.error.issues);
-        }
         expect(validation.success).toBe(true);
       });
     });

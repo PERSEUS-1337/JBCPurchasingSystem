@@ -11,8 +11,6 @@ export const userSchema = z
   .object({
     userID: z.string(),
     fullname: z.string().min(1, "Fullname is required"),
-    idNumber: z.string().min(1, "ID Number is required"),
-    username: z.string().min(3, "Username must be at least 3 characters long"),
     email: z.string().email("Invalid email format"),
     password: z.string().min(8, "Password must be at least 8 characters long"),
     role: z.enum(roleList).default(defaultRole), // Reused constant

@@ -8,12 +8,17 @@ import {
   superAdmin,
 } from "../constants";
 
-// Extend IUser with custom instance methods
-export interface IUser extends Document {
-  userID: string; // Primary Key
+interface IUserMethods {
+  // Instance Methods (Available on user instances
+  comparePassword(candidatePassword: string): Promise<boolean>;
+  isSuperAdmin(): Promise<boolean>;
+  getPersonalProfile(): Promise<Partial<IUser>>;
+  getAdminView(): Promise<Partial<IUser>>;
+}
+
+export interface IUser extends Document, IUserMethods {
+  userID: string;
   fullname: string;
-  idNumber: string;
-  username: string;
   email: string;
   password: string;
   role: string;
@@ -21,12 +26,11 @@ export interface IUser extends Document {
   department: string;
   dateCreated: Date;
   status: string;
+}
 
-  // Instance methods
-  comparePassword(candidatePassword: string): Promise<boolean>;
-  isSuperAdmin(): Promise<boolean>;
-  getPersonalProfile(): Promise<Partial<IUser>>;
-  getAdminView(): Promise<Partial<IUser>>;
+// Static Methods (Available, regardless of instance)
+interface IUserModel extends Model<IUser> {
+  checkDuplicateUser(email: string): Promise<boolean>;
 }
 
 // Then, define the schema
@@ -41,20 +45,11 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
       type: String,
       required: true,
     },
-    idNumber: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    username: {
-      type: String,
-      required: true,
-      unique: true,
-    },
     email: {
       type: String,
       required: true,
       unique: true,
+      lowercase: true,
     },
     password: {
       type: String,
@@ -88,7 +83,8 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
   { strict: true }
 );
 
-// Pre-hook to hash password before saving
+// ### PRE and POST Hooks
+// Hash password before it is saved to the database
 UserSchema.pre("save", async function (next) {
   const user: IUser = this as IUser;
 
@@ -104,7 +100,7 @@ UserSchema.pre("save", async function (next) {
 });
 
 UserSchema.post("find", (docs) => {
-  docs.forEach((doc: { dateCreated: string | number | Date; }) => {
+  docs.forEach((doc: { dateCreated: string | number | Date }) => {
     if (doc.dateCreated && typeof doc.dateCreated === "string") {
       doc.dateCreated = new Date(doc.dateCreated);
     }
@@ -117,8 +113,15 @@ UserSchema.post("findOne", (doc) => {
   }
 });
 
+// STATIC METHODS, regardless if User or Not
+UserSchema.statics.checkDuplicateUser = async function (
+  email: string
+): Promise<boolean> {
+  const existingUser = await this.findOne({ email });
+  return !!existingUser; // Convert the result to a boolean
+};
 
-// Secure User Schema POST Methods
+// INSTANCE METHODS for Individual User Objects
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
@@ -129,7 +132,6 @@ UserSchema.methods.isSuperAdmin = async function (): Promise<boolean> {
   return this.role === superAdmin;
 };
 
-// GET Methods
 UserSchema.methods.getPersonalProfile = async function (): Promise<
   Partial<IUser>
 > {
@@ -143,15 +145,6 @@ UserSchema.methods.getAdminView = async function (): Promise<Partial<IUser>> {
   return secureData; // Admin sees all but not password
 };
 
+const User = mongoose.model<IUser, IUserModel>("User", UserSchema, "users");
 
-// // Static Method for Role-Specific Filtering
-// UserSchema.statics.filterByRole = async function (
-//   role: string
-// ): Promise<Partial<IUser>[]> {
-//   const users = await this.find({ role });
-//   return users.map((user) => user.getPublicProfile());
-// };
-
-// Create and export model
-const User: Model<IUser> = mongoose.model<IUser>("User", UserSchema, "users");
 export default User;

@@ -69,7 +69,7 @@ describe("Authentication Routes", () => {
           expect.objectContaining({
             message: "User registered successfully",
             data: {
-              username: validUser.username,
+              email: validUser.email,
             },
           })
         );
@@ -77,7 +77,7 @@ describe("Authentication Routes", () => {
     });
 
     describe("Fail Cases", () => {
-      it("Rejects registration when username is a duplicate.", async () => {
+      it("Rejects registration when a user is a duplicate.", async () => {
         await preSaveValidUser();
 
         const response: Response = await request(app)
@@ -85,47 +85,7 @@ describe("Authentication Routes", () => {
           .send(validUser); // Try registering the same user.
 
         expect(response.status).toBe(409); // Conflict status code.
-        expect(response.body.message).toBe("Username or email already exists");
-      });
-
-      it("Rejects registration when username is missing.", async () => {
-        const response: Response = await request(app)
-          .post(apiRegister)
-          .send(noUsernameUser);
-
-        expect(response.status).toBe(400); // Bad Request
-        expect(response.body).toEqual(
-          expect.objectContaining({
-            message: "Validation failed", // Ensure it matches the expected error type
-            errors: expect.arrayContaining([
-              expect.objectContaining({
-                path: "username", // The path is empty for unexpected fields
-                message: expect.stringContaining("Required"), // Specific error message
-              }),
-            ]),
-          })
-        );
-      });
-
-      it("Rejects registration when username is too short.", async () => {
-        const response: Response = await request(app)
-          .post(apiRegister)
-          .send(shortUsernameUser);
-
-        expect(response.status).toBe(400); // Bad Request
-        expect(response.body).toEqual(
-          expect.objectContaining({
-            message: "Validation failed",
-            errors: expect.arrayContaining([
-              expect.objectContaining({
-                path: "username",
-                message: expect.stringContaining(
-                  "Username must be at least 3 characters long"
-                ),
-              }),
-            ]),
-          })
-        );
+        expect(response.body.message).toBe("Email already exists");
       });
 
       it("Rejects registration when password is missing.", async () => {

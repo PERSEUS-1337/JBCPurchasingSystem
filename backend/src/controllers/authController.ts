@@ -1,20 +1,22 @@
 import { Request, Response } from "express";
 import User from "../models/userModel";
 import { generateJWT } from "../utils/authUtils";
-import { checkDuplicateUser } from "../utils/userUtils";
+import { UserInput } from "../validators";
 
 export const registerUser = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const user = new User(req.body);
+    const userData: UserInput = req.body;
 
-    const isDuplicate = await checkDuplicateUser(user.username, user.email);
+    const user = new User(userData);
+
+    const isDuplicate = await User.checkDuplicateUser(user.email);
     if (isDuplicate) {
       res
         .status(409)
-        .json({ message: "Username or email already exists", data: null });
+        .json({ message: "Email already exists", data: null });
       return;
     }
 
@@ -22,7 +24,7 @@ export const registerUser = async (
 
     res.status(201).json({
       message: "User registered successfully",
-      data: { username: user.username },
+      data: { email: user.email },
     });
   } catch (err: any) {
     // Log and handle unexpected errors

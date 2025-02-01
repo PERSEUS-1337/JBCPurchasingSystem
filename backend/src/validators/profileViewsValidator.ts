@@ -4,7 +4,6 @@ import { roleList, statusList } from "../constants";
 // Schema for user profile view (general view)
 export const userProfileViewSchema = z
   .object({
-    username: z.string(),
     fullname: z.string(),
     email: z.string(),
     position: z.string(),
@@ -22,11 +21,10 @@ export const userProfileViewSchema = z
   export const userProfileAdminViewSchema = userProfileViewSchema
   .extend({
     userID: z.string(),
-    role: z.enum(roleList),
-    idNumber: z.string().min(1, "ID Number is required"),
+    role: z.enum(roleList)
   })
   .strict();
 
 // Types for the schemas
-// export type UserProfileView = z.infer<typeof userProfileViewSchema>;
-// export type UserProfileAdminView = z.infer<typeof userProfileAdminViewSchema>;
+export type UserProfileView = z.infer<typeof userProfileViewSchema>;
+export type UserProfileAdminView = z.infer<typeof userProfileAdminViewSchema>;
