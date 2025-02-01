@@ -1,5 +1,12 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 import bcrypt from "bcrypt";
+import {
+  defaultRole,
+  defaultStatus,
+  roleList,
+  statusList,
+  superAdmin,
+} from "../constants";
 
 // Extend IUser with custom instance methods
 export interface IUser extends Document {
@@ -21,26 +28,6 @@ export interface IUser extends Document {
   getPersonalProfile(): Promise<Partial<IUser>>;
   getAdminView(): Promise<Partial<IUser>>;
 }
-
-export const roleList: string[] = [
-  "Super Administrator",
-  "Administrator",
-  "Manager",
-  "Staff",
-  "Auditor",
-  "Requester",
-  "Approver",
-  "Purchaser",
-  "Inventory Clerk",
-  "Accountant",
-  "Project Lead",
-  "Guest",
-  "Staff",
-];
-export const superAdmin = "Super Administrator";
-export const defaultRole = "Staff";
-export const statusList: string[] = ["Active", "Inactive"];
-export const defaultStatus = "Active";
 
 // Then, define the schema
 const UserSchema: Schema<IUser> = new Schema<IUser>(
@@ -116,6 +103,21 @@ UserSchema.pre("save", async function (next) {
   }
 });
 
+UserSchema.post("find", (docs) => {
+  docs.forEach((doc: { dateCreated: string | number | Date; }) => {
+    if (doc.dateCreated && typeof doc.dateCreated === "string") {
+      doc.dateCreated = new Date(doc.dateCreated);
+    }
+  });
+});
+
+UserSchema.post("findOne", (doc) => {
+  if (doc && doc.dateCreated && typeof doc.dateCreated === "string") {
+    doc.dateCreated = new Date(doc.dateCreated);
+  }
+});
+
+
 // Secure User Schema POST Methods
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string
@@ -131,16 +133,16 @@ UserSchema.methods.isSuperAdmin = async function (): Promise<boolean> {
 UserSchema.methods.getPersonalProfile = async function (): Promise<
   Partial<IUser>
 > {
-  // User sees all except version and password
-  const { _id, userID, role, password, status, __v, ...secureData } =
+  const { _id, userID, role, password, idNumber, __v, ...secureData } =
     this.toObject();
-  return secureData;
+  return secureData; // General users get their profile without sensitive data
 };
 
 UserSchema.methods.getAdminView = async function (): Promise<Partial<IUser>> {
-  const { _id, __v, ...secureData } = this.toObject(); // Exclude Mongoose version key
-  return secureData; // Admin sees all except version
+  const { _id, password, __v, ...secureData } = this.toObject(); // Exclude password and version key
+  return secureData; // Admin sees all but not password
 };
+
 
 // // Static Method for Role-Specific Filtering
 // UserSchema.statics.filterByRole = async function (

@@ -6,9 +6,8 @@ import {
   refresh,
   changePassword,
 } from "../controllers/authController";
-import { loginSchema } from "../validators/loginValidator";
 import { userSchema } from "../validators/userValidator";
-import { changePasswordSchema } from "../validators/authValidator";
+import { changePasswordSchema, loginSchema } from "../validators/authValidator";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import { authorizeJWT } from "../middlewares/authorizationMiddleware";
 

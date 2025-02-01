@@ -12,12 +12,12 @@ export const validSuperAdminUser = {
 };
 
 export const expectedSuperAdminView = {
-  userID: "U999",
-  fullname: "Super Admin User",
-  idNumber: "99999",
-  username: "superadmin",
-  email: "superadmin@example.com",
-  role: "Super Administrator",
+  userID: "U001",
+  fullname: "Test User",
+  idNumber: "10001",
+  username: "testuser",
+  email: "testuser@example.com",
+  role: "Staff",
   position: "Staff",
   department: "IT",
   status: "Active",

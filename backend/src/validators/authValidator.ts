@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-// Schema for Change Password
+// Login Schema
+export const loginSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+});
+export type LoginInput = z.infer<typeof loginSchema>;
+
+// Change Password Schema
 export const changePasswordSchema = z.object({
   currentPassword: z
     .string()
@@ -13,5 +20,10 @@ export const changePasswordSchema = z.object({
         "Password must contain at least one letter, one number, and a special character",
     }),
 });
-
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+// Forgot Password Schema (optional, if needed)
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email format"),
+});
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;

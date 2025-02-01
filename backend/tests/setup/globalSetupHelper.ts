@@ -44,6 +44,26 @@ export const preSaveSuperAdminAndGenJWT = async (): Promise<string> => {
   return await generateJWT(user.userID);
 };
 
+
+export const preSaveUsersAndGenTokens = async (): Promise<{
+  validToken: string;
+  superAdminToken: string;
+}> => {
+  await User.deleteMany({}); // Clear the users
+
+  // Save regular user and generate token
+  const user = await new User(validUser).save();
+  const validToken = await generateJWT(user.userID);
+
+  // Save super admin user and generate token
+  const superAdmin = await new User(validSuperAdminUser).save();
+  const superAdminToken = await generateJWT(superAdmin.userID);
+
+  // Return both tokens
+  return { validToken, superAdminToken };
+};
+
+
 export const deleteAllUsers = async () => {
   await User.deleteMany({});
 };
