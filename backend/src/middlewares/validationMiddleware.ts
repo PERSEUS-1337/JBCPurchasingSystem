@@ -18,7 +18,6 @@ export const validateRequest =
       return;
     }
 
-    req.body = result.data; // Assign the validated data to req.body
-    // console.log(result)
-    next(); // Proceed to the next middleware or controller
+    req.body = result.data;
+    next(); 
   };

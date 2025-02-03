@@ -1,17 +1,11 @@
 // /constants.ts
 export const roleList = [
   "Super Administrator",
-  "Administrator",
   "Manager",
   "Staff",
-  "Auditor",
   "Requester",
-  "Approver",
+  "Chief Officer",
   "Purchaser",
-  "Inventory Clerk",
-  "Accountant",
-  "Project Lead",
-  "Guest",
 ] as const;
 
 export const statusList = ["Active", "Inactive"] as const;

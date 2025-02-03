@@ -64,12 +64,14 @@ describe("Authentication Routes", () => {
           .post(apiRegister)
           .send(validUser);
 
+        console.log(response.body);
         expect(response.status).toBe(201);
         expect(response.body).toEqual(
           expect.objectContaining({
             message: "User registered successfully",
             data: {
               email: validUser.email,
+              dateCreated: expect.any(String)
             },
           })
         );

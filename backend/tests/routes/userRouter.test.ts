@@ -17,8 +17,8 @@ import {
 } from "../setup/mockUsers";
 import {
   apiUserHello,
-  apiViewUser,
-  apiViewUserByID,
+  apiViewUser as apiGetUser,
+  apiViewUserByID as apiGetUserByID,
 } from "../setup/refRoutes";
 import {
   connectDB,
@@ -39,7 +39,7 @@ describe("User Routes", () => {
     await disconnectDB();
   });
 
-  describe(`GET ${apiViewUser}`, () => {
+  describe(`GET ${apiGetUser}`, () => {
     let validToken: string;
 
     beforeEach(async () => {
@@ -49,7 +49,7 @@ describe("User Routes", () => {
     describe("Success Cases", () => {
       it("Returns the logged-in user's profile view validated by schema.", async () => {
         const response = await request(app)
-          .get(apiViewUser)
+          .get(apiGetUser)
           .set("Authorization", `Bearer ${validToken}`);
 
         expect(response.status).toBe(200);
@@ -97,7 +97,7 @@ describe("User Routes", () => {
         .mockRejectedValueOnce(new Error("Unexpected server error"));
 
       const response = await request(app)
-        .get(apiViewUser)
+        .get(apiGetUser)
         .set("Authorization", `Bearer ${validToken}`);
 
       expect(response.status).toBe(500);
@@ -105,7 +105,7 @@ describe("User Routes", () => {
     });
   });
 
-  describe(`GET ${apiViewUserByID(":userID")}`, () => {
+  describe(`GET ${apiGetUserByID(":userID")}`, () => {
     let superAdminUserID: string;
     let validUserID: string;
     let validToken: string;
@@ -119,7 +119,7 @@ describe("User Routes", () => {
     });
 
     describe("Success Cases", () => {
-      it("Returns the admin view for a super admin.", async () => {
+      it("Returns the admin view of a user details for a super admin.", async () => {
         const response = await request(app)
           .get(`/api/user/${validUserID}`)
           .set("Authorization", `Bearer ${superAdminToken}`);

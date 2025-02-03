@@ -13,7 +13,6 @@ export const userProfileViewSchema = z
     .refine((val) => val instanceof Date && !isNaN(val.getTime()), {
       message: "Invalid date format",
     }),
-    status: z.enum(statusList),
   })
   .strict();
   
@@ -21,7 +20,8 @@ export const userProfileViewSchema = z
   export const userProfileAdminViewSchema = userProfileViewSchema
   .extend({
     userID: z.string(),
-    role: z.enum(roleList)
+    role: z.enum(roleList),
+    status: z.enum(statusList),
   })
   .strict();
 

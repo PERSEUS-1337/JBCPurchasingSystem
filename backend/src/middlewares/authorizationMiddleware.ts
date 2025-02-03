@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { jwtVerify } from "jose";
-import User from "../models/userModel";
+import User, { IUser } from "../models/userModel";
 
 const SECRET_KEY: string = process.env.SECRET_KEY as string;
 
@@ -38,7 +38,6 @@ export const authorizeSuperAdmin = async (
   try {
     const { user } = req; // Assume `req.user` is set by `authenticateJWT`
 
-    // Check if user exists in the database
     if (!user || !user.userID) {
       res
         .status(403)
@@ -55,7 +54,7 @@ export const authorizeSuperAdmin = async (
     }
 
     // Check if user is a Super Administrator
-    if (dbUser.role !== "Super Administrator") {
+    if (!(await User.isSuperAdmin(dbUser.role))) {
       res
         .status(403)
         .json({ message: "Access denied. Super Administrators only." });

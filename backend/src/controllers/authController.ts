@@ -1,30 +1,27 @@
 import { Request, Response } from "express";
 import User from "../models/userModel";
 import { generateJWT } from "../utils/authUtils";
-import { UserInput } from "../validators";
+import { LoginInput, RegisterInput } from "../validators";
 
 export const registerUser = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const userData: UserInput = req.body;
+    const newUserData: RegisterInput = req.body;
 
-    const user = new User(userData);
-
-    const isDuplicate = await User.checkDuplicateUser(user.email);
+    const isDuplicate = await User.checkDuplicateUser(newUserData.email);
     if (isDuplicate) {
-      res
-        .status(409)
-        .json({ message: "Email already exists", data: null });
+      res.status(409).json({ message: "Email already exists", data: null });
       return;
     }
 
-    await user.save();
+    const newUser = new User(newUserData);
+    await newUser.save();
 
     res.status(201).json({
       message: "User registered successfully",
-      data: { email: user.email },
+      data: { email: newUser.email, dateCreated: newUser.dateCreated },
     });
   } catch (err: any) {
     // Log and handle unexpected errors
@@ -38,7 +35,7 @@ export const registerUser = async (
 
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { email, password }: LoginInput = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {

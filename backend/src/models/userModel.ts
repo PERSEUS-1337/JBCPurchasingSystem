@@ -11,9 +11,9 @@ import {
 interface IUserMethods {
   // Instance Methods (Available on user instances
   comparePassword(candidatePassword: string): Promise<boolean>;
-  isSuperAdmin(): Promise<boolean>;
-  getPersonalProfile(): Promise<Partial<IUser>>;
-  getAdminView(): Promise<Partial<IUser>>;
+  // isSuperAdmin(): Promise<boolean>;
+  getUser(): Promise<Partial<IUser>>;
+  getUserAdminView(): Promise<Partial<IUser>>;
 }
 
 export interface IUser extends Document, IUserMethods {
@@ -31,6 +31,7 @@ export interface IUser extends Document, IUserMethods {
 // Static Methods (Available, regardless of instance)
 interface IUserModel extends Model<IUser> {
   checkDuplicateUser(email: string): Promise<boolean>;
+  isSuperAdmin(role: string): Promise<boolean>;
 }
 
 // Then, define the schema
@@ -121,28 +122,32 @@ UserSchema.statics.checkDuplicateUser = async function (
   return !!existingUser; // Convert the result to a boolean
 };
 
-// INSTANCE METHODS for Individual User Objects
-UserSchema.methods.comparePassword = async function (
-  candidatePassword: string
+UserSchema.statics.isSuperAdmin = async function (
+  role: string
 ): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.password);
+  return role === superAdmin;
 };
 
-UserSchema.methods.isSuperAdmin = async function (): Promise<boolean> {
-  return this.role === superAdmin;
-};
-
-UserSchema.methods.getPersonalProfile = async function (): Promise<
+// INSTANCE METHODS for Individual User Objects
+// GETTERS
+UserSchema.methods.getUser = async function (): Promise<
   Partial<IUser>
 > {
-  const { _id, userID, role, password, idNumber, __v, ...secureData } =
+  const { _id, userID, role, password, status, __v, ...secureData } =
     this.toObject();
   return secureData; // General users get their profile without sensitive data
 };
 
-UserSchema.methods.getAdminView = async function (): Promise<Partial<IUser>> {
-  const { _id, password, __v, ...secureData } = this.toObject(); // Exclude password and version key
+UserSchema.methods.getUserAdminView = async function (): Promise<Partial<IUser>> {
+  const { _id, password, __v, ...secureData } = this.toObject();
   return secureData; // Admin sees all but not password
+};
+
+
+UserSchema.methods.comparePassword = async function (
+  candidatePassword: string
+): Promise<boolean> {
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
 const User = mongoose.model<IUser, IUserModel>("User", UserSchema, "users");

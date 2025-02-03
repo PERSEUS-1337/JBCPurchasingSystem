@@ -1,6 +1,21 @@
+import { register } from "module";
 import { z } from "zod";
+import { defaultRole, defaultStatus, roleList, statusList } from "../constants";
 
-// Login Schema
+export const registerSchema = z
+  .object({
+    userID: z.string(),
+    fullname: z.string().min(1, "Fullname is required"),
+    email: z.string().email("Invalid email format"),
+    password: z.string().min(8, "Password must be at least 8 characters long"),
+    role: z.enum(roleList).default(defaultRole), // Reused constant
+    position: z.string().min(1, "Position is required"),
+    department: z.string().min(1, "Department is required"),
+  })
+  .strict();
+
+export type RegisterInput = z.infer<typeof registerSchema>;
+
 export const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
   password: z.string().min(8, "Password must be at least 8 characters long"),

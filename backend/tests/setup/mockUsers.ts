@@ -27,7 +27,6 @@ export const validUser = {
   role: "Staff",
   position: "Staff",
   department: "IT",
-  status: "Active",
 };
 
 export const expectedPersonalProfileView = {

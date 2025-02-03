@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import User from "../models/userModel";
 
-export const viewUser = async (req: Request, res: Response): Promise<void> => {
+export const getUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userID } = req.user;
     const user = await User.findOne({ userID });
@@ -11,15 +11,18 @@ export const viewUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const data = await user.getPersonalProfile();
-    res.status(200).json({ message: "User profile retrieved successfully", data });
+    const data = await user.getUser();
+    res
+      .status(200)
+      .json({ message: "User profile retrieved successfully", data });
   } catch (err: any) {
-    res.status(500).json({ message: "Internal server error", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
   }
 };
 
-
-export const viewUserByID = async (
+export const getUserByID = async (
   req: Request,
   res: Response
 ): Promise<void> => {
@@ -34,10 +37,14 @@ export const viewUserByID = async (
       return;
     }
 
-    const data = await user.getAdminView();
-    res.status(200).json({ message: "User details retrieved successfully", data });
+    const data = await user.getUserAdminView();
+    res
+      .status(200)
+      .json({ message: "User details retrieved successfully", data });
   } catch (err: any) {
-    res.status(500).json({ message: "Internal server error", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
   }
 };
 
@@ -66,12 +73,10 @@ export const updateUser = async (
       data: filteredUser,
     });
   } catch (err: any) {
-    res
-      .status(500)
-      .json({
-        message: "Internal server error",
-        data: null,
-        error: err.message,
-      });
+    res.status(500).json({
+      message: "Internal server error",
+      data: null,
+      error: err.message,
+    });
   }
 };

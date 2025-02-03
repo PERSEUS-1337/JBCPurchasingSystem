@@ -7,7 +7,7 @@ import {
   changePassword,
 } from "../controllers/authController";
 import { userSchema } from "../validators/userValidator";
-import { changePasswordSchema, loginSchema } from "../validators/authValidator";
+import { changePasswordSchema, loginSchema, registerSchema } from "../validators/authValidator";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import { authorizeJWT } from "../middlewares/authorizationMiddleware";
 
@@ -17,7 +17,7 @@ const router = Router();
 router.get("/hello", (req, res) => {
   res.status(200).json({ message: "This is the public auth route" });
 });
-router.post("/register", validateRequest(userSchema), registerUser);
+router.post("/register", validateRequest(registerSchema), registerUser);
 router.post("/login", validateRequest(loginSchema), loginUser);
 router.post("/logout", logoutUser);
 router.get("/refresh", refreshUserToken);
