@@ -130,19 +130,18 @@ UserSchema.statics.isSuperAdmin = async function (
 
 // INSTANCE METHODS for Individual User Objects
 // GETTERS
-UserSchema.methods.getUser = async function (): Promise<
-  Partial<IUser>
-> {
+UserSchema.methods.getUser = async function (): Promise<Partial<IUser>> {
   const { _id, userID, role, password, status, __v, ...secureData } =
     this.toObject();
   return secureData; // General users get their profile without sensitive data
 };
 
-UserSchema.methods.getUserAdminView = async function (): Promise<Partial<IUser>> {
+UserSchema.methods.getUserAdminView = async function (): Promise<
+  Partial<IUser>
+> {
   const { _id, password, __v, ...secureData } = this.toObject();
   return secureData; // Admin sees all but not password
 };
-
 
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string

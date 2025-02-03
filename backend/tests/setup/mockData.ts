@@ -32,3 +32,9 @@ export const wrongOldChangePasswordData = {
   currentPassword: wrongOldPassword,
   newPassword: newPassword,
 };
+
+export const validEditUserData = {
+  fullname: "Updated Fullname",
+  position: "Updated Position",
+  department: "Updated Department",
+};

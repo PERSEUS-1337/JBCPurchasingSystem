@@ -7,4 +7,4 @@ export const apiProtected = "/api/auth/protected";
 export const apiUserHello = "/api/user/hello";
 export const apiViewUser = "/api/user/me";
 export const apiViewUserByID = (params: string) => `api/user/${params}`;
-export const apiUpdateUser = "/api/user/update";
+export const apiEditUser = "/api/user/edit";

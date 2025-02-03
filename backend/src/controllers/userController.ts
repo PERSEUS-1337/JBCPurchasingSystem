@@ -49,16 +49,19 @@ export const getUserByID = async (
 };
 
 // TODO: Update function by making sure to exclude fields being edited by users, and only allowed to be edited by the administrator
-export const updateUser = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const editUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userID } = req.user;
     const updates = req.body;
 
     const user = await User.findOneAndUpdate({ userID }, updates, {
       new: true,
+      projection: {
+        password: 0,
+        role: 0,
+        _id: 0,
+        __v: 0,
+      },
     });
 
     if (!user) {
@@ -66,11 +69,9 @@ export const updateUser = async (
       return;
     }
 
-    const { password, __v, ...filteredUser } = user;
-
     res.status(200).json({
       message: "User details updated successfully",
-      data: filteredUser,
+      data: user
     });
   } catch (err: any) {
     res.status(500).json({

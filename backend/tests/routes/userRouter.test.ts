@@ -19,6 +19,7 @@ import {
   apiUserHello,
   apiViewUser as apiGetUser,
   apiViewUserByID as apiGetUserByID,
+  apiEditUser,
 } from "../setup/refRoutes";
 import {
   connectDB,
@@ -27,8 +28,11 @@ import {
   preSaveUserAndGenJWT,
   preSaveUsersAndGenTokens,
 } from "../setup/globalSetupHelper";
-import { invalidToken } from "../setup/mockData";
-import {userProfileAdminViewSchema, userProfileViewSchema} from "../../src/validators"
+import { invalidToken, validEditUserData } from "../setup/mockData";
+import {
+  userProfileAdminViewSchema,
+  userProfileViewSchema,
+} from "../../src/validators";
 
 describe("User Routes", () => {
   beforeAll(async () => {
@@ -171,6 +175,114 @@ describe("User Routes", () => {
 
         expect(response.status).toBe(404);
         expect(response.body.message).toBe("User not found");
+      });
+    });
+  });
+
+  describe(`PUT ${apiEditUser}`, () => {
+    let validToken: string;
+    let superAdminToken: string;
+    let validUserID: string;
+    let superAdminUserID: string;
+
+    beforeEach(async () => {
+      // Pre-save users and generate tokens
+      ({ validToken, superAdminToken } = await preSaveUsersAndGenTokens());
+      validUserID = validUser.userID;
+      superAdminUserID = validSuperAdminUser.userID;
+    });
+
+    describe("Success Cases", () => {
+      it("Updates the user's details and returns the updated user profile.", async () => {
+        const response = await request(app)
+          .put(apiEditUser)
+          .set("Authorization", `Bearer ${superAdminToken}`)
+          .send(validEditUserData);
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("User details updated successfully");
+        console.log(response.body.data)
+        // Validate the updated user data
+        expect(response.body.data.fullname).toBe(validEditUserData.fullname);
+        expect(response.body.data.position).toBe(validEditUserData.position);
+        expect(response.body.data.department).toBe(validEditUserData.department);
+      });
+    });
+
+    describe("Fail Cases", () => {
+      it("Returns 401 for an invalid token.", async () => {
+        const response = await request(app)
+          .put(`/api/user/${validUserID}`)
+          .set("Authorization", `Bearer ${invalidToken}`)
+          .send({ fullname: "Updated Fullname" });
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Invalid or expired token");
+      });
+
+      it("Returns 403 if no token is provided.", async () => {
+        const response = await request(app)
+          .put(`/api/user/${validUserID}`)
+          .send({ fullname: "Updated Fullname" });
+
+        expect(response.status).toBe(403);
+        expect(response.body.message).toBe("Access denied, no token provided");
+      });
+
+      it("Returns 403 if a regular user tries to update another user's profile.", async () => {
+        const response = await request(app)
+          .put(`/api/user/${superAdminUserID}`)
+          .set("Authorization", `Bearer ${validToken}`) // Regular user token
+          .send({ fullname: "Updated Fullname" });
+
+        expect(response.status).toBe(403);
+        expect(response.body.message).toBe(
+          "Access denied. You can only update your own profile."
+        );
+      });
+
+      it("Returns 404 if the userID does not exist.", async () => {
+        const response = await request(app)
+          .put(`/api/user/nonExistentUser`)
+          .set("Authorization", `Bearer ${superAdminToken}`)
+          .send({ fullname: "Updated Fullname" });
+
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("User not found");
+      });
+
+      it("Returns 400 for invalid input data.", async () => {
+        const invalidData = {
+          fullname: "", // Invalid: Empty fullname
+          position: "Updated Position",
+          department: "Updated Department",
+        };
+
+        const response = await request(app)
+          .put(`/api/user/${validUserID}`)
+          .set("Authorization", `Bearer ${superAdminToken}`)
+          .send(invalidData);
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe("Validation failed");
+        expect(response.body.errors).toBeInstanceOf(Array);
+        expect(response.body.errors[0].message).toContain(
+          "Fullname is required"
+        );
+      });
+
+      it("Returns 500 for an unexpected server error.", async () => {
+        jest
+          .spyOn(User, "findOneAndUpdate")
+          .mockRejectedValueOnce(new Error("Unexpected server error"));
+
+        const response = await request(app)
+          .put(`/api/user/${validUserID}`)
+          .set("Authorization", `Bearer ${superAdminToken}`)
+          .send({ fullname: "Updated Fullname" });
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
       });
     });
   });

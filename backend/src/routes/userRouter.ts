@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   getUser,
   getUserByID,
-  updateUser,
+  editUser as editUser,
 } from "../controllers/userController";
 import {
   authorizeJWT,
@@ -17,6 +17,6 @@ router.get("/hello", (req, res) => {
 
 router.get("/me", authorizeJWT, getUser);
 router.get("/:userID", authorizeJWT, authorizeSuperAdmin, getUserByID);
-router.post("/update", authorizeJWT, updateUser);
+router.put("/edit", authorizeJWT, authorizeSuperAdmin, editUser);
 
 export default router;
