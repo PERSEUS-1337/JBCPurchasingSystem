@@ -1,13 +1,16 @@
 import { Router } from "express";
 import {
   getUser,
-  getUserByID,
   editUser as editUser,
+  getUserByID,
+  deleteUser,
 } from "../controllers/userController";
 import {
   authorizeJWT,
   authorizeSuperAdmin,
 } from "../middlewares/authorizationMiddleware";
+import { validateRequest } from "../middlewares/validationMiddleware";
+import { userUpdateSchema } from "../validators";
 
 const router = Router();
 
@@ -17,6 +20,7 @@ router.get("/hello", (req, res) => {
 
 router.get("/me", authorizeJWT, getUser);
 router.get("/:userID", authorizeJWT, authorizeSuperAdmin, getUserByID);
-router.put("/edit", authorizeJWT, authorizeSuperAdmin, editUser);
+router.put("/:userID", authorizeJWT, authorizeSuperAdmin, validateRequest(userUpdateSchema), editUser);
+router.delete("/:userID", authorizeJWT, authorizeSuperAdmin, deleteUser);
 
 export default router;

@@ -5,6 +5,5 @@ export const apiLogout = "api/auth/logout";
 export const apiChangePassword = "/api/auth/change-pwd";
 export const apiProtected = "/api/auth/protected";
 export const apiUserHello = "/api/user/hello";
-export const apiViewUser = "/api/user/me";
-export const apiViewUserByID = (params: string) => `api/user/${params}`;
-export const apiEditUser = "/api/user/edit";
+export const apiUserID = (params: string) => `/api/user/${params}`;
+

@@ -1,6 +1,5 @@
-import { register } from "module";
 import { z } from "zod";
-import { defaultRole, defaultStatus, roleList, statusList } from "../constants";
+import { defaultRole, roleList } from "../constants";
 
 export const registerSchema = z
   .object({

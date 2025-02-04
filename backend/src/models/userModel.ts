@@ -11,7 +11,6 @@ import {
 interface IUserMethods {
   // Instance Methods (Available on user instances
   comparePassword(candidatePassword: string): Promise<boolean>;
-  // isSuperAdmin(): Promise<boolean>;
   getUser(): Promise<Partial<IUser>>;
   getUserAdminView(): Promise<Partial<IUser>>;
 }

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { jwtVerify } from "jose";
-import User, { IUser } from "../models/userModel";
+import User from "../models/userModel";
 
 const SECRET_KEY: string = process.env.SECRET_KEY as string;
 
@@ -12,7 +12,7 @@ export const authorizeJWT = async (
   const token = req.headers["authorization"]?.split(" ")[1];
 
   if (!token) {
-    res.status(403).json({ message: "Access denied, no token provided" });
+    res.status(401).json({ message: "Access denied, no token provided" });
     return;
   }
 
@@ -40,7 +40,7 @@ export const authorizeSuperAdmin = async (
 
     if (!user || !user.userID) {
       res
-        .status(403)
+        .status(401)
         .json({ message: "Access denied. User not authenticated." });
       return;
     }
@@ -57,7 +57,7 @@ export const authorizeSuperAdmin = async (
     if (!(await User.isSuperAdmin(dbUser.role))) {
       res
         .status(403)
-        .json({ message: "Access denied. Super Administrators only." });
+        .json({ message: "Access denied. Insufficient permissions." });
       return;
     }
 
