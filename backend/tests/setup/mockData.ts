@@ -21,8 +21,8 @@ export const invalidToken: string = "invalid-token";
 export const expiredToken: string =
   "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI2NzUyYTEwZWRjZWExMGQwNjlhNTU5ZGYiLCJpYXQiOjE3MzM4MTU4NDgsImV4cCI6MTczMzgxNjE0OH0.uTFHWMoVXIlV3ERhnLVFEZzfHCVeA77snM8B4KzwCps";
 
-const wrongOldPassword = "WrongOldPassword123";
-const newPassword = "NewPassword123!";
+export const wrongOldPassword = "WrongOldPassword123";
+export const newPassword = "NewPassword123!";
 
 export const validChangePasswordData = {
   currentPassword: validUser.password,
@@ -31,4 +31,10 @@ export const validChangePasswordData = {
 export const wrongOldChangePasswordData = {
   currentPassword: wrongOldPassword,
   newPassword: newPassword,
+};
+
+export const validEditUserData = {
+  fullname: "Updated Fullname",
+  position: "Updated Position",
+  department: "Updated Department",
 };

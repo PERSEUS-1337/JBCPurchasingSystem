@@ -1,16 +1,15 @@
 import { Router } from "express";
 import {
-  register,
-  login,
-  logout,
-  refresh,
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshUserToken,
   changePassword,
 } from "../controllers/authController";
-import { authenticateJWT } from "../middlewares/jwtMiddleware";
-import { validateRequest } from "../middlewares/validationMiddleware";
-import { loginSchema } from "../validators/loginValidator";
 import { userSchema } from "../validators/userValidator";
-import { changePasswordSchema } from "../validators/authValidator";
+import { changePasswordSchema, loginSchema, registerSchema } from "../validators/authValidator";
+import { validateRequest } from "../middlewares/validationMiddleware";
+import { authorizeJWT } from "../middlewares/authorizationMiddleware";
 
 const router = Router();
 
@@ -18,20 +17,20 @@ const router = Router();
 router.get("/hello", (req, res) => {
   res.status(200).json({ message: "This is the public auth route" });
 });
-router.post("/register", validateRequest(userSchema), register);
-router.post("/login", validateRequest(loginSchema), login);
-router.post("/logout", logout);
-router.get("/refresh", refresh);
+router.post("/register", validateRequest(registerSchema), registerUser);
+router.post("/login", validateRequest(loginSchema), loginUser);
+router.post("/logout", logoutUser);
+router.get("/refresh", refreshUserToken);
 
 // Protected Routes
-router.get("/protected", authenticateJWT, (req, res) => {
+router.get("/protected", authorizeJWT, (req, res) => {
   res.status(200).json({ message: "This is the auth protected route" });
 });
 
 // Password Management
 router.post(
   "/change-pwd",
-  authenticateJWT,
+  authorizeJWT,
   validateRequest(changePasswordSchema),
   changePassword
 ); // Change user password

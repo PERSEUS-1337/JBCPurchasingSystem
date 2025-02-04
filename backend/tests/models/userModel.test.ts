@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import User from "../../src/models/userModel";
 import {
@@ -11,6 +10,8 @@ import {
   jest,
 } from "@jest/globals";
 import { connectDB, disconnectDB, dropDB } from "../setup/globalSetupHelper";
+import { invalidStatusUser, validUser } from "../setup/mockUsers";
+import { wrongOldPassword } from "../setup/mockData";
 
 describe("Mongoose Model Validation: User", () => {
   beforeAll(async () => {
@@ -31,61 +32,30 @@ describe("Mongoose Model Validation: User", () => {
   });
 
   it("save user with VALID fields", async () => {
-    const user = new User({
-      userID: "U123",
-      fullname: "John Doe",
-      idNumber: "12345",
-      username: "johndoe",
-      email: "johndoe@example.com",
-      password: "hashedpassword",
-      role: "Admin",
-      position: "Manager",
-      department: "HR",
-      status: "Active",
-    });
-
+    const user = new User(validUser);
     const savedUser = await user.save(); // Save the user by inserting it to db
+
     expect(savedUser._id).toBeDefined();
-    expect(savedUser.email).toBe("johndoe@example.com");
+    expect(savedUser.email).toBe(validUser.email);
   });
 
   it("default DATECREATED to now()", async () => {
-    const user = new User({
-      userID: "U456",
-      fullname: "Jane Doe",
-      idNumber: "67890",
-      username: "janedoe",
-      email: "janedoe@example.com",
-      password: "hashedpassword",
-      role: "User",
-      position: "Engineer",
-      department: "IT",
-      status: "Active",
-    });
+    const user = new User(validUser);
     const savedUser = await user.save();
+    
     expect(savedUser.dateCreated).toBeDefined(); // We ensure that date exists first
     expect(savedUser.dateCreated.getTime()).toBeLessThanOrEqual(Date.now()); // We compare the date created to the latest date available
   });
 
   it("successfully HASH password", async () => {
-    const user = new User({
-      userID: "U123",
-      fullname: "John Doe",
-      idNumber: "12345",
-      username: "johndoe",
-      email: "johndoe@example.com",
-      password: "plaintextpassword",
-      role: "Admin",
-      position: "Manager",
-      department: "HR",
-      status: "Active",
-    });
+    const user = new User(validUser);
 
-    await user.save();
+    const savedUser = await user.save();
 
-    expect(user._id).toBeDefined();
-    expect(user.password).not.toBe("plaintextpassword"); // Password should be hashed
-    expect(await bcrypt.compare("plaintextpassword", user.password)).toBe(true); // Check if the hash matches
+    expect(savedUser._id).toBeDefined();
+    expect(savedUser.password).not.toBe(validUser.password); // Password should be hashed
+
+    expect(await bcrypt.compare(validUser.password, savedUser.password)).toBe(true); // Check if the hash matches
   });
 
   it("reject PASSWORD HASH errors", async () => {
@@ -94,18 +64,7 @@ describe("Mongoose Model Validation: User", () => {
       throw new Error("Salt generation failed");
     });
 
-    const user = new User({
-      userID: "U123",
-      fullname: "John Doe",
-      idNumber: "12345",
-      username: "johndoe",
-      email: "johndoe@example.com",
-      password: "plaintextpassword",
-      role: "Admin",
-      position: "Manager",
-      department: "HR",
-      status: "Active",
-    });
+    const user = new User(validUser);
 
     await expect(user.save()).rejects.toThrow("Salt generation failed");
 
@@ -114,42 +73,20 @@ describe("Mongoose Model Validation: User", () => {
   });
 
   it("successfully COMPARE passwords", async () => {
-    const user = new User({
-      userID: "U123",
-      fullname: "John Doe",
-      idNumber: "12345",
-      username: "johndoe",
-      email: "johndoe@example.com",
-      password: "plaintextpassword",
-      role: "Admin",
-      position: "Manager",
-      department: "HR",
-      status: "Active",
-    });
+    const user = new User(validUser);
 
-    await user.save();
+    const savedUser = await user.save();
 
     // Test the comparePassword method
-    const isMatch = await user.comparePassword("plaintextpassword");
+    const isMatch = await savedUser.comparePassword(validUser.password);
     expect(isMatch).toBe(true);
 
-    const isNotMatch = await user.comparePassword("wrongpassword");
+    const isNotMatch = await user.comparePassword(wrongOldPassword);
     expect(isNotMatch).toBe(false);
   });
 
   it("skip HASH if password is unmodified", async () => {
-    const user = new User({
-      userID: "U123",
-      fullname: "John Doe",
-      idNumber: "12345",
-      username: "johndoe",
-      email: "johndoe@example.com",
-      password: "plaintextpassword",
-      role: "Admin",
-      position: "Manager",
-      department: "HR",
-      status: "Active",
-    });
+    const user = new User(validUser);
 
     await user.save();
 
@@ -165,18 +102,7 @@ describe("Mongoose Model Validation: User", () => {
   });
 
   it("reject INVALID status", async () => {
-    const user = new User({
-      userID: "U456",
-      fullname: "Jane Doe",
-      idNumber: "67890",
-      username: "janedoe",
-      email: "janedoe@example.com",
-      password: "hashedpassword",
-      role: "User",
-      position: "Engineer",
-      department: "IT",
-      status: "invalidStatus",
-    });
+    const user = new User(invalidStatusUser);
     await expect(user.save()).rejects.toThrow(); // Expects the save to throw an error, as defined by the enums in the model
   });
 });

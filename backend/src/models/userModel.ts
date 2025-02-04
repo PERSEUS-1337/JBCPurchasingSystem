@@ -1,12 +1,23 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 import bcrypt from "bcrypt";
+import {
+  defaultRole,
+  defaultStatus,
+  roleList,
+  statusList,
+  superAdmin,
+} from "../constants";
 
-// Interface for User Document
-export interface IUser extends Document {
-  userID: string; // Primary Key
+interface IUserMethods {
+  // Instance Methods (Available on user instances
+  comparePassword(candidatePassword: string): Promise<boolean>;
+  getUser(): Promise<Partial<IUser>>;
+  getUserAdminView(): Promise<Partial<IUser>>;
+}
+
+export interface IUser extends Document, IUserMethods {
+  userID: string;
   fullname: string;
-  idNumber: string;
-  username: string;
   email: string;
   password: string;
   role: string;
@@ -14,7 +25,12 @@ export interface IUser extends Document {
   department: string;
   dateCreated: Date;
   status: string;
-  comparePassword(candidatePassword: string): Promise<boolean>; // Method to compare passwords
+}
+
+// Static Methods (Available, regardless of instance)
+interface IUserModel extends Model<IUser> {
+  checkDuplicateUser(email: string): Promise<boolean>;
+  isSuperAdmin(role: string): Promise<boolean>;
 }
 
 // Then, define the schema
@@ -24,25 +40,16 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
       type: String,
       required: true,
       unique: true,
-    }, // Primary Key
+    },
     fullname: {
       type: String,
       required: true,
-    },
-    idNumber: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    username: {
-      type: String,
-      required: true,
-      unique: true,
     },
     email: {
       type: String,
       required: true,
       unique: true,
+      lowercase: true,
     },
     password: {
       type: String,
@@ -51,6 +58,8 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
     role: {
       type: String,
       required: true,
+      enum: roleList,
+      default: defaultRole,
     },
     position: {
       type: String,
@@ -62,18 +71,20 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
     },
     dateCreated: {
       type: Date,
-      default: Date.now, // Auto-sets to current date
+      default: Date.now,
     },
     status: {
       type: String,
       required: true,
-      enum: ["Active", "Inactive"], // We can enforce specific values
+      enum: statusList,
+      default: defaultStatus,
     },
   },
-  { strict: true } // Disallow extra / unexpected fields from pushing through db
+  { strict: true }
 );
 
-// Pre-hook to hash password before saving
+// ### PRE and POST Hooks
+// Hash password before it is saved to the database
 UserSchema.pre("save", async function (next) {
   const user: IUser = this as IUser;
 
@@ -88,13 +99,55 @@ UserSchema.pre("save", async function (next) {
   }
 });
 
-// Add method for password comparison
+UserSchema.post("find", (docs) => {
+  docs.forEach((doc: { dateCreated: string | number | Date }) => {
+    if (doc.dateCreated && typeof doc.dateCreated === "string") {
+      doc.dateCreated = new Date(doc.dateCreated);
+    }
+  });
+});
+
+UserSchema.post("findOne", (doc) => {
+  if (doc && doc.dateCreated && typeof doc.dateCreated === "string") {
+    doc.dateCreated = new Date(doc.dateCreated);
+  }
+});
+
+// STATIC METHODS, regardless if User or Not
+UserSchema.statics.checkDuplicateUser = async function (
+  email: string
+): Promise<boolean> {
+  const existingUser = await this.findOne({ email });
+  return !!existingUser; // Convert the result to a boolean
+};
+
+UserSchema.statics.isSuperAdmin = async function (
+  role: string
+): Promise<boolean> {
+  return role === superAdmin;
+};
+
+// INSTANCE METHODS for Individual User Objects
+// GETTERS
+UserSchema.methods.getUser = async function (): Promise<Partial<IUser>> {
+  const { _id, userID, role, password, status, __v, ...secureData } =
+    this.toObject();
+  return secureData; // General users get their profile without sensitive data
+};
+
+UserSchema.methods.getUserAdminView = async function (): Promise<
+  Partial<IUser>
+> {
+  const { _id, password, __v, ...secureData } = this.toObject();
+  return secureData; // Admin sees all but not password
+};
+
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Create and export model
-const User: Model<IUser> = mongoose.model<IUser>("User", UserSchema, "users");
+const User = mongoose.model<IUser, IUserModel>("User", UserSchema, "users");
+
 export default User;
