@@ -1,6 +1,4 @@
-const mongoose = require("mongoose");
-
-import { Document, Types } from "mongoose";
+import mongoose, { Document, Schema, Types } from "mongoose";
 
 export interface ISupplier extends Document {
   supplierID: string;
@@ -16,19 +14,25 @@ export interface ISupplier extends Document {
   updatedAt: Date;
 }
 
-const SupplierSchema = new mongoose.Schema(
+const SupplierSchema: Schema<ISupplier> = new Schema<ISupplier>(
   {
     supplierID: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     contactPerson: { type: String },
     contactNumber: { type: String },
-    email: { type: String },
+    email: { type: String, lowercase: true },
     address: { type: String },
     lastOrderDate: { type: Date },
     supplies: [{ type: mongoose.Schema.Types.ObjectId, ref: "Supply" }],
-    documentation: { type: Array }, // Or you can use a more specific type if needed
+    documentation: [{ type: String }], // Or you can use a more specific type if needed
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Supplier", SupplierSchema);
+const Supplier = mongoose.model<ISupplier>(
+  "Supplier",
+  SupplierSchema,
+  "suppliers"
+);
+
+export default Supplier;
