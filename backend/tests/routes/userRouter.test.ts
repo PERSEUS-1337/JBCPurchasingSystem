@@ -48,6 +48,7 @@ describe("User Routes", () => {
           .set("Authorization", `Bearer ${validToken}`);
 
         expect(response.status).toBe(200);
+        console.log(response.body.data)
         const validation = userViewSchema.safeParse(response.body.data);
         expect(validation.success).toBe(true);
       });

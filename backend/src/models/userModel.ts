@@ -23,8 +23,9 @@ export interface IUser extends Document, IUserMethods {
   role: string;
   position: string;
   department: string;
-  dateCreated: Date;
   status: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Static Methods (Available, regardless of instance)
@@ -69,10 +70,6 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
       type: String,
       required: true,
     },
-    dateCreated: {
-      type: Date,
-      default: Date.now,
-    },
     status: {
       type: String,
       required: true,
@@ -80,7 +77,7 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
       default: defaultStatus,
     },
   },
-  { strict: true }
+  { strict: true, timestamps: true }
 );
 
 // ### PRE and POST Hooks
@@ -96,20 +93,6 @@ UserSchema.pre("save", async function (next) {
     next();
   } catch (err: any) {
     next(err);
-  }
-});
-
-UserSchema.post("find", (docs) => {
-  docs.forEach((doc: { dateCreated: string | number | Date }) => {
-    if (doc.dateCreated && typeof doc.dateCreated === "string") {
-      doc.dateCreated = new Date(doc.dateCreated);
-    }
-  });
-});
-
-UserSchema.post("findOne", (doc) => {
-  if (doc && doc.dateCreated && typeof doc.dateCreated === "string") {
-    doc.dateCreated = new Date(doc.dateCreated);
   }
 });
 

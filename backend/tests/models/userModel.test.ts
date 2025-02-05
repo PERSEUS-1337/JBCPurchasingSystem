@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import User from "../../src/models/userModel";
+import User, { IUser } from "../../src/models/userModel";
 import {
   afterAll,
   beforeAll,
@@ -41,10 +41,10 @@ describe("Mongoose Model Validation: User", () => {
 
   it("default DATECREATED to now()", async () => {
     const user = new User(validUser);
-    const savedUser = await user.save();
+    const savedUser: IUser = await user.save();
     
-    expect(savedUser.dateCreated).toBeDefined(); // We ensure that date exists first
-    expect(savedUser.dateCreated.getTime()).toBeLessThanOrEqual(Date.now()); // We compare the date created to the latest date available
+    expect(savedUser.createdAt).toBeDefined(); // We ensure that date exists first
+    expect(savedUser.createdAt.getTime()).toBeLessThanOrEqual(Date.now()); // We compare the date created to the latest date available
   });
 
   it("successfully HASH password", async () => {

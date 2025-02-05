@@ -16,7 +16,6 @@ export const userSchema = z
     role: z.enum(roleList).default(defaultRole), // Reused constant
     position: z.string().min(1, "Position is required"),
     department: z.string().min(1, "Department is required"),
-    dateCreated: z.date().optional(),
     status: z.enum(statusList).default(defaultStatus), // Reused constant
   })
   .strict();
@@ -46,5 +45,30 @@ export const userUpdateSchema = z
   .strict(); // Disallow extra fields
 
 export type UserUpdateInput = z.infer<typeof userUpdateSchema>;
+
+// Schema for user profile view (general view)
+export const userViewSchema = z
+  .object({
+    fullname: z.string(),
+    email: z.string(),
+    position: z.string(),
+    department: z.string(),
+    createdAt: z.coerce.date().optional(), // Converts ISO string to Date object
+    updatedAt: z.coerce.date().optional(),
+  })
+  .strict();
+
+// Schema for admin view with extended fields
+export const userAdminViewSchema = userViewSchema
+  .extend({
+    userID: z.string(),
+    role: z.enum(roleList),
+    status: z.enum(statusList),
+  })
+  .strict();
+
+// Types for the schemas
+export type UserView = z.infer<typeof userViewSchema>;
+export type UserAdminView = z.infer<typeof userAdminViewSchema>;
 
 

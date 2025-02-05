@@ -12,11 +12,9 @@ import app from "../../src/app";
 import User from "../../src/models/userModel";
 import {
   validUser,
-  noUsernameUser,
   noPasswordUser,
   weakPasswordUser,
   unexpectedUser,
-  shortUsernameUser,
 } from "../setup/mockUsers";
 import {
   validLoginData,
@@ -70,7 +68,7 @@ describe("Authentication Routes", () => {
             message: "User registered successfully",
             data: {
               email: validUser.email,
-              dateCreated: expect.any(String)
+              createdAt: expect.any(String),
             },
           })
         );
