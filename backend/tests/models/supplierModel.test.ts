@@ -1,4 +1,4 @@
-import Supplier, { ISupplier } from "../../src/models/supplierModel";
+import Supplier from "../../src/models/supplierModel";
 import {
   afterAll,
   beforeAll,
@@ -6,16 +6,17 @@ import {
   describe,
   expect,
   it,
-  jest,
 } from "@jest/globals";
 import { connectDB, disconnectDB, dropDB } from "../setup/globalSetupHelper";
 import {
   validSupplier,
   invalidSupplierMissingFields,
   validSupplierWithDocumentation,
+  supplierWithContacts,
+  validSupplierOptionalFields,
 } from "../setup/mockSuppliers";
 
-describe("Mongoose Model Validation: Supplier", () => {
+describe("Supplier Model Validation", () => {
   beforeAll(async () => {
     await connectDB();
   });
@@ -28,7 +29,8 @@ describe("Mongoose Model Validation: Supplier", () => {
     await disconnectDB();
   });
 
-  describe("Success Cases", () => {
+  // ========= SUCCESS CASES =========
+  describe("Success Cases: Supplier Creation and Validation", () => {
     it("Should save a valid supplier", async () => {
       const supplier = new Supplier(validSupplier);
       const savedSupplier = await supplier.save();
@@ -36,6 +38,13 @@ describe("Mongoose Model Validation: Supplier", () => {
       expect(savedSupplier._id).toBeDefined();
       expect(savedSupplier.supplierID).toBe(validSupplier.supplierID);
       expect(savedSupplier.name).toBe(validSupplier.name);
+      expect(savedSupplier.contactNumbers).toEqual(
+        validSupplier.contactNumbers
+      );
+      expect(savedSupplier.emails).toEqual(validSupplier.emails);
+      expect(savedSupplier.address).toBe(validSupplier.address);
+      expect(savedSupplier.primaryTag).toBe(validSupplier.primaryTag);
+      expect(savedSupplier.tags).toEqual(validSupplier.tags);
     });
 
     it("Should default timestamps (createdAt & updatedAt)", async () => {
@@ -48,22 +57,26 @@ describe("Mongoose Model Validation: Supplier", () => {
       expect(savedSupplier.updatedAt.getTime()).toBeLessThanOrEqual(Date.now());
     });
 
-    it("Should allow optional fields to be empty", async () => {
-      const supplier = new Supplier({
-        supplierID: "SUP-002",
-        name: "Minimal Supplier",
-      });
-
+    it("Should allow minimal required fields and default others", async () => {
+      const supplier = new Supplier(validSupplierOptionalFields);
       const savedSupplier = await supplier.save();
 
       expect(savedSupplier._id).toBeDefined();
-      expect(savedSupplier.contactPerson).toBeUndefined();
-      expect(savedSupplier.contactNumber).toBeUndefined();
-      expect(savedSupplier.email).toBeUndefined();
-      expect(savedSupplier.address).toBeUndefined();
-      expect(savedSupplier.lastOrderDate).toBeUndefined();
+      expect(savedSupplier.supplierID).toBe(
+        validSupplierOptionalFields.supplierID
+      );
+      expect(savedSupplier.name).toBe(validSupplierOptionalFields.name);
+      expect(savedSupplier.contactNumbers).toEqual(
+        validSupplierOptionalFields.contactNumbers
+      );
+      expect(savedSupplier.emails).toEqual([]);
+      expect(savedSupplier.contactPersons).toEqual([]);
       expect(savedSupplier.supplies.length).toBe(0);
       expect(savedSupplier.documentation.length).toBe(0);
+      expect(savedSupplier.primaryTag).toBe(
+        validSupplierOptionalFields.primaryTag
+      );
+      expect(savedSupplier.tags).toEqual(validSupplierOptionalFields.tags);
     });
 
     it("Should store an array of supply references", async () => {
@@ -74,39 +87,117 @@ describe("Mongoose Model Validation: Supplier", () => {
 
       const savedSupplier = await supplier.save();
       expect(savedSupplier.supplies.length).toBe(2);
+      expect(savedSupplier.supplies).toEqual(validSupplier.supplies);
     });
 
     it("Should allow an array of document filenames in documentation", async () => {
       const supplier = new Supplier(validSupplierWithDocumentation);
+      const savedSupplier = await supplier.save();
+
+      expect(savedSupplier.documentation.length).toBe(3);
+      expect(savedSupplier.documentation).toEqual(
+        validSupplierWithDocumentation.documentation
+      );
+    });
+
+    it("Should save multiple contact numbers", async () => {
+      const supplier = new Supplier({
+        ...validSupplier,
+        contactNumbers: ["1234567890", "0987654321"],
+      });
 
       const savedSupplier = await supplier.save();
-      expect(savedSupplier.documentation.length).toBe(2);
-      expect(savedSupplier.documentation).toEqual(validSupplierWithDocumentation.documentation);
-    //   expect(savedSupplier.documentation).toContain("certificate.jpg");
+      expect(savedSupplier.contactNumbers.length).toBe(2);
+      expect(savedSupplier.contactNumbers).toContain("1234567890");
+      expect(savedSupplier.contactNumbers).toContain("0987654321");
+    });
+
+    it("Should save multiple emails", async () => {
+      const supplier = new Supplier({
+        ...validSupplier,
+        emails: ["sales@company.com", "info@company.com"],
+      });
+
+      const savedSupplier = await supplier.save();
+      expect(savedSupplier.emails.length).toBe(2);
+      expect(savedSupplier.emails).toContain("sales@company.com");
+      expect(savedSupplier.emails).toContain("info@company.com");
+    });
+
+    it("Should save contact persons with name, number, email, and position", async () => {
+      const supplier = new Supplier(supplierWithContacts);
+      const savedSupplier = await supplier.save();
+
+      expect(savedSupplier.contactPersons.length).toBe(2);
+      expect(savedSupplier.contactPersons[0]).toMatchObject({
+        name: "John Doe",
+        number: "123456789",
+        email: "john.doe@abc.com",
+        position: "Manager",
+      });
+      expect(savedSupplier.contactPersons[1]).toMatchObject({
+        name: "Jane Smith",
+        number: "987654321",
+        email: "jane.smith@abc.com",
+        position: "Procurement Officer",
+      });
+    });
+
+    it("Should allow setting lastOrderDate", async () => {
+      const supplier = new Supplier({
+        ...validSupplier,
+        lastOrderDate: new Date("2024-02-01"),
+      });
+
+      const savedSupplier = await supplier.save();
+      expect(savedSupplier.lastOrderDate).toBeDefined();
+      expect(savedSupplier.lastOrderDate.toISOString()).toBe(
+        new Date("2024-02-01").toISOString()
+      );
     });
   });
 
-  describe("Fail Cases", () => {
+  // ========= FAIL CASES =========
+  describe("Fail Cases: Supplier Validation and Error Handling", () => {
     it("Should reject if required fields are missing", async () => {
       const supplier = new Supplier(invalidSupplierMissingFields);
       await expect(supplier.save()).rejects.toThrow();
     });
 
+    // TODO: Fix unique supplierID issue in Mongoose Model Schema Level
     // it("Should enforce unique supplierID", async () => {
-    //   await new Supplier(validSupplier).save(); // First supplier
-
-    //   const duplicateSupplier = new Supplier(validSupplier); // Same supplierID
+    //   const supplier = new Supplier(validSupplier);
+    //   const savedSupplier = await supplier.save();
+    //   const duplicateSupplier = new Supplier(validSupplier);
+    //   // const savedDuplicateSupplier = await duplicateSupplier.save();
+    //   // console.log(savedSupplier, savedDuplicateSupplier);
     //   await expect(duplicateSupplier.save()).rejects.toThrow();
     // });
 
-    // it("Should enforce email format if provided", async () => {
-    //   const supplier = new Supplier({
-    //     ...validSupplier,
-    //     email: "invalid-email",
-    //   });
+    it("Should enforce valid email format in `emails` field", async () => {
+      const supplier = new Supplier({
+        ...validSupplier,
+        emails: ["invalid-email"],
+      });
 
-    //   await expect(supplier.save()).rejects.toThrow();
-    // });
+      await expect(supplier.save()).rejects.toThrow();
+    });
+
+    it("Should enforce valid email format in `contactPersons` field", async () => {
+      const supplier = new Supplier({
+        ...validSupplier,
+        contactPersons: [
+          {
+            name: "Invalid Email Contact",
+            number: "1234567890",
+            email: "not-an-email",
+            position: "Supervisor",
+          },
+        ],
+      });
+
+      await expect(supplier.save()).rejects.toThrow();
+    });
 
     it("Should reject invalid ObjectId values in supplies array", async () => {
       const supplier = new Supplier({
@@ -117,10 +208,39 @@ describe("Mongoose Model Validation: Supplier", () => {
       await expect(supplier.save()).rejects.toThrow();
     });
 
-    it("Should not allow non-string values in documentation array", async () => {
+    it("Should reject non-string values in documentation array", async () => {
       const supplier = new Supplier({
         ...validSupplier,
         documentation: [12345, true, { doc: "invalid" }],
+      });
+
+      await expect(supplier.save()).rejects.toThrow();
+    });
+
+    it("Should reject `contactPersons` missing required fields", async () => {
+      const supplier = new Supplier({
+        ...validSupplier,
+        contactPersons: [
+          { name: "Missing Number", email: "missing@company.com" },
+        ],
+      });
+
+      await expect(supplier.save()).rejects.toThrow();
+    });
+
+    it("Should reject supplier without `primaryTag`", async () => {
+      const supplier = new Supplier({
+        ...validSupplier,
+        primaryTag: undefined,
+      });
+
+      await expect(supplier.save()).rejects.toThrow();
+    });
+
+    it("Should reject supplier with empty `tags` array", async () => {
+      const supplier = new Supplier({
+        ...validSupplier,
+        tags: [],
       });
 
       await expect(supplier.save()).rejects.toThrow();

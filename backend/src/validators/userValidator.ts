@@ -13,10 +13,10 @@ export const userSchema = z
     fullname: z.string().min(1, "Fullname is required"),
     email: z.string().email("Invalid email format"),
     password: z.string().min(8, "Password must be at least 8 characters long"),
-    role: z.enum(roleList).default(defaultRole), // Reused constant
+    role: z.enum(roleList).default(defaultRole), 
     position: z.string().min(1, "Position is required"),
     department: z.string().min(1, "Department is required"),
-    status: z.enum(statusList).default(defaultStatus), // Reused constant
+    status: z.enum(statusList).default(defaultStatus),
   })
   .strict();
 
