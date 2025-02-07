@@ -1,11 +1,11 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import {
-  defaultRole,
-  defaultStatus,
-  roleList,
-  statusList,
-  superAdmin,
+  defaultUserRole,
+  defaultUserStatus,
+  userRoleEnums,
+  userStatusEnums,
+  userSuperAdmin,
 } from "../constants";
 
 interface IUserMethods {
@@ -59,8 +59,8 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
     role: {
       type: String,
       required: true,
-      enum: roleList,
-      default: defaultRole,
+      enum: userRoleEnums,
+      default: defaultUserRole,
     },
     position: {
       type: String,
@@ -73,8 +73,8 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
     status: {
       type: String,
       required: true,
-      enum: statusList,
-      default: defaultStatus,
+      enum: userStatusEnums,
+      default: defaultUserStatus,
     },
   },
   { strict: true, timestamps: true }
@@ -107,7 +107,7 @@ UserSchema.statics.checkDuplicateUser = async function (
 UserSchema.statics.isSuperAdmin = async function (
   role: string
 ): Promise<boolean> {
-  return role === superAdmin;
+  return role === userSuperAdmin;
 };
 
 // INSTANCE METHODS for Individual User Objects

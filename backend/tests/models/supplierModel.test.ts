@@ -129,18 +129,12 @@ describe("Supplier Model Validation", () => {
       const savedSupplier = await supplier.save();
 
       expect(savedSupplier.contactPersons.length).toBe(2);
-      expect(savedSupplier.contactPersons[0]).toMatchObject({
-        name: "John Doe",
-        number: "123456789",
-        email: "john.doe@abc.com",
-        position: "Manager",
-      });
-      expect(savedSupplier.contactPersons[1]).toMatchObject({
-        name: "Jane Smith",
-        number: "987654321",
-        email: "jane.smith@abc.com",
-        position: "Procurement Officer",
-      });
+      expect(savedSupplier.contactPersons[0]).toMatchObject(
+        supplierWithContacts.contactPersons[0]
+      );
+      expect(savedSupplier.contactPersons[1]).toMatchObject(
+        supplierWithContacts.contactPersons[1]
+      );
     });
 
     it("Should allow setting lastOrderDate", async () => {

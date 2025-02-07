@@ -3,23 +3,19 @@ import mongoose from "mongoose";
 export const validSupplier = {
   supplierID: "SUP-001",
   name: "ABC Supplies",
-  contactNumbers: ["123456789", "987654321"],
+  contactNumbers: ["0123456789", "0987654321"],
   emails: ["abc@example.com", "support@abc.com"],
   address: "123 Main St",
-  contactPersons: [
-    {
-      name: "John Doe",
-      number: "123456789",
-      email: "john.doe@abc.com",
-      position: "Manager",
-    },
-  ],
+  contactPersons: [],
   lastOrderDate: new Date("2024-01-15"),
   supplies: [
-    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d73"), new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d74")],
+    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d73"),
+    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d74"),
+  ],
   documentation: ["license.pdf", "certificate.jpg"],
   primaryTag: "Electrical",
   tags: ["Construction", "Maintenance"],
+  status: "Active",
 };
 
 export const validSupplierWithDocumentation = {
@@ -32,17 +28,28 @@ export const supplierWithContacts = {
   contactPersons: [
     {
       name: "John Doe",
-      number: "123456789",
+      contactNumber: "0123456789",
       email: "john.doe@abc.com",
       position: "Manager",
     },
     {
       name: "Jane Smith",
-      number: "987654321",
+      contactNumber: "0987654321",
       email: "jane.smith@abc.com",
       position: "Procurement Officer",
     },
   ],
+};
+
+export const validSupplierOptionalFields = {
+  supplierID: "SUP-002",
+  name: "Minimal Supplier",
+  contactNumbers: ["0123456789"],
+  emails: [],
+  address: "456 Secondary St",
+  primaryTag: "General",
+  tags: ["Miscellaneous"],
+  status: "Active",
 };
 
 export const invalidSupplierMissingFields = {
@@ -52,7 +59,7 @@ export const invalidSupplierMissingFields = {
   contactPersons: [
     {
       name: "Missing Contact",
-      number: "999999999",
+      contactNumber: "999999999",
       email: "missing@contact.com",
       position: "Supervisor",
     },
@@ -61,12 +68,49 @@ export const invalidSupplierMissingFields = {
   documentation: [],
 };
 
-export const validSupplierOptionalFields = {
+export const invalidSupplierEmail = {
   supplierID: "SUP-002",
   name: "Minimal Supplier",
-  contactNumbers: ["123456789"], 
-  emails: [],
-  address: "456 Secondary St", 
-  primaryTag: "General", 
-  tags: ["Miscellaneous"], 
+  contactNumbers: ["0123456789"],
+  emails: ["invalid-format"],
+  address: "456 Secondary St",
+  primaryTag: "General",
+  tags: ["Miscellaneous"],
+  status: "Active",
+};
+
+export const invalidSupplierMissingContactPersonFields = {
+  supplierID: "SUP-002",
+  name: "Minimal Supplier",
+  contactNumbers: ["0123456789"],
+  emails: ["invalid@invalid.com"],
+  contactPersons: [
+    {
+      name: "Wrong Phone",
+      // Missing contactNumber, which is required
+    },
+  ],
+  address: "456 Secondary St",
+  primaryTag: "General",
+  tags: ["Miscellaneous"],
+  status: "Active",
+};
+
+export const invalidSupplierContactPersonPhoneNumber = {
+  supplierID: "SUP-002",
+  name: "Minimal Supplier",
+  contactNumbers: ["09178187094"],
+  emails: ["invalid@invalid.com"],
+  contactPersons: [
+    {
+      name: "Wrong Phone",
+      contactNumber: "++0123456789", // Invalid due to double "+"
+      email: "missing@contact.com",
+      position: "Supervisor",
+    },
+  ],
+  address: "456 Secondary St",
+  primaryTag: "General",
+  tags: ["Miscellaneous"],
+  status: "Active",
 };

@@ -1,8 +1,10 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
+import { contactNumberRegex, emailRegex, supplierIDRegex } from "../constants/regex";
+import { defaultSupplierStatus, supplierStatusEnums } from "../constants";
 
 export interface IContactPerson {
   name: string;
-  number: string;
+  contactNumber: string;
   email: string;
   position: string;
 }
@@ -21,19 +23,26 @@ export interface ISupplier extends Document {
   tags: string[];
   createdAt: Date;
   updatedAt: Date;
+  status: string;
 }
 
 const ContactPersonSchema = new Schema<IContactPerson>(
   {
     name: { type: String, required: true },
-    number: { type: String, required: true },
+    contactNumber: {
+      type: String,
+      required: true,
+      validate: {
+        validator: (num: string) => contactNumberRegex.test(num),
+        message:
+          "Phone number can only contain numbers and an optional '+' at the start",
+      },
+    },
     email: {
       type: String,
       lowercase: true,
       validate: {
         validator: function (email: string) {
-          // Regular expression to validate email format
-          const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
           return emailRegex.test(email);
         },
         message: (props) => `${props.value} is not a valid email address`,
@@ -46,14 +55,21 @@ const ContactPersonSchema = new Schema<IContactPerson>(
 
 const SupplierSchema = new Schema<ISupplier>(
   {
-    supplierID: { type: String, required: true, unique: true },
+    supplierID: {
+      type: String,
+      required: true,
+      unique: true,
+      match: supplierIDRegex,
+    },
     name: { type: String, required: true },
     contactNumbers: {
       type: [String],
       required: true,
       validate: {
-        validator: (contactNumbers: string[]) => contactNumbers.length > 0,
-        message: "At least one contact number is required",
+        validator: (contactNumbers: string[]) =>
+          contactNumbers.length > 0 &&
+          contactNumbers.every((num) => contactNumberRegex.test(num)),
+        message: "At least one valid company number is required",
       },
     },
     emails: [
@@ -63,9 +79,6 @@ const SupplierSchema = new Schema<ISupplier>(
         required: true,
         validate: {
           validator: function (email: string) {
-            // Regular expression to validate email format
-            const emailRegex =
-              /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
             return emailRegex.test(email);
           },
           message: (props) => `${props.value} is not a valid email address`,
@@ -92,6 +105,11 @@ const SupplierSchema = new Schema<ISupplier>(
         validator: (tags: string[]) => tags.length > 0,
         message: "At least one tag is required",
       },
+    },
+    status: {
+      type: String,
+      enum: supplierStatusEnums,
+      default: defaultSupplierStatus,
     },
   },
   { timestamps: true }

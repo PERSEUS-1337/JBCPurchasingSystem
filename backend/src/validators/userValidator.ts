@@ -1,10 +1,10 @@
 // /validators/userValidator.ts
 import { z } from "zod";
 import {
-  roleList,
-  statusList,
-  defaultStatus,
-  defaultRole,
+  userRoleEnums,
+  userStatusEnums,
+  defaultUserStatus,
+  defaultUserRole,
 } from "../constants";
 
 export const userSchema = z
@@ -13,15 +13,14 @@ export const userSchema = z
     fullname: z.string().min(1, "Fullname is required"),
     email: z.string().email("Invalid email format"),
     password: z.string().min(8, "Password must be at least 8 characters long"),
-    role: z.enum(roleList).default(defaultRole), 
+    role: z.enum(userRoleEnums).default(defaultUserRole),
     position: z.string().min(1, "Position is required"),
     department: z.string().min(1, "Department is required"),
-    status: z.enum(statusList).default(defaultStatus),
+    status: z.enum(userStatusEnums).default(defaultUserStatus),
   })
   .strict();
 
 export type UserInput = z.infer<typeof userSchema>;
-
 
 export const userUpdateSchema = z
   .object({
@@ -62,13 +61,11 @@ export const userViewSchema = z
 export const userAdminViewSchema = userViewSchema
   .extend({
     userID: z.string(),
-    role: z.enum(roleList),
-    status: z.enum(statusList),
+    role: z.enum(userRoleEnums),
+    status: z.enum(userStatusEnums),
   })
   .strict();
 
 // Types for the schemas
 export type UserView = z.infer<typeof userViewSchema>;
 export type UserAdminView = z.infer<typeof userAdminViewSchema>;
-
-
