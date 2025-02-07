@@ -6,4 +6,6 @@ export const apiChangePassword = "/api/auth/change-pwd";
 export const apiProtected = "/api/auth/protected";
 export const apiUserHello = "/api/user/hello";
 export const apiUserID = (params: string) => `/api/user/${params}`;
-
+export const apiSupplierHello = "/api/supplier/hello";
+export const apiSupplierID = (params: string) => `/api/supplier/${params}`;
+export const apiSupplierMain = "api/supplier/";

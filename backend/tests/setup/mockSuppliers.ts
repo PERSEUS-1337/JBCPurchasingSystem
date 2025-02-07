@@ -17,6 +17,23 @@ export const validSupplier = {
   tags: ["Construction", "Maintenance"],
   status: "Active",
 };
+export const validSupplier2 = {
+  supplierID: "SUP-001",
+  name: "ABC Supplies",
+  contactNumbers: ["0123456789", "0987654321"],
+  emails: ["abc@example.com", "support@abc.com"],
+  address: "123 Main St",
+  contactPersons: [],
+  lastOrderDate: new Date("2024-01-15"),
+  supplies: [
+    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d73"),
+    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d74"),
+  ],
+  documentation: ["license.pdf", "certificate.jpg"],
+  primaryTag: "Electrical",
+  tags: ["Construction", "Maintenance"],
+  status: "Active",
+};
 
 export const validSupplierWithDocumentation = {
   ...validSupplier,

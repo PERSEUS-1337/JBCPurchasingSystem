@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import User from "../../src/models/userModel";
 import { validSuperAdminUser, validUser } from "./mockUsers";
 import { generateJWT } from "../../src/utils/authUtils";
+import Supplier from "../../src/models/supplierModel";
+import { validSupplier } from "./mockSuppliers";
 
 let mongoServer: MongoMemoryServer;
 
@@ -44,7 +46,6 @@ export const preSaveSuperAdminAndGenJWT = async (): Promise<string> => {
   return await generateJWT(user.userID);
 };
 
-
 export const preSaveUsersAndGenTokens = async (): Promise<{
   validToken: string;
   superAdminToken: string;
@@ -63,7 +64,12 @@ export const preSaveUsersAndGenTokens = async (): Promise<{
   return { validToken, superAdminToken };
 };
 
-
 export const deleteAllUsers = async () => {
   await User.deleteMany({});
 };
+
+export const preSaveSupplier = async () => {
+  await Supplier.deleteMany({});
+  await new Supplier(validSupplier).save();
+};
+export const preSaveMultipleSuppliers = async () => {};

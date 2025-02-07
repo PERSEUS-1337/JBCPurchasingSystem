@@ -17,6 +17,8 @@ export const contactPersonSchema = z.object({
   position: z.string().optional(),
 });
 
+export type contactPersonInput = z.infer<typeof contactPersonSchema>;
+
 export const supplierSchema = z.object({
   supplierID: z
     .string()

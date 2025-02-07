@@ -31,8 +31,10 @@ app.get("/health", (req: Request, res: Response) => {
 
 import authRouter from "./routes/authRouter";
 import userRouter from "./routes/userRouter";
+import supplierRouter from "./routes/supplierRouter";
 // Mount the routes here
 app.use("/api/auth", authRouter);
-app.use("/api/user", userRouter)
+app.use("/api/user", userRouter);
+app.use("/api/supplier", supplierRouter);
 
 export default app;
