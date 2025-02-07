@@ -45,11 +45,14 @@ export const validSupplierOptionalFields = {
   supplierID: "SUP-002",
   name: "Minimal Supplier",
   contactNumbers: ["0123456789"],
+  contactPersons: [],
   emails: [],
   address: "456 Secondary St",
   primaryTag: "General",
   tags: ["Miscellaneous"],
   status: "Active",
+  supplies: [],
+  documentation: []
 };
 
 export const invalidSupplierMissingFields = {

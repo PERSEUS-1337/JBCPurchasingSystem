@@ -3,15 +3,7 @@ import {
   supplierSchema,
   SupplierInput,
 } from "../../src/validators/supplierValidator";
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from "@jest/globals";
-import { connectDB, disconnectDB, dropDB } from "../setup/globalSetupHelper";
+import { afterAll, beforeEach, describe, expect, it } from "@jest/globals";
 import {
   validSupplier,
   invalidSupplierMissingFields,
@@ -30,25 +22,20 @@ describe("Supplier Validator", () => {
     it("Should pass with a valid supplier", () => {
       const result = supplierSchema.safeParse(validSupplier);
       expect(result.success).toBe(true);
-      // if (result.error) console.log(fromZodError(result.error).message);
-
       if (result.success) {
-        // Now TypeScript knows result.data is defined
-        expect(result.data.supplierID).toBe(validSupplier.supplierID);
-        expect(result.data.name).toBe(validSupplier.name);
-        expect(result.data.contactNumbers).toEqual(
-          validSupplier.contactNumbers
-        );
-        expect(result.data.address).toBe(validSupplier.address);
-        expect(result.data.primaryTag).toBe(validSupplier.primaryTag);
-        expect(result.data.tags).toEqual(validSupplier.tags);
+        const resultData = result.data;
+        expect(resultData.supplierID).toBe(validSupplier.supplierID);
+        expect(resultData.name).toBe(validSupplier.name);
+        expect(resultData.contactNumbers).toEqual(validSupplier.contactNumbers);
+        expect(resultData.address).toBe(validSupplier.address);
+        expect(resultData.primaryTag).toBe(validSupplier.primaryTag);
+        expect(resultData.tags).toEqual(validSupplier.tags);
       }
     });
 
     it("Should pass with a valid supplier that has documentation", () => {
       const result = supplierSchema.safeParse(validSupplierWithDocumentation);
       expect(result.success).toBe(true);
-      // if (result.error) console.log(fromZodError(result.error).message);
       if (result.success) {
         expect(result.data.documentation).toEqual(
           validSupplierWithDocumentation.documentation
@@ -61,15 +48,59 @@ describe("Supplier Validator", () => {
       expect(result.success).toBe(true);
       // if (result.error) console.log(fromZodError(result.error).message);
       if (result.success) {
-        expect(result.data.supplierID).toBe(
+        const resultData = result.data;
+        expect(resultData.supplierID).toBe(
           validSupplierOptionalFields.supplierID
         );
-        expect(result.data.contactNumbers).toEqual(
+        expect(resultData.contactNumbers).toEqual(
           validSupplierOptionalFields.contactNumbers
         );
+        expect(resultData.emails).toEqual([]);
+        expect(resultData.contactPersons).toEqual([]);
+        expect(resultData.tags).toEqual(validSupplierOptionalFields.tags);
+      }
+    });
+    it("Should pass with a supplier that has multiple contact persons", () => {
+      const result = supplierSchema.safeParse(supplierWithContacts);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.contactPersons.length).toBe(2);
+        expect(result.data.contactPersons[0].name).toBe(
+          supplierWithContacts.contactPersons[0].name
+        );
+        expect(result.data.contactPersons[1].name).toBe(
+          supplierWithContacts.contactPersons[1].name
+        );
+      }
+    });
+
+    it("Should pass with a supplier that has no documentation (defaults to empty array)", () => {
+      const supplierWithoutDocs = {
+        ...validSupplier,
+        documentation: undefined,
+      };
+      const result = supplierSchema.safeParse(supplierWithoutDocs);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.documentation).toEqual([]);
+      }
+    });
+
+    it("Should pass with a supplier having valid emails and an empty email array", () => {
+      const supplierWithEmptyEmails = { ...validSupplier, emails: [] };
+      const result = supplierSchema.safeParse(supplierWithEmptyEmails);
+      expect(result.success).toBe(true);
+      if (result.success) {
         expect(result.data.emails).toEqual([]);
-        expect(result.data.contactPersons).toEqual([]);
-        expect(result.data.tags).toEqual(validSupplierOptionalFields.tags);
+      }
+    });
+
+    it("Should pass with a supplier that has a valid last order date", () => {
+      const result = supplierSchema.safeParse(validSupplier);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.lastOrderDate).toBeInstanceOf(Date);
+        expect(result.data.lastOrderDate).toEqual(validSupplier.lastOrderDate);
       }
     });
   });
@@ -82,8 +113,6 @@ describe("Supplier Validator", () => {
 
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
-
-        // Check for multiple error messages related to missing or invalid fields
         expect(errorMessage).toContain(`Required at "supplierID"`);
         expect(errorMessage).toContain(`Required at "tags"`);
         expect(errorMessage).toContain(`Required at "address"`);
