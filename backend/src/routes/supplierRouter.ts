@@ -19,7 +19,7 @@ router.get("/hello", (req, res) => {
 });
 
 // ========================== SUPPLIER ROUTES ========================== //
-router.get("/", authorizeJWT, searchSuppliers);
+router.get("/search", authorizeJWT, searchSuppliers);
 router.get("/all", authorizeJWT, getAllSuppliers);
 router.get("/:supplierID", authorizeJWT, getSupplierByID);
 

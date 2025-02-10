@@ -8,4 +8,6 @@ export const apiUserHello = "/api/user/hello";
 export const apiUserID = (params: string) => `/api/user/${params}`;
 export const apiSupplierHello = "/api/supplier/hello";
 export const apiSupplierID = (params: string) => `/api/supplier/${params}`;
-export const apiSupplierMain = "api/supplier/";
+export const apiSupplierMain = "/api/supplier";
+export const apiSupplierSearch = "/api/supplier/search";
+export const apiSupplierAll = "/api/supplier/all";

@@ -4,7 +4,7 @@ import User from "../../src/models/userModel";
 import { validSuperAdminUser, validUser } from "./mockUsers";
 import { generateJWT } from "../../src/utils/authUtils";
 import Supplier from "../../src/models/supplierModel";
-import { validSupplier } from "./mockSuppliers";
+import { validSupplier, validSuppliersList } from "./mockSuppliers";
 
 let mongoServer: MongoMemoryServer;
 
@@ -72,4 +72,11 @@ export const preSaveSupplier = async () => {
   await Supplier.deleteMany({});
   await new Supplier(validSupplier).save();
 };
-export const preSaveMultipleSuppliers = async () => {};
+export const preSaveMultipleSuppliers = async () => {
+  await Supplier.deleteMany({});
+  await Supplier.insertMany(validSuppliersList);
+
+  // Fetch and log the saved suppliers
+  // const savedSuppliers = await Supplier.find({});
+  // console.log("Saved Suppliers:", savedSuppliers);
+};

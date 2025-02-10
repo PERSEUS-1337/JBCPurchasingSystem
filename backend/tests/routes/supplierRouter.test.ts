@@ -12,9 +12,11 @@ import app from "../../src/app"; // Import your Express app
 import User from "../../src/models/userModel";
 import { validSuperAdminUser, validUser } from "../setup/mockUsers";
 import {
+  apiSupplierAll,
   apiSupplierHello,
   apiSupplierID,
   apiSupplierMain,
+  apiSupplierSearch,
   apiUserHello,
   apiUserID,
 } from "../setup/refRoutes";
@@ -22,12 +24,13 @@ import {
   connectDB,
   disconnectDB,
   dropDB,
+  preSaveMultipleSuppliers,
   preSaveSupplier,
   preSaveUsersAndGenTokens,
 } from "../setup/globalSetupHelper";
 import { invalidToken, validEditUserData } from "../setup/mockData";
 import { userAdminViewSchema, userViewSchema } from "../../src/validators";
-import { validSupplier } from "../setup/mockSuppliers";
+import { validSupplier, validSuppliersList } from "../setup/mockSuppliers";
 import Supplier from "../../src/models/supplierModel";
 
 describe("Supplier Routes", () => {
@@ -56,7 +59,7 @@ describe("Supplier Routes", () => {
       await preSaveSupplier();
     });
 
-    describe("Success Cases: GET suppliers", () => {
+    describe("Success Cases: GET suppliers by ID", () => {
       it("Returns the specified supplier when accessed with a valid token", async () => {
         const response = await request(app)
           .get(apiSupplierID(validSupplier.supplierID))
@@ -70,7 +73,7 @@ describe("Supplier Routes", () => {
       });
     });
 
-    describe("Failure Cases: GET suppliers", () => {
+    describe("Failure Cases: GET suppliers by ID", () => {
       it("Returns 404 when supplier does not exist", async () => {
         const response = await request(app)
           .get(apiSupplierID("nonexistentID"))
@@ -114,91 +117,227 @@ describe("Supplier Routes", () => {
     });
   });
 
-//   describe(`GET ${apiUserID(":userID")}`, () => {
-//     let validUserID: string;
-//     let superAdminUserID: string;
-//     let validToken: string;
-//     let superAdminToken: string;
+  describe(`GET ${apiSupplierAll}`, () => {
+    let validUserID: string;
+    let superAdminUserID: string;
+    let validToken: string;
+    let superAdminToken: string;
 
-//     beforeEach(async () => {
-//       superAdminUserID = validSuperAdminUser.userID;
-//       validUserID = validUser.userID;
-//       ({ validToken, superAdminToken } = await preSaveUsersAndGenTokens());
-//     });
+    beforeEach(async () => {
+      superAdminUserID = validSuperAdminUser.userID;
+      validUserID = validUser.userID;
+      ({ validToken, superAdminToken } = await preSaveUsersAndGenTokens());
+    });
 
-//     describe("Success Cases", () => {
-//       it("Returns the user's own profile when accessed with a valid token.", async () => {
-//         const response = await request(app)
-//           .get(apiUserID("me"))
-//           .set("Authorization", `Bearer ${validToken}`);
+    describe("Success Cases: GET all suppliers", () => {
+      it("Returns all suppliers when accessed with a valid token", async () => {
+        await preSaveSupplier(); // Save a test supplier
 
-//         expect(response.status).toBe(200);
-//         const validation = userViewSchema.safeParse(response.body.data);
-//         expect(validation.success).toBe(true);
-//       });
+        const response = await request(app)
+          .get(apiSupplierAll)
+          .set("Authorization", `Bearer ${validToken}`);
 
-//       it("Allows a super admin to access another user's details.", async () => {
-//         const response = await request(app)
-//           .get(apiUserID(validUserID))
-//           .set("Authorization", `Bearer ${superAdminToken}`);
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("Suppliers retrieved successfully");
+        expect(response.body.data).toBeInstanceOf(Array);
+        expect(response.body.data.length).toBeGreaterThan(0);
+      });
+    });
 
-//         expect(response.status).toBe(200);
-//         const validation = userAdminViewSchema.safeParse(response.body.data);
-//         expect(validation.success).toBe(true);
-//       });
-//     });
+    describe("Failure Cases: GET all suppliers", () => {
+      it("Returns 401 when no token is provided", async () => {
+        const response = await request(app).get(apiSupplierAll);
 
-//     describe("Fail Cases", () => {
-//       it("Returns 401 for an invalid token.", async () => {
-//         const response = await request(app)
-//           .get(apiUserID("me"))
-//           .set("Authorization", `Bearer ${invalidToken}`);
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
 
-//         expect(response.status).toBe(401);
-//         expect(response.body.message).toBe("Invalid or expired token");
-//       });
+      it("Returns 404 and an empty array when no suppliers exist", async () => {
+        const response = await request(app)
+          .get(apiSupplierAll)
+          .set("Authorization", `Bearer ${validToken}`);
 
-//       it("Returns 403 if a regular user tries to access another user's profile.", async () => {
-//         const response = await request(app)
-//           .get(apiUserID(superAdminUserID))
-//           .set("Authorization", `Bearer ${validToken}`);
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("No suppliers found");
+        expect(response.body.data).toEqual([]);
+      });
 
-//         expect(response.status).toBe(403);
-//         expect(response.body.message).toBe(
-//           "Access denied. Insufficient permissions."
-//         );
-//       });
+      it("Returns 500 when there is a server error", async () => {
+        jest
+          .spyOn(Supplier, "find")
+          .mockRejectedValueOnce(new Error("Database error"));
 
-//       it("Returns 401 if no token is provided.", async () => {
-//         const response = await request(app).get(apiUserID(superAdminUserID));
+        const response = await request(app)
+          .get(apiSupplierAll)
+          .set("Authorization", `Bearer ${validToken}`);
 
-//         expect(response.status).toBe(401);
-//         expect(response.body.message).toBe("Access denied: No token provided");
-//       });
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
+      });
+    });
+  });
 
-//       it("Returns 404 if the userID does not exist.", async () => {
-//         const response = await request(app)
-//           .get(apiUserID("nonExistentUser"))
-//           .set("Authorization", `Bearer ${superAdminToken}`);
+  describe(`GET ${apiSupplierSearch}`, () => {
+    let validUserID: string;
+    let validToken: string;
 
-//         expect(response.status).toBe(404);
-//         expect(response.body.message).toBe("User not found");
-//       });
+    beforeEach(async () => {
+      validUserID = "validUser123"; // Use a mock or retrieved valid user ID
+      ({ validToken } = await preSaveUsersAndGenTokens());
+      await preSaveMultipleSuppliers(); // Save test suppliers in DB
+    });
 
-//       it("Returns 500 for an unexpected server error.", async () => {
-//         jest
-//           .spyOn(User, "findOne")
-//           .mockRejectedValueOnce(new Error("Unexpected server error"));
+    describe("Success Cases: Search Suppliers", () => {
+      it("Returns matching suppliers when searched with a valid query", async () => {
+        const response = await request(app)
+          .get(`${apiSupplierSearch}?query=ABC`)
+          .set("Authorization", `Bearer ${validToken}`);
 
-//         const response = await request(app)
-//           .get(apiUserID("me"))
-//           .set("Authorization", `Bearer ${validToken}`);
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("Search results retrieved");
+        expect(response.body.data).toBeInstanceOf(Array);
+        expect(response.body.data.length).toBeGreaterThan(0);
+        expect(response.body.data[0].name).toContain("ABC");
+      });
 
-//         expect(response.status).toBe(500);
-//         expect(response.body.message).toBe("Internal server error");
-//       });
-//     });
-//   });
+      it("Returns multiple results when searching for a common term", async () => {
+        const response = await request(app)
+          .get(`${apiSupplierSearch}?query=Construction`)
+          .set("Authorization", `Bearer ${validToken}`);
+        expect(response.status).toBe(200);
+        expect(response.body.data.length).toBeGreaterThan(1);
+      });
+    });
+
+    describe("Failure Cases: Search Suppliers", () => {
+      it("Returns 401 when no token is provided", async () => {
+        const response = await request(app).get(
+          `${apiSupplierSearch}?query=ABC`
+        );
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
+
+      it("Returns 400 when no query parameter is provided", async () => {
+        const response = await request(app)
+          .get(apiSupplierSearch)
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe("Search query is required");
+      });
+
+      it("Returns 404 if no suppliers match the query", async () => {
+        const response = await request(app)
+          .get(`${apiSupplierSearch}?query=NonExistentSupplier`)
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("No suppliers matched your search");
+        expect(response.body.data).toEqual([]);
+      });
+
+      it("Returns 500 when there is a server error", async () => {
+        jest
+          .spyOn(Supplier, "find")
+          .mockRejectedValueOnce(new Error("Database error"));
+
+        const response = await request(app)
+          .get(`${apiSupplierSearch}?query=ABC`)
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
+      });
+    });
+  });
+
+  //   describe(`GET ${apiUserID(":userID")}`, () => {
+  //     let validUserID: string;
+  //     let superAdminUserID: string;
+  //     let validToken: string;
+  //     let superAdminToken: string;
+
+  //     beforeEach(async () => {
+  //       superAdminUserID = validSuperAdminUser.userID;
+  //       validUserID = validUser.userID;
+  //       ({ validToken, superAdminToken } = await preSaveUsersAndGenTokens());
+  //     });
+
+  //     describe("Success Cases", () => {
+  //       it("Returns the user's own profile when accessed with a valid token.", async () => {
+  //         const response = await request(app)
+  //           .get(apiUserID("me"))
+  //           .set("Authorization", `Bearer ${validToken}`);
+
+  //         expect(response.status).toBe(200);
+  //         const validation = userViewSchema.safeParse(response.body.data);
+  //         expect(validation.success).toBe(true);
+  //       });
+
+  //       it("Allows a super admin to access another user's details.", async () => {
+  //         const response = await request(app)
+  //           .get(apiUserID(validUserID))
+  //           .set("Authorization", `Bearer ${superAdminToken}`);
+
+  //         expect(response.status).toBe(200);
+  //         const validation = userAdminViewSchema.safeParse(response.body.data);
+  //         expect(validation.success).toBe(true);
+  //       });
+  //     });
+
+  //     describe("Fail Cases", () => {
+  //       it("Returns 401 for an invalid token.", async () => {
+  //         const response = await request(app)
+  //           .get(apiUserID("me"))
+  //           .set("Authorization", `Bearer ${invalidToken}`);
+
+  //         expect(response.status).toBe(401);
+  //         expect(response.body.message).toBe("Invalid or expired token");
+  //       });
+
+  //       it("Returns 403 if a regular user tries to access another user's profile.", async () => {
+  //         const response = await request(app)
+  //           .get(apiUserID(superAdminUserID))
+  //           .set("Authorization", `Bearer ${validToken}`);
+
+  //         expect(response.status).toBe(403);
+  //         expect(response.body.message).toBe(
+  //           "Access denied. Insufficient permissions."
+  //         );
+  //       });
+
+  //       it("Returns 401 if no token is provided.", async () => {
+  //         const response = await request(app).get(apiUserID(superAdminUserID));
+
+  //         expect(response.status).toBe(401);
+  //         expect(response.body.message).toBe("Access denied: No token provided");
+  //       });
+
+  //       it("Returns 404 if the userID does not exist.", async () => {
+  //         const response = await request(app)
+  //           .get(apiUserID("nonExistentUser"))
+  //           .set("Authorization", `Bearer ${superAdminToken}`);
+
+  //         expect(response.status).toBe(404);
+  //         expect(response.body.message).toBe("User not found");
+  //       });
+
+  //       it("Returns 500 for an unexpected server error.", async () => {
+  //         jest
+  //           .spyOn(User, "findOne")
+  //           .mockRejectedValueOnce(new Error("Unexpected server error"));
+
+  //         const response = await request(app)
+  //           .get(apiUserID("me"))
+  //           .set("Authorization", `Bearer ${validToken}`);
+
+  //         expect(response.status).toBe(500);
+  //         expect(response.body.message).toBe("Internal server error");
+  //       });
+  //     });
+  //   });
 
   //   describe(`PUT ${apiUserID(":userID")}`, () => {
   //     let validToken: string;

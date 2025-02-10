@@ -69,7 +69,7 @@ export const validSupplierOptionalFields = {
   tags: ["Miscellaneous"],
   status: "Active",
   supplies: [],
-  documentation: []
+  documentation: [],
 };
 
 export const invalidSupplierMissingFields = {
@@ -134,3 +134,84 @@ export const invalidSupplierContactPersonPhoneNumber = {
   tags: ["Miscellaneous"],
   status: "Active",
 };
+
+export const validSuppliersList = [
+  {
+    supplierID: "SUP-001",
+    name: "ABC Supplies",
+    contactNumbers: ["0123456789", "0987654321"],
+    emails: ["abc@example.com", "support@abc.com"],
+    address: "123 Main St",
+    contactPersons: [
+      {
+        name: "John Doe",
+        contactNumber: "0123456789",
+        email: "john.doe@abc.com",
+        position: "Manager",
+      },
+      {
+        name: "Jane Smith",
+        contactNumber: "0987654321",
+        email: "jane.smith@abc.com",
+        position: "Procurement Officer",
+      },
+    ],
+    lastOrderDate: new Date("2024-01-15"),
+    supplies: [
+      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d73"),
+      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d74"),
+    ],
+    documentation: ["license.pdf", "certificate.jpg"],
+    primaryTag: "Electrical",
+    tags: ["Construction", "Maintenance"],
+    status: "Active",
+  },
+  {
+    supplierID: "SUP-002",
+    name: "XYZ Industrial",
+    contactNumbers: ["09123456789"],
+    emails: ["xyz@industry.com"],
+    address: "789 Industrial Rd",
+    contactPersons: [
+      {
+        name: "Alice Johnson",
+        contactNumber: "09123456789",
+        email: "alice.johnson@xyz.com",
+        position: "CEO",
+      },
+    ],
+    lastOrderDate: new Date("2023-12-10"),
+    supplies: [
+      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
+      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d76"),
+    ],
+    documentation: ["business_permit.pdf", "tax_certificate.png"],
+    primaryTag: "Machinery",
+    tags: ["Manufacturing", "Heavy Equipment"],
+    status: "Active",
+  },
+  {
+    supplierID: "SUP-003",
+    name: "Global Materials Ltd.",
+    contactNumbers: ["09987654321"],
+    emails: ["global@materials.com"],
+    address: "456 Commerce St",
+    contactPersons: [
+      {
+        name: "Bob Williams",
+        contactNumber: "09987654321",
+        email: "bob.williams@global.com",
+        position: "Head of Procurement",
+      },
+    ],
+    lastOrderDate: new Date("2024-02-05"),
+    supplies: [
+      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d77"),
+      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d78"),
+    ],
+    documentation: ["ISO_certification.pdf"],
+    primaryTag: "Raw Materials",
+    tags: ["Steel", "Cement", "Construction"],
+    status: "Active",
+  },
+];

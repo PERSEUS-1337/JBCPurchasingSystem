@@ -14,12 +14,10 @@ export const getSupplierByID = async (
       return;
     }
 
-    res
-      .status(200)
-      .json({
-        message: "Supplier details retrieved successfully",
-        data: supplier,
-      });
+    res.status(200).json({
+      message: "Supplier details retrieved successfully",
+      data: supplier,
+    });
   } catch (err: any) {
     res
       .status(500)
@@ -33,6 +31,12 @@ export const getAllSuppliers = async (
 ): Promise<void> => {
   try {
     const suppliers = await Supplier.find({}, { _id: 0, __v: 0 });
+
+    if (suppliers.length === 0) {
+      res.status(404).json({ message: "No suppliers found", data: [] });
+      return;
+    }
+
     res
       .status(200)
       .json({ message: "Suppliers retrieved successfully", data: suppliers });
@@ -49,9 +53,35 @@ export const searchSuppliers = async (
 ): Promise<void> => {
   try {
     const { query } = req.query;
-    const suppliers = await Supplier.find({
-      name: { $regex: query as string, $options: "i" },
-    });
+
+    if (!query || typeof query !== "string") {
+      res.status(400).json({ message: "Search query is required" });
+      return;
+    }
+
+    // Convert the query into individual words for flexible searching
+    const keywords = query.trim().split(/\s+/);
+
+    // Create an array of regex conditions for flexible search
+    const searchConditions = keywords.map((word) => ({
+      $or: [
+        { name: { $regex: word, $options: "i" } }, // Search by name
+        { primaryTag: { $regex: word, $options: "i" } }, // Search by primary tag
+        { tags: { $regex: word, $options: "i" } }, // Search in tags array
+        { emails: { $regex: word, $options: "i" } }, // Search in emails array
+        { contactNumbers: { $regex: word, $options: "i" } }, // Search in contact numbers
+        { "contactPersons.name": { $regex: word, $options: "i" } }, // Search contact person names
+      ],
+    }));
+
+    const suppliers = await Supplier.find({ $and: searchConditions });
+
+    if (suppliers.length === 0) {
+      res
+        .status(404)
+        .json({ message: "No suppliers matched your search", data: [] });
+      return;
+    }
 
     res
       .status(200)
@@ -62,6 +92,7 @@ export const searchSuppliers = async (
       .json({ message: "Internal server error", error: err.message });
   }
 };
+
 
 export const createSupplier = async (
   req: Request,
@@ -124,12 +155,10 @@ export const updateSupplierStatus = async (
       return;
     }
 
-    res
-      .status(200)
-      .json({
-        message: "Supplier status updated successfully",
-        data: supplier,
-      });
+    res.status(200).json({
+      message: "Supplier status updated successfully",
+      data: supplier,
+    });
   } catch (err: any) {
     res
       .status(500)
