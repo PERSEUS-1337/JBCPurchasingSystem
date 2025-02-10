@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema, Types } from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import { contactNumberRegex, emailRegex, supplierIDRegex } from "../constants/regex";
 import { defaultSupplierStatus, supplierStatusEnums } from "../constants";
 
@@ -16,7 +16,6 @@ export interface ISupplier extends Document {
   emails: string[];
   contactPersons: IContactPerson[];
   address: string;
-  lastOrderDate: Date;
   supplies: Types.ObjectId[];
   documentation: string[];
   primaryTag: string;
@@ -25,6 +24,12 @@ export interface ISupplier extends Document {
   updatedAt: Date;
   status: string;
 }
+
+// Static Methods (Available, regardless of instance)
+interface ISupplierModel extends Model<ISupplier> {
+  checkDuplicateSupplier(supplierID: string): Promise<boolean>;
+}
+
 
 const ContactPersonSchema = new Schema<IContactPerson>(
   {
@@ -90,7 +95,6 @@ const SupplierSchema = new Schema<ISupplier>(
       default: [],
     },
     address: { type: String, required: true },
-    lastOrderDate: { type: Date, default: null },
     supplies: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: "Supply",
@@ -115,7 +119,16 @@ const SupplierSchema = new Schema<ISupplier>(
   { timestamps: true }
 );
 
-const Supplier = mongoose.model<ISupplier>(
+// STATIC METHODS, regardless if User or Not
+SupplierSchema.statics.checkDuplicateSupplier = async function (
+  supplierID: string
+): Promise<boolean> {
+  const existingSupplier = await this.findOne({ supplierID });
+  console.log(existingSupplier)
+  return !!existingSupplier; // Convert the result to a boolean
+};
+
+const Supplier = mongoose.model<ISupplier, ISupplierModel>(
   "Supplier",
   SupplierSchema,
   "suppliers"

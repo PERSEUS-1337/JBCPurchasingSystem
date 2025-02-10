@@ -44,7 +44,6 @@ export const supplierSchema = z.object({
     .string()
     .min(1, "Address is required")
     .max(255, "Address must not exceed 255 characters"),
-  lastOrderDate: z.date().optional(),
   supplies: z.array(z.instanceof(Types.ObjectId)).optional(),
   primaryTag: z.string().min(1, "Primary category tag is required"),
   tags: z.array(z.string()).min(1, "At least one tag is required"),

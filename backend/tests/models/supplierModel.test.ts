@@ -10,10 +10,10 @@ import {
 import { connectDB, disconnectDB, dropDB } from "../setup/globalSetupHelper";
 import {
   validSupplier,
-  invalidSupplierMissingFields,
-  validSupplierWithDocumentation,
-  supplierWithContacts,
-  validSupplierOptionalFields,
+  missingFieldsSupplier,
+  validSupplierWithDocs,
+  validSupplierWithContacts,
+  validSupplierOptional,
 } from "../setup/mockSuppliers";
 
 describe("Supplier Model Validation", () => {
@@ -58,25 +58,21 @@ describe("Supplier Model Validation", () => {
     });
 
     it("Should allow minimal required fields and default others", async () => {
-      const supplier = new Supplier(validSupplierOptionalFields);
+      const supplier = new Supplier(validSupplierOptional);
       const savedSupplier = await supplier.save();
 
       expect(savedSupplier._id).toBeDefined();
-      expect(savedSupplier.supplierID).toBe(
-        validSupplierOptionalFields.supplierID
-      );
-      expect(savedSupplier.name).toBe(validSupplierOptionalFields.name);
+      expect(savedSupplier.supplierID).toBe(validSupplierOptional.supplierID);
+      expect(savedSupplier.name).toBe(validSupplierOptional.name);
       expect(savedSupplier.contactNumbers).toEqual(
-        validSupplierOptionalFields.contactNumbers
+        validSupplierOptional.contactNumbers
       );
       expect(savedSupplier.emails).toEqual([]);
       expect(savedSupplier.contactPersons).toEqual([]);
       expect(savedSupplier.supplies.length).toBe(0);
       expect(savedSupplier.documentation.length).toBe(0);
-      expect(savedSupplier.primaryTag).toBe(
-        validSupplierOptionalFields.primaryTag
-      );
-      expect(savedSupplier.tags).toEqual(validSupplierOptionalFields.tags);
+      expect(savedSupplier.primaryTag).toBe(validSupplierOptional.primaryTag);
+      expect(savedSupplier.tags).toEqual(validSupplierOptional.tags);
     });
 
     it("Should store an array of supply references", async () => {
@@ -91,12 +87,12 @@ describe("Supplier Model Validation", () => {
     });
 
     it("Should allow an array of document filenames in documentation", async () => {
-      const supplier = new Supplier(validSupplierWithDocumentation);
+      const supplier = new Supplier(validSupplierWithDocs);
       const savedSupplier = await supplier.save();
 
       expect(savedSupplier.documentation.length).toBe(3);
       expect(savedSupplier.documentation).toEqual(
-        validSupplierWithDocumentation.documentation
+        validSupplierWithDocs.documentation
       );
     });
 
@@ -125,36 +121,36 @@ describe("Supplier Model Validation", () => {
     });
 
     it("Should save contact persons with name, number, email, and position", async () => {
-      const supplier = new Supplier(supplierWithContacts);
+      const supplier = new Supplier(validSupplierWithContacts);
       const savedSupplier = await supplier.save();
 
       expect(savedSupplier.contactPersons.length).toBe(2);
       expect(savedSupplier.contactPersons[0]).toMatchObject(
-        supplierWithContacts.contactPersons[0]
+        validSupplierWithContacts.contactPersons[0]
       );
       expect(savedSupplier.contactPersons[1]).toMatchObject(
-        supplierWithContacts.contactPersons[1]
+        validSupplierWithContacts.contactPersons[1]
       );
     });
 
-    it("Should allow setting lastOrderDate", async () => {
-      const supplier = new Supplier({
-        ...validSupplier,
-        lastOrderDate: new Date("2024-02-01"),
-      });
+    // it("Should allow setting lastOrderDate", async () => {
+    //   const supplier = new Supplier({
+    //     ...validSupplier,
+    //     lastOrderDate: new Date("2024-02-01"),
+    //   });
 
-      const savedSupplier = await supplier.save();
-      expect(savedSupplier.lastOrderDate).toBeDefined();
-      expect(savedSupplier.lastOrderDate.toISOString()).toBe(
-        new Date("2024-02-01").toISOString()
-      );
-    });
+    //   const savedSupplier = await supplier.save();
+    //   expect(savedSupplier.lastOrderDate).toBeDefined();
+    //   expect(savedSupplier.lastOrderDate.toISOString()).toBe(
+    //     new Date("2024-02-01").toISOString()
+    //   );
+    // });
   });
 
   // ========= FAIL CASES =========
   describe("Fail Cases: Supplier Validation and Error Handling", () => {
     it("Should reject if required fields are missing", async () => {
-      const supplier = new Supplier(invalidSupplierMissingFields);
+      const supplier = new Supplier(missingFieldsSupplier);
       await expect(supplier.save()).rejects.toThrow();
     });
 

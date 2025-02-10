@@ -7,7 +7,6 @@ export const validSupplier = {
   emails: ["abc@example.com", "support@abc.com"],
   address: "123 Main St",
   contactPersons: [],
-  lastOrderDate: new Date("2024-01-15"),
   supplies: [
     new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d73"),
     new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d74"),
@@ -17,30 +16,25 @@ export const validSupplier = {
   tags: ["Construction", "Maintenance"],
   status: "Active",
 };
-export const validSupplier2 = {
+
+export const createNewSupplierValidData = {
   supplierID: "SUP-001",
   name: "ABC Supplies",
   contactNumbers: ["0123456789", "0987654321"],
   emails: ["abc@example.com", "support@abc.com"],
   address: "123 Main St",
-  contactPersons: [],
-  lastOrderDate: new Date("2024-01-15"),
-  supplies: [
-    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d73"),
-    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d74"),
-  ],
   documentation: ["license.pdf", "certificate.jpg"],
   primaryTag: "Electrical",
   tags: ["Construction", "Maintenance"],
   status: "Active",
 };
 
-export const validSupplierWithDocumentation = {
+export const validSupplierWithDocs = {
   ...validSupplier,
   documentation: ["license.pdf", "certification.jpg", "permit.docx"],
 };
 
-export const supplierWithContacts = {
+export const validSupplierWithContacts = {
   ...validSupplier,
   contactPersons: [
     {
@@ -58,7 +52,7 @@ export const supplierWithContacts = {
   ],
 };
 
-export const validSupplierOptionalFields = {
+export const validSupplierOptional = {
   supplierID: "SUP-002",
   name: "Minimal Supplier",
   contactNumbers: ["0123456789"],
@@ -72,7 +66,7 @@ export const validSupplierOptionalFields = {
   documentation: [],
 };
 
-export const invalidSupplierMissingFields = {
+export const missingFieldsSupplier = {
   // Missing required fields: supplierID, contactNumbers, address, primaryTag, and tags
   name: "Faulty Supplier",
   emails: ["missing@example.com"],
@@ -135,6 +129,11 @@ export const invalidSupplierContactPersonPhoneNumber = {
   status: "Active",
 };
 
+export const invalidSuppliesSupplier = {
+  ...createNewSupplierValidData,
+  supplies: ["invalid-object-id"],
+};
+
 export const validSuppliersList = [
   {
     supplierID: "SUP-001",
@@ -156,11 +155,6 @@ export const validSuppliersList = [
         position: "Procurement Officer",
       },
     ],
-    lastOrderDate: new Date("2024-01-15"),
-    supplies: [
-      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d73"),
-      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d74"),
-    ],
     documentation: ["license.pdf", "certificate.jpg"],
     primaryTag: "Electrical",
     tags: ["Construction", "Maintenance"],
@@ -180,11 +174,6 @@ export const validSuppliersList = [
         position: "CEO",
       },
     ],
-    lastOrderDate: new Date("2023-12-10"),
-    supplies: [
-      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
-      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d76"),
-    ],
     documentation: ["business_permit.pdf", "tax_certificate.png"],
     primaryTag: "Machinery",
     tags: ["Manufacturing", "Heavy Equipment"],
@@ -203,11 +192,6 @@ export const validSuppliersList = [
         email: "bob.williams@global.com",
         position: "Head of Procurement",
       },
-    ],
-    lastOrderDate: new Date("2024-02-05"),
-    supplies: [
-      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d77"),
-      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d78"),
     ],
     documentation: ["ISO_certification.pdf"],
     primaryTag: "Raw Materials",

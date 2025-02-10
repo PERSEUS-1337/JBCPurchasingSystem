@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import Supplier from "../models/supplierModel";
+import Supplier, { ISupplier } from "../models/supplierModel";
+import { SupplierInput } from "../validators/supplierValidator";
 
 export const getSupplierByID = async (
   req: Request,
@@ -93,23 +94,37 @@ export const searchSuppliers = async (
   }
 };
 
-
 export const createSupplier = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const supplier = new Supplier(req.body);
-    await supplier.save();
+    const newSupplierData: SupplierInput = req.body
+    // Check if supplier with the same supplierID already exists
+    const isDuplicate = await Supplier.checkDuplicateSupplier(newSupplierData.supplierID);
+
+    if (isDuplicate) {
+      res.status(400).json({
+        message: "Supplier ID already exists",
+        data: null
+      });
+      return;
+    }
+
+    // Create and save the new supplier
+    const newSupplier: ISupplier = new Supplier(newSupplierData);
+    await newSupplier.save();
+
     res
       .status(201)
-      .json({ message: "Supplier created successfully", data: supplier });
+      .json({ message: "Supplier created successfully", data: newSupplier, createdAt: newSupplier.createdAt });
   } catch (err: any) {
     res
       .status(500)
       .json({ message: "Internal server error", error: err.message });
   }
 };
+
 
 export const updateSupplier = async (
   req: Request,
