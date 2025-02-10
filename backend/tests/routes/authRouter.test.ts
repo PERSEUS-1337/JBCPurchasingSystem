@@ -282,7 +282,7 @@ describe("Authentication Routes", () => {
         const response: Response = await request(app).get(apiProtected);
 
         expect(response.status).toBe(401); // Forbidden
-        expect(response.body.message).toBe("Access denied, no token provided");
+        expect(response.body.message).toBe("Access denied: No token provided");
       });
 
       it("Denies access to a protected route when the token is invalid.", async () => {
@@ -350,7 +350,7 @@ describe("Authentication Routes", () => {
           .send(validChangePasswordData);
 
         expect(response.status).toBe(401);
-        expect(response.body.message).toBe("Access denied, no token provided");
+        expect(response.body.message).toBe("Access denied: No token provided");
       });
 
       it("Rejects password change when the token is invalid.", async () => {

@@ -12,7 +12,7 @@ export const authorizeJWT = async (
   const token = req.headers["authorization"]?.split(" ")[1];
 
   if (!token) {
-    res.status(401).json({ message: "Access denied, no token provided" });
+    res.status(401).json({ message: "Access denied: No token provided" });
     return;
   }
 
@@ -36,35 +36,31 @@ export const authorizeSuperAdmin = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { user } = req; // Assume `req.user` is set by `authenticateJWT`
+    const { user } = req; // Assume `req.user` is set by `authorizeJWT`
 
     if (!user || !user.userID) {
       res
         .status(401)
-        .json({ message: "Access denied. User not authenticated." });
+        .json({ message: "Unauthorized: User not authenticated." });
       return;
     }
 
     const dbUser = await User.findOne({ userID: user.userID });
 
-    // Check if user exists in the database
     if (!dbUser) {
-      res.status(403).json({ message: "Access denied. User not found." });
+      res.status(403).json({ message: "Forbidden: User not found." });
       return;
     }
 
-    // Check if user is a Super Administrator
     if (!(await User.isSuperAdmin(dbUser.role))) {
-      res
-        .status(403)
-        .json({ message: "Access denied. Insufficient permissions." });
+      res.status(403).json({ message: "Forbidden: Insufficient permissions." });
       return;
     }
 
-    next(); // Proceed to the next middleware or controller
+    next();
   } catch (err: any) {
     res
       .status(500)
-      .json({ message: "Internal server error", error: err.message });
+      .json({ message: "Internal server error.", error: err.message });
   }
 };

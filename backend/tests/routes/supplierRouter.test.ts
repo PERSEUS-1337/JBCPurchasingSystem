@@ -28,8 +28,9 @@ import {
 import { invalidToken, validEditUserData } from "../setup/mockData";
 import { userAdminViewSchema, userViewSchema } from "../../src/validators";
 import { validSupplier } from "../setup/mockSuppliers";
+import Supplier from "../../src/models/supplierModel";
 
-describe("User Routes", () => {
+describe("Supplier Routes", () => {
   beforeAll(async () => {
     await connectDB();
   });
@@ -62,7 +63,53 @@ describe("User Routes", () => {
           .set("Authorization", `Bearer ${validToken}`);
 
         expect(response.status).toBe(200);
-        console.log(response.body);
+        expect(response.body.message).toBe(
+          "Supplier details retrieved successfully"
+        );
+        expect(response.body.data.supplierID).toBe(validSupplier.supplierID);
+      });
+    });
+
+    describe("Failure Cases: GET suppliers", () => {
+      it("Returns 404 when supplier does not exist", async () => {
+        const response = await request(app)
+          .get(apiSupplierID("nonexistentID"))
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("Supplier not found");
+      });
+
+      it("Returns 401 when no token is provided", async () => {
+        const response = await request(app).get(
+          apiSupplierID(validSupplier.supplierID)
+        );
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
+
+      // it("Returns 403 when a user with insufficient privileges tries to access", async () => {
+      //   // Assume a different role is tested here
+      //   const response = await request(app)
+      //     .get(apiSupplierID(validSupplier.supplierID))
+      //     .set("Authorization", `Bearer ${invalidToken}`);
+
+      //   expect(response.status).toBe(403);
+      //   expect(response.body.message).toBe("Forbidden");
+      // });
+
+      it("Returns 500 when there is a server error", async () => {
+        jest
+          .spyOn(Supplier, "findOne")
+          .mockRejectedValueOnce(new Error("Database error"));
+
+        const response = await request(app)
+          .get(apiSupplierID(validSupplier.supplierID))
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
       });
     });
   });
@@ -126,7 +173,7 @@ describe("User Routes", () => {
 //         const response = await request(app).get(apiUserID(superAdminUserID));
 
 //         expect(response.status).toBe(401);
-//         expect(response.body.message).toBe("Access denied, no token provided");
+//         expect(response.body.message).toBe("Access denied: No token provided");
 //       });
 
 //       it("Returns 404 if the userID does not exist.", async () => {
@@ -199,7 +246,7 @@ describe("User Routes", () => {
   //           .send(validEditUserData);
 
   //         expect(response.status).toBe(401);
-  //         expect(response.body.message).toBe("Access denied, no token provided");
+  //         expect(response.body.message).toBe("Access denied: No token provided");
   //       });
 
   //       it("Returns 403 if a regular user tries to update their own profile.", async () => {
@@ -321,7 +368,7 @@ describe("User Routes", () => {
   //         const response = await request(app).delete(apiUserID(validUserID));
 
   //         expect(response.status).toBe(401);
-  //         expect(response.body.message).toBe("Access denied, no token provided");
+  //         expect(response.body.message).toBe("Access denied: No token provided");
   //       });
 
   //       it("Returns 500 for an unexpected server error", async () => {
