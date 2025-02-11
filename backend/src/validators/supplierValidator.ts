@@ -19,6 +19,13 @@ export const contactPersonSchema = z.object({
 
 export type contactPersonInput = z.infer<typeof contactPersonSchema>;
 
+const objectIdSchema = z.union([
+  z.string().refine((val) => Types.ObjectId.isValid(val), {
+    message: "Invalid ObjectId format",
+  }),
+  z.instanceof(Types.ObjectId),
+]);
+
 export const supplierSchema = z.object({
   supplierID: z
     .string()
@@ -44,13 +51,11 @@ export const supplierSchema = z.object({
     .string()
     .min(1, "Address is required")
     .max(255, "Address must not exceed 255 characters"),
-  supplies: z.array(z.instanceof(Types.ObjectId)).default([]),
+  supplies: z.array(objectIdSchema).default([]),
   primaryTag: z.string().min(1, "Primary category tag is required"),
   tags: z.array(z.string()).min(1, "At least one tag is required"),
   documentation: z.array(z.string()).default([]),
-  status: z
-    .enum(supplierStatusEnums)
-    .default(defaultSupplierStatus),
+  status: z.enum(supplierStatusEnums).default(defaultSupplierStatus),
 });
 
 export type SupplierInput = z.infer<typeof supplierSchema>;

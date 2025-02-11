@@ -72,7 +72,7 @@ export const preSaveSupplier = async () => {
   await Supplier.deleteMany({});
   await new Supplier(validSupplierMinimum).save();
   const savedSuppliers = await Supplier.find({});
-  console.log("Saved Suppliers:", savedSuppliers);
+  // console.log("Saved Suppliers:", savedSuppliers);
 };
 
 export const preSaveMultipleSuppliers = async () => {

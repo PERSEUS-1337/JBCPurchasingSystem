@@ -44,6 +44,7 @@ describe("Supplier Model Validation", () => {
 
   describe("Success Cases: Supplier Creation and Validation", () => {
     it("Should save a valid complete supplier", async () => {
+      
       const savedSupplier = await saveSupplierAndReturn(validSupplierComplete);
 
       expect(savedSupplier._id).toBeDefined();

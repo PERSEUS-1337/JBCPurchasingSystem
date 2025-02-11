@@ -23,6 +23,8 @@ describe("Supplier Validator", () => {
     it("Should pass with a complete valid supplier", () => {
       const result = supplierSchema.safeParse(validSupplierComplete);
       expect(result.success).toBe(true);
+      // if (!result.success)
+      //   console.log(fromZodError(result.error).message)
       if (result.success) {
         const resultData = result.data;
         expect(resultData.supplierID).toBe(validSupplierComplete.supplierID);
@@ -164,7 +166,7 @@ describe("Supplier Validator", () => {
       expect(result.success).toBe(false);
       if (result.error) {
         expect(fromZodError(result.error).message).toBe(
-          `Validation error: Input not instance of ObjectId at "supplies[0]"`
+          `Validation error: Invalid ObjectId format at "supplies[0]"`
         );
       }
     });
