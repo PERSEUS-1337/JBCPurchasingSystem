@@ -146,6 +146,10 @@ export const invalidSupplierDocumentation = {
   ...validSupplierMinimum,
   documentation: [12345, true, { doc: "invalid" }],
 };
+export const invalidSupplierStatus = {
+  ...validSupplierMinimum,
+  status: "Invalid",
+};
 
 export const validSuppliersList = [
   {

@@ -38,13 +38,13 @@ export const supplierSchema = z.object({
         )
     )
     .min(1, "At least one company number is required"),
-  emails: z.array(z.string().email("Invalid email format")).optional(),
+  emails: z.array(z.string().email("Invalid email format")).default([]),
   contactPersons: z.array(contactPersonSchema).default([]),
   address: z
     .string()
     .min(1, "Address is required")
     .max(255, "Address must not exceed 255 characters"),
-  supplies: z.array(z.instanceof(Types.ObjectId)).optional(),
+  supplies: z.array(z.instanceof(Types.ObjectId)).default([]),
   primaryTag: z.string().min(1, "Primary category tag is required"),
   tags: z.array(z.string()).min(1, "At least one tag is required"),
   documentation: z.array(z.string()).default([]),
