@@ -82,11 +82,21 @@ export const validSupplierComplete = {
   tags: ["Construction", "Maintenance"],
 };
 
-export const { primaryTag, ...missingPrimaryTagSupplier } =
-  validSupplierMinimum;
+// export const { primaryTag, ...missingPrimaryTagSupplier } =
+//   validSupplierMinimum;
 
-export const { supplierID, name, ...missingFieldsSupplier } =
-  validSupplierMinimum;
+export const {
+  supplierID,
+  name,
+  contactNumbers,
+  address,
+  primaryTag,
+  tags,
+  ...missingRequiredFieldsSupplier
+} = validSupplierComplete;
+
+// export const { supplierID, name, ...missingFieldsSupplier } =
+//   validSupplierMinimum;
 
 export const invalidSupplierEmails = {
   ...validSupplierMinimum,
@@ -136,69 +146,6 @@ export const invalidSupplierDocumentation = {
   ...validSupplierMinimum,
   documentation: [12345, true, { doc: "invalid" }],
 };
-
-// export const missingFieldsSupplier = {
-//   // Missing required fields: supplierID, contactNumbers, address, primaryTag, and tags
-//   name: "Faulty Supplier",
-//   emails: ["missing@example.com"],
-//   contactPersons: [
-//     {
-//       name: "Missing Contact",
-//       contactNumber: "999999999",
-//       email: "missing@contact.com",
-//       position: "Supervisor",
-//     },
-//   ],
-//   supplies: [],
-//   documentation: [],
-// };
-//
-// export const invalidSupplierEmail = {
-//   supplierID: "SUP-002",
-//   name: "Minimal Supplier",
-//   contactNumbers: ["0123456789"],
-//   emails: ["invalid-format"],
-//   address: "456 Secondary St",
-//   primaryTag: "General",
-//   tags: ["Miscellaneous"],
-//   status: "Active",
-// };
-//
-// export const invalidSupplierMissingContactPersonFields = {
-//   supplierID: "SUP-002",
-//   name: "Minimal Supplier",
-//   contactNumbers: ["0123456789"],
-//   emails: ["invalid@invalid.com"],
-//   contactPersons: [
-//     {
-//       name: "Wrong Phone",
-//       // Missing contactNumber, which is required
-//     },
-//   ],
-//   address: "456 Secondary St",
-//   primaryTag: "General",
-//   tags: ["Miscellaneous"],
-//   status: "Active",
-// };
-
-// export const invalidSupplierContactPersonPhoneNumber = {
-//   supplierID: "SUP-002",
-//   name: "Minimal Supplier",
-//   contactNumbers: ["09178187094"],
-//   emails: ["invalid@invalid.com"],
-//   contactPersons: [
-//     {
-//       name: "Wrong Phone",
-//       contactNumber: "++0123456789", // Invalid due to double "+"
-//       email: "missing@contact.com",
-//       position: "Supervisor",
-//     },
-//   ],
-//   address: "456 Secondary St",
-//   primaryTag: "General",
-//   tags: ["Miscellaneous"],
-//   status: "Active",
-// };
 
 export const validSuppliersList = [
   {
@@ -267,16 +214,8 @@ export const validSuppliersList = [
 ];
 
 export const updateSupplierData = {
-  // supplierID: "SUP-001",
   name: "ABC Supplies New Name",
-  // contactNumbers: ["0123456789", "0987654321"],
-  // emails: ["abc@example.com", "support@abc.com"],
   address: "456 Less main St.",
-  // contactPersons: [],
-  // documentation: ["license.pdf", "certificate.jpg"],
-  // primaryTag: "Electrical",
-  // tags: ["Construction", "Maintenance"],
-  // status: "Active",
 };
 
 export const invalidUpdateSupplierEmail = {

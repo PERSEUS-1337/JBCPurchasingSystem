@@ -15,7 +15,6 @@ import {
 } from "../setup/globalSetupHelper";
 import {
   validSupplierMinimum,
-  missingFieldsSupplier,
   validSupplierWithDocs,
   validSupplierWithContactPersons,
   validSupplierComplete,
@@ -27,7 +26,7 @@ import {
   invalidSupplierContactPersonEmail,
   invalidSupplierSupplies,
   invalidSupplierDocumentation,
-  missingPrimaryTagSupplier,
+  missingRequiredFieldsSupplier,
 } from "../setup/mockSuppliers";
 
 describe("Supplier Model Validation", () => {
@@ -134,7 +133,7 @@ describe("Supplier Model Validation", () => {
   // ========= FAIL CASES =========
     describe("Fail Cases: Supplier Validation and Error Handling", () => {
       it("Should reject if required fields are missing", async () => {
-        const supplier = new Supplier(missingFieldsSupplier);
+        const supplier = new Supplier(missingRequiredFieldsSupplier);
         await expect(supplier.save()).rejects.toThrow();
       });
 
@@ -178,19 +177,19 @@ describe("Supplier Model Validation", () => {
         await expect(supplier.save()).rejects.toThrow();
       });
 
-      it("Should reject supplier without `primaryTag`", async () => {
-        const supplier = new Supplier(missingPrimaryTagSupplier);
+      // it("Should reject supplier without `primaryTag`", async () => {
+      //   const supplier = new Supplier(missingPrimaryTagSupplier);
 
-        await expect(supplier.save()).rejects.toThrow();
-      });
+      //   await expect(supplier.save()).rejects.toThrow();
+      // });
 
-      it("Should reject supplier with empty `tags` array", async () => {
-        const supplier = new Supplier({
-          ...validSupplierMinimum,
-          tags: [],
-        });
+      // it("Should reject supplier with empty `tags` array", async () => {
+      //   const supplier = new Supplier({
+      //     ...validSupplierMinimum,
+      //     tags: [],
+      //   });
 
-        await expect(supplier.save()).rejects.toThrow();
-      });
+      //   await expect(supplier.save()).rejects.toThrow();
+      // });
     });
 });

@@ -48,7 +48,9 @@ export const supplierSchema = z.object({
   primaryTag: z.string().min(1, "Primary category tag is required"),
   tags: z.array(z.string()).min(1, "At least one tag is required"),
   documentation: z.array(z.string()).default([]),
-  status: z.enum(supplierStatusEnums).default(defaultSupplierStatus),
+  status: z
+    .enum(supplierStatusEnums)
+    .default(defaultSupplierStatus),
 });
 
 export type SupplierInput = z.infer<typeof supplierSchema>;
