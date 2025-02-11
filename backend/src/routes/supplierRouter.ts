@@ -9,8 +9,8 @@ import {
   updateSupplierStatus,
 } from "../controllers/supplierController";
 import { validateRequest } from "../middlewares/validationMiddleware";
-import { supplierSchema } from "../validators/supplierValidator";
-import { authorizeJWT } from "../middlewares/authorizationMiddleware";
+import { supplierSchema, supplierUpdateSchema } from "../validators/supplierValidator";
+import { authorizeJWT, authorizeSuperAdmin } from "../middlewares/authorizationMiddleware";
 
 const router = express.Router();
 
@@ -28,11 +28,11 @@ router.post("/", authorizeJWT, validateRequest(supplierSchema), createSupplier);
 router.put(
   "/:supplierID",
   authorizeJWT,
-  validateRequest(supplierSchema),
+  validateRequest(supplierUpdateSchema),
   updateSupplier
 );
 
-router.patch("/:id/status", authorizeJWT, updateSupplierStatus);
+router.patch("/:id/status", authorizeJWT, authorizeSuperAdmin, updateSupplierStatus);
 
 router.delete("/:supplierID", authorizeJWT, deleteSupplier);
 

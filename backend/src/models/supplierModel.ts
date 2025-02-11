@@ -1,5 +1,9 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
-import { contactNumberRegex, emailRegex, supplierIDRegex } from "../constants/regex";
+import {
+  contactNumberRegex,
+  emailRegex,
+  supplierIDRegex,
+} from "../constants/regex";
 import { defaultSupplierStatus, supplierStatusEnums } from "../constants";
 
 export interface IContactPerson {
@@ -30,7 +34,6 @@ interface ISupplierModel extends Model<ISupplier> {
   checkDuplicateSupplier(supplierID: string): Promise<boolean>;
 }
 
-
 const ContactPersonSchema = new Schema<IContactPerson>(
   {
     name: { type: String, required: true },
@@ -55,7 +58,7 @@ const ContactPersonSchema = new Schema<IContactPerson>(
     },
     position: { type: String },
   },
-  { timestamps: true }
+  { _id: false }
 );
 
 const SupplierSchema = new Schema<ISupplier>(
@@ -124,7 +127,7 @@ SupplierSchema.statics.checkDuplicateSupplier = async function (
   supplierID: string
 ): Promise<boolean> {
   const existingSupplier = await this.findOne({ supplierID });
-  console.log(existingSupplier)
+  // console.log(existingSupplier)
   return !!existingSupplier; // Convert the result to a boolean
 };
 

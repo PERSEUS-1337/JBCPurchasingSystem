@@ -99,14 +99,16 @@ export const createSupplier = async (
   res: Response
 ): Promise<void> => {
   try {
-    const newSupplierData: SupplierInput = req.body
+    const newSupplierData: SupplierInput = req.body;
     // Check if supplier with the same supplierID already exists
-    const isDuplicate = await Supplier.checkDuplicateSupplier(newSupplierData.supplierID);
+    const isDuplicate = await Supplier.checkDuplicateSupplier(
+      newSupplierData.supplierID
+    );
 
     if (isDuplicate) {
       res.status(400).json({
         message: "Supplier ID already exists",
-        data: null
+        data: null,
       });
       return;
     }
@@ -115,16 +117,17 @@ export const createSupplier = async (
     const newSupplier: ISupplier = new Supplier(newSupplierData);
     await newSupplier.save();
 
-    res
-      .status(201)
-      .json({ message: "Supplier created successfully", data: newSupplier, createdAt: newSupplier.createdAt });
+    res.status(201).json({
+      message: "Supplier created successfully",
+      data: newSupplier,
+      createdAt: newSupplier.createdAt,
+    });
   } catch (err: any) {
     res
       .status(500)
       .json({ message: "Internal server error", error: err.message });
   }
 };
-
 
 export const updateSupplier = async (
   req: Request,
@@ -133,18 +136,39 @@ export const updateSupplier = async (
   try {
     const { supplierID } = req.params;
     const updates = req.body;
-    const supplier = await Supplier.findOneAndUpdate({ supplierID }, updates, {
-      new: true,
-    });
+
+    // Reject empty updates
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ message: "No update data provided" });
+      return;
+    }
+
+    // Find supplier by supplierID first
+    const supplier = await Supplier.findOne({ supplierID: supplierID });
 
     if (!supplier) {
       res.status(404).json({ message: "Supplier not found" });
       return;
     }
 
-    res
-      .status(200)
-      .json({ message: "Supplier updated successfully", data: supplier });
+    // Perform the update
+    const updatedSupplier = await Supplier.findOneAndUpdate(
+      { supplierID: supplierID }, // Find by supplierID
+      updates,
+      {
+        new: true, // Return updated document
+        runValidators: true, // Ensure updates adhere to schema rules
+      }
+    );
+    if (!updatedSupplier) {
+      res.status(404).json({ message: "Supplier not found" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Supplier updated successfully",
+      data: updatedSupplier,
+    });
   } catch (err: any) {
     res
       .status(500)

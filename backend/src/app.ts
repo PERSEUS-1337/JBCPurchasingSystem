@@ -9,7 +9,7 @@ const app: Application = express();
 app.use(express.json());
 
 // Use Morgan for logging requests
-app.use(morgan(":method :url :status :response-time ms - :remote-addr"));
+// app.use(morgan(":method :url :status :response-time ms - :remote-addr"));
 
 // // Custom logging middleware for additional details
 // app.use((req: Request, res: Response, next: NextFunction) => {

@@ -38,7 +38,7 @@ export const supplierSchema = z.object({
         )
     )
     .min(1, "At least one company number is required"),
-  emails: z.array(z.string().email("Invalid email format").optional()),
+  emails: z.array(z.string().email("Invalid email format")).optional(),
   contactPersons: z.array(contactPersonSchema).default([]),
   address: z
     .string()
@@ -52,3 +52,9 @@ export const supplierSchema = z.object({
 });
 
 export type SupplierInput = z.infer<typeof supplierSchema>;
+
+export const supplierUpdateSchema = supplierSchema
+  .omit({ supplierID: true, status: true, supplies: true }) // Exclude fields from being updated
+  .partial();
+
+export type SupplierUpdateInput = z.infer<typeof supplierUpdateSchema>;
