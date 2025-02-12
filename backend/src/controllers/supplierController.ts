@@ -140,12 +140,12 @@ export const updateSupplier = async (
 
     // Reject empty updates
     if (Object.keys(updates).length === 0) {
-      res.status(400).json({ message: "No update data provided" });
+      res.status(400).json({ message: "No valid update data provided" });
       return;
     }
 
     // Find supplier by supplierID first
-    const supplier = await Supplier.findOne({ supplierID: supplierID });
+    const supplier = await Supplier.findOne({ supplierID }).lean();
 
     if (!supplier) {
       res.status(404).json({ message: "Supplier not found" });
@@ -153,16 +153,13 @@ export const updateSupplier = async (
     }
 
     // Perform the update
-    const updatedSupplier = await Supplier.findOneAndUpdate(
-      { supplierID: supplierID }, // Find by supplierID
-      updates,
-      {
-        new: true, // Return updated document
-        runValidators: true, // Ensure updates adhere to schema rules
-      }
-    );
+    await Supplier.updateOne({ supplierID }, updates, { runValidators: true });
+
+    // Fetch the updated supplier as a lean object
+    const updatedSupplier = await Supplier.findOne({ supplierID }).lean();
+
     if (!updatedSupplier) {
-      res.status(404).json({ message: "Supplier not found" });
+      res.status(404).json({ message: "Supplier not found after update" });
       return;
     }
 
@@ -176,6 +173,7 @@ export const updateSupplier = async (
       .json({ message: "Internal server error", error: err.message });
   }
 };
+
 
 export const deleteSupplier = async (
   req: Request,

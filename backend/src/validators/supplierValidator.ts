@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z, ZodIssueCode } from "zod";
 import { defaultSupplierStatus, supplierStatusEnums } from "../constants";
 import { Types } from "mongoose";
 import { contactNumberRegex, supplierIDRegex } from "../constants/regex";
@@ -17,8 +17,6 @@ export const contactPersonSchema = z.object({
   email: z.string().email("Invalid email format").optional(),
   position: z.string().optional(),
 });
-
-export type contactPersonInput = z.infer<typeof contactPersonSchema>;
 
 const objectIdSchema = z.union([
   z.string().refine((val) => Types.ObjectId.isValid(val), {
@@ -59,11 +57,22 @@ export const supplierSchema = z.object({
   status: z.enum(supplierStatusEnums).default(defaultSupplierStatus),
 });
 
-export type SupplierInput = z.infer<typeof supplierSchema>;
-
-// Additional schema for supplier updating with differing restricted fields
 export const supplierUpdateSchema = supplierSchema
-  .omit({ supplierID: true, status: true, supplies: true }) // Exclude fields from being updated
-  .partial();
+  .partial()
+  .superRefine((data: any, ctx) => {
+    const restrictedFields = ["supplierID", "supplies"];
 
+    for (const field of restrictedFields) {
+      if (data[field] !== undefined) {
+        ctx.addIssue({
+          code: ZodIssueCode.custom,
+          path: [field],
+          message: `Update not allowed on restricted field: ${field}`,
+        });
+      }
+    }
+  });
+
+export type SupplierInput = z.infer<typeof supplierSchema>;
+export type contactPersonInput = z.infer<typeof contactPersonSchema>;
 export type SupplierUpdateInput = z.infer<typeof supplierUpdateSchema>;

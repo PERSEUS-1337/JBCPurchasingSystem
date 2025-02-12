@@ -97,6 +97,11 @@ export const invalidSupplierEmails = {
   emails: ["invalid-format"],
 };
 
+export const invalidSupplierContactNumbers = {
+  ...validSupplierMinimum,
+  contactNumbers: ["invalid-phone", "wrong-phone", "12345"],
+};
+
 export const invalidSupplierMissingContactPersonFields = {
   ...validSupplierMinimum,
   contactPersons: [
@@ -212,44 +217,52 @@ export const validSuppliersList = [
   },
 ];
 
-export const validSupplierUpdateData = {
+export const validSupplierUpdateMinimumData = {
   name: "ABC Supplies New Name",
   address: "456 Less main St.",
   primaryTag: "Mechanical",
   status: "Inactive",
 };
+export const validSupplierUpdatePartialData = {
+  primaryTag: "Mechanical",
+  status: "Inactive",
+};
+export const validSupplierUpdateCompleteData = {
+  ...validSupplierUpdateMinimumData,
+  contactNumbers: ["091234567890", "09773515590"],
+  emails: ["cde@example.com", "help@abc.com"],
+  contactPersons: [
+    {
+      name: "John Wick",
+      contactNumber: "0123456789",
+      email: "john.doe@abc.com",
+      position: "Manager",
+    },
+    {
+      name: "Jane Doe",
+      contactNumber: "0987654321",
+      email: "jane.smith@abc.com",
+      position: "Procurement Officer",
+    },
+  ],
+  // supplies: [
+  //   new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
+  //   new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d76"),
+  // ],
+  documentation: ["lisensya.pdf", "certipikado.jpg", "permit.docs"],
+  tags: ["Mechanical", "Repair"],
+};
 
-// export const restrictedUpdateSupplierData = {
-//   contactNumbers: ["091234567890", "09773515590"],
-//   emails: ["cde@example.com", "help@abc.com"],
-//   contactPersons: [
-//     {
-//       name: "John Wick",
-//       contactNumber: "0123456789",
-//       email: "john.doe@abc.com",
-//       position: "Manager",
-//     },
-//     {
-//       name: "Jane Doe",
-//       contactNumber: "0987654321",
-//       email: "jane.smith@abc.com",
-//       position: "Procurement Officer",
-//     },
-//   ],
-//   supplies: [
-//     new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
-//     new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d76"),
-//   ],
-//   documentation: ["lisensya.pdf", "certipikado.jpg", "permit.docs"],
-//   tags: ["Mechanical", "Repair"],
-// };
+export const invalidUpdateSupplierEmail = {
+  ...validSupplierUpdateMinimumData,
+  emails: ["invalid-email"],
+};
 
-// export const invalidUpdateSupplierEmail = {
-//   ...validSupplierUpdateData,
-//   emails: ["invalid-email"],
-// };
 
-export const newContactNumber = "+12345678901";
-export const newContactNumbers = ["09123456789", "12345678901"];
-export const newInvalidContactNumber = "abc123";
-export const newEmptyContactNumbersTestCases = [undefined, {}, []];
+export const restrictedUpdateSupplierData = {
+  supplierID: "SUP-999",
+  supplies: [
+    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
+    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d76"),
+  ]
+};
