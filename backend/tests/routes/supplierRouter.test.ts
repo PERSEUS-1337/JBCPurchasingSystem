@@ -13,10 +13,18 @@ import User from "../../src/models/userModel";
 import { validSuperAdminUser, validUser } from "../setup/mockUsers";
 import {
   apiSupplierAll,
+  apiSupplierContactNumbers,
+  apiSupplierContactPersons,
+  apiSupplierContactPersonsIdx,
+  apiSupplierDocs,
+  apiSupplierDocsIdx,
+  apiSupplierEmails,
   apiSupplierHello,
   apiSupplierID,
   apiSupplierMain,
   apiSupplierSearch,
+  apiSupplierSupplies,
+  apiSupplierSupplyID,
   apiUserHello,
   apiUserID,
 } from "../setup/refRoutes";
@@ -35,9 +43,12 @@ import { userAdminViewSchema, userViewSchema } from "../../src/validators";
 import {
   invalidSupplierEmails,
   invalidSupplierSupplies,
-  invalidUpdateSupplierEmail,
   missingRequiredFieldsSupplier,
-  updateSupplierData,
+  newContactNumber,
+  newContactNumbers,
+  newEmptyContactNumbersTestCases,
+  newInvalidContactNumber,
+  validSupplierUpdateData,
   validSupplierComplete,
   validSupplierMinimum,
   validSuppliersList,
@@ -63,13 +74,13 @@ describe("Supplier Routes", () => {
     let validToken: string;
     let validSupplierID: string;
 
-    beforeEach(async () => {
-      validToken = await preSaveUserAndGenJWT();
-      validSupplierID = validSupplierMinimum.supplierID;
-      await preSaveSupplier();
-    });
-
     describe("Success Cases: GET suppliers by ID", () => {
+      beforeEach(async () => {
+        validToken = await preSaveUserAndGenJWT();
+        validSupplierID = validSupplierComplete.supplierID;
+        await preSaveSupplier();
+      });
+
       it("Returns the specified supplier when accessed with a valid token", async () => {
         const response = await request(app)
           .get(apiSupplierID(validSupplierMinimum.supplierID))
@@ -79,7 +90,9 @@ describe("Supplier Routes", () => {
         expect(response.body.message).toBe(
           "Supplier details retrieved successfully"
         );
-        expect(response.body.data.supplierID).toBe(validSupplierMinimum.supplierID);
+        expect(response.body.data.supplierID).toBe(
+          validSupplierMinimum.supplierID
+        );
       });
     });
 
@@ -127,18 +140,14 @@ describe("Supplier Routes", () => {
 
   describe(`GET ${apiSupplierAll}`, () => {
     let validToken: string;
-    let validSupplierID: string;
-
-    beforeEach(async () => {
-      validToken = await preSaveUserAndGenJWT();
-      validSupplierID = validSupplierMinimum.supplierID;
-      await preSaveSupplier();
-    });
 
     describe("Success Cases: GET all suppliers", () => {
-      it("Returns all suppliers when accessed with a valid token", async () => {
-        await preSaveSupplier(); // Save a test supplier
+      beforeEach(async () => {
+        validToken = await preSaveUserAndGenJWT();
+        await preSaveMultipleSuppliers();
+      });
 
+      it("Returns all suppliers when accessed with a valid token", async () => {
         const response = await request(app)
           .get(apiSupplierAll)
           .set("Authorization", `Bearer ${validToken}`);
@@ -187,12 +196,12 @@ describe("Supplier Routes", () => {
   describe(`GET ${apiSupplierSearch}`, () => {
     let validToken: string;
 
-    beforeEach(async () => {
-      validToken = await preSaveUserAndGenJWT();
-      await preSaveMultipleSuppliers();
-    });
-
     describe("Success Cases: Search Suppliers", () => {
+      beforeEach(async () => {
+        validToken = await preSaveUserAndGenJWT();
+        await preSaveMultipleSuppliers();
+      });
+
       it("Returns matching suppliers when searched with a valid query", async () => {
         const response = await request(app)
           .get(`${apiSupplierSearch}?query=ABC`)
@@ -262,7 +271,7 @@ describe("Supplier Routes", () => {
     let validToken: string;
 
     beforeEach(async () => {
-      ({ validToken } = await preSaveUsersAndGenTokens());
+      validToken = await preSaveUserAndGenJWT();
     });
 
     describe("Success Cases: Create Supplier", () => {
@@ -376,99 +385,88 @@ describe("Supplier Routes", () => {
       });
     });
   });
+  // TODO: Only do general updates
+  describe(`PATCH ${apiSupplierID(":supplierID")}`, () => {
+    let validToken: string;
+    let validSupplierID: string;
+    let invalidSupplierID = "SUP-999";
 
-  //   describe(`PUT ${apiSupplierID(":supplierID")}`, () => {
-  //     let validToken: string;
-  //     let validSupplierID: string;
-  //     let invalidSupplierID = "SUP-999";
+    beforeEach(async () => {
+      validToken = await preSaveUserAndGenJWT();
+      validSupplierID = validSupplierMinimum.supplierID;
+      await preSaveSupplier();
+    });
 
-  //     beforeEach(async () => {
-  //       validToken = await preSaveUserAndGenJWT();
-  //       validSupplierID = validSupplierMinimum.supplierID;
-  //       await preSaveSupplier();
-  //     });
+    describe("Success Cases: Update Supplier", () => {
+      it("Updates a supplier when provided with valid supplierID and update data", async () => {
+        const response = await request(app)
+          .patch(apiSupplierID(validSupplierID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validSupplierUpdateData);
 
-  //     describe("Success Cases: Update Supplier", () => {
-  //       it("Updates a supplier when provided with valid supplierID and update data", async () => {
-  //         // const updatedData = { name: "Updated Supplier Name" };
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("Supplier updated successfully");
+        expect(response.body.data.name).toBe(validSupplierUpdateData.name);
+      });
+    });
 
-  //         const response = await request(app)
-  //           .put(apiSupplierID(validSupplierID))
-  //           .set("Authorization", `Bearer ${validToken}`)
-  //           .send(updateSupplierData);
-  //         // console.log(response);
+    describe("Failure Cases: Update Supplier", () => {
+      it("Returns 401 when no token is provided", async () => {
+        const response = await request(app)
+          .patch(apiSupplierID(validSupplierID))
+          .send(validSupplierUpdateData);
 
-  //         expect(response.status).toBe(200);
-  //         expect(response.body.message).toBe("Supplier updated successfully");
-  //         expect(response.body.data.name).toBe(updateSupplierData.name);
-  //       });
-  //     });
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
 
-  //     describe("Failure Cases: Update Supplier", () => {
-  //       it("Returns 401 when no token is provided", async () => {
-  //         // const updatedData = { name: "Unauthorized Update" };
+      it("Returns 404 when supplierID does not exist", async () => {
+        const response = await request(app)
+          .patch(apiSupplierID(invalidSupplierID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validSupplierUpdateData);
 
-  //         const response = await request(app)
-  //           .put(apiSupplierID(validSupplierID))
-  //           .send(updateSupplierData);
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("Supplier not found");
+      });
 
-  //         expect(response.status).toBe(401);
-  //         expect(response.body.message).toBe("Access denied: No token provided");
-  //       });
+      it("Returns 400 when no update data is provided", async () => {
+        const response = await request(app)
+          .patch(apiSupplierID(validSupplierID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({});
+        expect(response.status).toBe(400);
+        expect(response.body.message).toContain("No update data provided");
+      });
 
-  //       it("Returns 404 when supplierID does not exist", async () => {
-  //         // const updatedData = { name: "Non-Existent Supplier" };
+      // it("Returns 400 when trying to update with an invalid email format", async () => {
+      //   const response = await request(app)
+      //     .patch(apiSupplierID(validSupplierID))
+      //     .set("Authorization", `Bearer ${validToken}`)
+      //     .send(invalidUpdateSupplierEmail);
 
-  //         const response = await request(app)
-  //           .put(apiSupplierID(invalidSupplierID))
-  //           .set("Authorization", `Bearer ${validToken}`)
-  //           .send(updateSupplierData);
+      //   expect(response.status).toBe(400);
+      //   expect(response.body.message).toContain("Validation failed");
+      //   expect(response.body.errors[0].message).toContain(
+      //     "Invalid email format"
+      //   );
+      // });
 
-  //         expect(response.status).toBe(404);
-  //         expect(response.body.message).toBe("Supplier not found");
-  //       });
+      it("Returns 500 when there is a server error", async () => {
+        jest
+          .spyOn(Supplier, "findOneAndUpdate")
+          .mockRejectedValueOnce(new Error("Database error"));
 
-  //       it("Returns 400 when no update data is provided", async () => {
-  //         const response = await request(app)
-  //           .put(apiSupplierID(validSupplierID))
-  //           .set("Authorization", `Bearer ${validToken}`)
-  //           .send({}); // Sending an empty update object
+        const response = await request(app)
+          .patch(apiSupplierID(validSupplierID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ name: "Should not update" });
 
-  //         expect(response.status).toBe(400);
-  //         expect(response.body.message).toContain("No update data provided");
-  //       });
-
-  //       it("Returns 400 when trying to update with an invalid email format", async () => {
-  //         // const invalidUpdate = { email: "invalid-email" };
-
-  //         const response = await request(app)
-  //           .put(apiSupplierID(validSupplierID))
-  //           .set("Authorization", `Bearer ${validToken}`)
-  //           .send(invalidUpdateSupplierEmail);
-
-  //         console.log(response.body);
-  //         expect(response.status).toBe(400);
-  //         expect(response.body.message).toContain("Validation failed");
-  //         expect(response.body.errors[0].message).toContain(
-  //           "Invalid email format"
-  //         );
-  //       });
-
-  //       it("Returns 500 when there is a server error", async () => {
-  //         jest
-  //           .spyOn(Supplier, "findOneAndUpdate")
-  //           .mockRejectedValueOnce(new Error("Database error"));
-
-  //         const response = await request(app)
-  //           .put(apiSupplierID(validSupplierID))
-  //           .set("Authorization", `Bearer ${validToken}`)
-  //           .send({ name: "Should not update" });
-
-  //         expect(response.status).toBe(500);
-  //         expect(response.body.message).toBe("Internal server error");
-  //       });
-  //     });
-  //   });
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
+      });
+    });
+  });
 
   describe(`DELETE ${apiSupplierID(":supplierID")}`, () => {
     let validToken: string;
@@ -525,6 +523,216 @@ describe("Supplier Routes", () => {
       });
     });
   });
+
+  // describe("Add and Remove Supplier Contact Numbers Routes", () => {
+  //   describe(`POST ${apiSupplierContactNumbers(":supplierID")}`, () => {
+  //     let validToken: string;
+  //     let validSupplierID: string;
+
+  //     beforeAll(async () => {
+  //       validSupplierID = validSupplierMinimum.supplierID;
+  //       validToken = await preSaveUserAndGenJWT();
+  //       await preSaveSupplier();
+  //     });
+
+  //     describe("Success Cases: Add Contact Number(s)", () => {
+  //       it("Adds a new contact number to the supplier", async () => {
+  //         const response = await request(app)
+  //           .post(apiSupplierContactNumbers(validSupplierID))
+  //           .set("Authorization", `Bearer ${validToken}`)
+  //           .send(newContactNumber);
+
+  //         expect(response.status).toBe(200);
+  //         expect(response.body.message).toBe(
+  //           "Contact number added successfully"
+  //         );
+  //         expect(response.body.data.contactNumbers).toContain(newContactNumber);
+  //       });
+
+  //       it("Adds multiple new contact numbers to the supplier", async () => {
+  //         const response = await request(app)
+  //           .post(apiSupplierContactNumbers(validSupplierID))
+  //           .set("Authorization", `Bearer ${validToken}`)
+  //           .send(newContactNumbers);
+
+  //         expect(response.status).toBe(200);
+  //         expect(response.body.message).toBe(
+  //           "Contact numbers added successfully"
+  //         );
+  //         newContactNumbers.forEach((number) => {
+  //           expect(response.body.data.contactNumbers).toContain(number);
+  //         });
+  //       });
+  //     });
+
+  //     describe("Failure Cases: Add Contact Number(s)", () => {
+  //       it("Returns 401 when no token is provided", async () => {
+  //         const response = await request(app)
+  //           .post(apiSupplierContactNumbers(validSupplierID))
+  //           .send(newContactNumber);
+  //         expect(response.status).toBe(401);
+  //         expect(response.body.message).toBe(
+  //           "Access denied: No token provided"
+  //         );
+  //       });
+
+  //       it("Returns 404 when supplierID does not exist", async () => {
+  //         const response = await request(app)
+  //           .post(apiSupplierContactNumbers("SUP-999"))
+  //           .set("Authorization", `Bearer ${validToken}`)
+  //           .send(newContactNumber);
+  //         expect(response.status).toBe(404);
+  //         expect(response.body.message).toBe("Supplier not found");
+  //       });
+
+  //       it("Returns 400 when contactNumbers is null, empty, or not provided", async () => {
+  //         for (const testCase of newEmptyContactNumbersTestCases) {
+  //           const response = await request(app)
+  //             .post(apiSupplierContactNumbers(validSupplierID))
+  //             .set("Authorization", `Bearer ${validToken}`)
+  //             .send(testCase);
+
+  //           expect(response.status).toBe(400);
+  //           expect(response.body.message).toContain(
+  //             "Contact numbers are required"
+  //           );
+  //         }
+  //       });
+
+  //       it("Returns 400 when provided contact number is invalid", async () => {
+  //         const response = await request(app)
+  //           .post(apiSupplierContactNumbers(validSupplierID))
+  //           .set("Authorization", `Bearer ${validToken}`)
+  //           .send(newInvalidContactNumber);
+  //         expect(response.status).toBe(400);
+  //         expect(response.body.message).toContain("Validation failed");
+  //       });
+
+  //       it("Returns 400 when contact number already exists", async () => {
+  //         const response = await request(app)
+  //           .post(apiSupplierContactNumbers(validSupplierID))
+  //           .set("Authorization", `Bearer ${validToken}`)
+  //           .send(validSupplierComplete.contactNumbers[0]);
+
+  //         expect(response.status).toBe(400);
+  //         expect(response.body.message).toBe("Contact number already exists");
+  //       });
+
+  //       it("Returns 500 when there is a server error", async () => {
+  //         jest
+  //           .spyOn(Supplier, "findOneAndUpdate")
+  //           .mockRejectedValueOnce(new Error("Database error"));
+  //         const response = await request(app)
+  //           .post(apiSupplierContactNumbers(validSupplierID))
+  //           .set("Authorization", `Bearer ${validToken}`)
+  //           .send({ contactNumber: newContactNumber });
+  //         expect(response.status).toBe(500);
+  //         expect(response.body.message).toBe("Internal server error");
+  //       });
+  //     });
+  //   });
+
+  //   describe(`DELETE ${apiSupplierContactNumbers(":supplierID")}`, () => {
+  //     let validToken: string;
+  //     let validSupplierID: string;
+  //     let existingContactNumber: string;
+  //     validSupplierID = validSupplierComplete.supplierID;
+
+  //     beforeEach(async () => {
+  //       validToken = await preSaveUserAndGenJWT();
+  //       await preSaveSupplier();
+  //     });
+
+  //     describe("Success Cases: Remove Contact Number", () => {
+  //       it("Removes an existing contact number from the supplier", async () => {
+  //         const response = await request(app)
+  //           .delete(apiSupplierContactNumbers(validSupplierID))
+  //           .set("Authorization", `Bearer ${validToken}`)
+  //           .send({ contactNumber: existingContactNumber });
+
+  //         expect(response.status).toBe(200);
+  //         expect(response.body.message).toBe(
+  //           "Contact number removed successfully"
+  //         );
+  //         expect(response.body.data.contactNumbers).not.toContain(
+  //           existingContactNumber
+  //         );
+  //       });
+  //     });
+
+  //     describe("Failure Cases: Remove Contact Number", () => {
+  //       it("Returns 401 when no token is provided", async () => {
+  //         const response = await request(app)
+  //           .delete(apiSupplierContactNumbers(validSupplierID))
+  //           .send({ contactNumber: existingContactNumber });
+  //         expect(response.status).toBe(401);
+  //         expect(response.body.message).toBe(
+  //           "Access denied: No token provided"
+  //         );
+  //       });
+
+  //       it("Returns 404 when supplierID does not exist", async () => {
+  //         const response = await request(app)
+  //           .delete(apiSupplierContactNumbers("SUP-999"))
+  //           .set("Authorization", `Bearer ${validToken}`)
+  //           .send({ contactNumber: existingContactNumber });
+  //         expect(response.status).toBe(404);
+  //         expect(response.body.message).toBe("Supplier not found");
+  //       });
+
+  //       it("Returns 400 when contact number is not provided", async () => {
+  //         const response = await request(app)
+  //           .delete(apiSupplierContactNumbers(validSupplierID))
+  //           .set("Authorization", `Bearer ${validToken}`)
+  //           .send({});
+  //         expect(response.status).toBe(400);
+  //         expect(response.body.message).toContain("No contact number provided");
+  //       });
+
+  //       it("Returns 500 when there is a server error", async () => {
+  //         jest
+  //           .spyOn(Supplier, "findOneAndUpdate")
+  //           .mockRejectedValueOnce(new Error("Database error"));
+  //         const response = await request(app)
+  //           .delete(apiSupplierContactNumbers(validSupplierID))
+  //           .set("Authorization", `Bearer ${validToken}`)
+  //           .send({ contactNumber: existingContactNumber });
+  //         expect(response.status).toBe(500);
+  //         expect(response.body.message).toBe("Internal server error");
+  //       });
+  //     });
+  //   });
+  // });
+
+  // describe("Add and Remove Supplier Emails Routes", () => {
+  //   describe(`POST ${apiSupplierEmails(":supplierID")}`, () => {});
+  //   describe(`DELETE ${apiSupplierEmails(":supplierID")}`, () => {});
+  // });
+
+  // describe("Add, Update, and Remove Supplier Contact Persons", () => {
+  //   describe(`POST ${apiSupplierContactPersons(":supplierID")}`, () => {});
+  //   describe(`PUT ${apiSupplierContactPersonsIdx(
+  //     ":supplierID",
+  //     ":idx"
+  //   )}`, () => {});
+  //   describe(`DELETE ${apiSupplierContactPersonsIdx(
+  //     ":supplierID",
+  //     "idx"
+  //   )}`, () => {});
+  // });
+
+  // describe("Add and Remove Supplier Supplies", () => {
+  //   describe(`POST ${apiSupplierSupplies(":supplierID")}`, () => {});
+  //   describe(`DELETE ${apiSupplierSupplyID(
+  //     ":supplierID",
+  //     ":supplyID"
+  //   )}`, () => {});
+  // });
+
+  // describe("Add and Remove Supplier Documentation", () => {
+  //   describe(`POST ${apiSupplierDocs(":supplierID")}`, () => {});
+  //   describe(`DELETE ${apiSupplierDocsIdx(":supplierID", ":idx")}`, () => {});
+  // });
 
   describe(`GET ${apiSupplierHello}`, () => {
     it("Confirms that the public supplier route is accessible.", async () => {

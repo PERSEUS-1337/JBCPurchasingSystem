@@ -82,9 +82,6 @@ export const validSupplierComplete = {
   tags: ["Construction", "Maintenance"],
 };
 
-// export const { primaryTag, ...missingPrimaryTagSupplier } =
-//   validSupplierMinimum;
-
 export const {
   supplierID,
   name,
@@ -94,9 +91,6 @@ export const {
   tags,
   ...missingRequiredFieldsSupplier
 } = validSupplierComplete;
-
-// export const { supplierID, name, ...missingFieldsSupplier } =
-//   validSupplierMinimum;
 
 export const invalidSupplierEmails = {
   ...validSupplierMinimum,
@@ -146,6 +140,7 @@ export const invalidSupplierDocumentation = {
   ...validSupplierMinimum,
   documentation: [12345, true, { doc: "invalid" }],
 };
+
 export const invalidSupplierStatus = {
   ...validSupplierMinimum,
   status: "Invalid",
@@ -217,12 +212,44 @@ export const validSuppliersList = [
   },
 ];
 
-export const updateSupplierData = {
+export const validSupplierUpdateData = {
   name: "ABC Supplies New Name",
   address: "456 Less main St.",
+  primaryTag: "Mechanical",
+  status: "Inactive",
 };
 
-export const invalidUpdateSupplierEmail = {
-  ...updateSupplierData,
-  emails: ["invalid-email"],
-};
+// export const restrictedUpdateSupplierData = {
+//   contactNumbers: ["091234567890", "09773515590"],
+//   emails: ["cde@example.com", "help@abc.com"],
+//   contactPersons: [
+//     {
+//       name: "John Wick",
+//       contactNumber: "0123456789",
+//       email: "john.doe@abc.com",
+//       position: "Manager",
+//     },
+//     {
+//       name: "Jane Doe",
+//       contactNumber: "0987654321",
+//       email: "jane.smith@abc.com",
+//       position: "Procurement Officer",
+//     },
+//   ],
+//   supplies: [
+//     new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
+//     new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d76"),
+//   ],
+//   documentation: ["lisensya.pdf", "certipikado.jpg", "permit.docs"],
+//   tags: ["Mechanical", "Repair"],
+// };
+
+// export const invalidUpdateSupplierEmail = {
+//   ...validSupplierUpdateData,
+//   emails: ["invalid-email"],
+// };
+
+export const newContactNumber = "+12345678901";
+export const newContactNumbers = ["09123456789", "12345678901"];
+export const newInvalidContactNumber = "abc123";
+export const newEmptyContactNumbersTestCases = [undefined, {}, []];

@@ -129,6 +129,7 @@ export const createSupplier = async (
   }
 };
 
+// TODO: General update supplier
 export const updateSupplier = async (
   req: Request,
   res: Response
@@ -176,35 +177,6 @@ export const updateSupplier = async (
   }
 };
 
-export const updateSupplierStatus = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-    const supplier = await Supplier.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    );
-
-    if (!supplier) {
-      res.status(404).json({ message: "Supplier not found" });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Supplier status updated successfully",
-      data: supplier,
-    });
-  } catch (err: any) {
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
-  }
-};
-
 export const deleteSupplier = async (
   req: Request,
   res: Response
@@ -227,3 +199,44 @@ export const deleteSupplier = async (
       .json({ message: "Internal server error", error: err.message });
   }
 };
+
+export const addContactNumber = async (): Promise<void> => {};
+export const removeContactNumber = async (): Promise<void> => {};
+export const addEmail = async (): Promise<void> => {};
+export const removeEmail = async (): Promise<void> => {};
+export const addContactPerson = async (): Promise<void> => {};
+export const updateContactPerson = async (): Promise<void> => {};
+export const removeContactPerson = async (): Promise<void> => {};
+export const addSupply = async (): Promise<void> => {};
+export const removeSupply = async (): Promise<void> => {};
+export const addDocs = async (): Promise<void> => {};
+export const removeDocs = async (): Promise<void> => {};
+
+// export const updateSupplierStatus = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const { id } = req.params;
+//     const { status } = req.body;
+//     const supplier = await Supplier.findByIdAndUpdate(
+//       id,
+//       { status },
+//       { new: true }
+//     );
+
+//     if (!supplier) {
+//       res.status(404).json({ message: "Supplier not found" });
+//       return;
+//     }
+
+//     res.status(200).json({
+//       message: "Supplier status updated successfully",
+//       data: supplier,
+//     });
+//   } catch (err: any) {
+//     res
+//       .status(500)
+//       .json({ message: "Internal server error", error: err.message });
+//   }
+// };

@@ -70,8 +70,8 @@ export const deleteAllUsers = async () => {
 
 export const preSaveSupplier = async () => {
   await Supplier.deleteMany({});
-  await new Supplier(validSupplierMinimum).save();
-  const savedSuppliers = await Supplier.find({});
+  await new Supplier(validSupplierComplete).save();
+  // const savedSuppliers = await Supplier.find({});
   // console.log("Saved Suppliers:", savedSuppliers);
 };
 

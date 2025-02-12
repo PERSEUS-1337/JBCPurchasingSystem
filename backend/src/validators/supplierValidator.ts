@@ -3,6 +3,7 @@ import { defaultSupplierStatus, supplierStatusEnums } from "../constants";
 import { Types } from "mongoose";
 import { contactNumberRegex, supplierIDRegex } from "../constants/regex";
 
+// Base Schema for Supplier Inputs, as well as contact person inputs
 export const contactPersonSchema = z.object({
   name: z.string().min(1, "Contact Person name is required"),
   contactNumber: z
@@ -60,6 +61,7 @@ export const supplierSchema = z.object({
 
 export type SupplierInput = z.infer<typeof supplierSchema>;
 
+// Additional schema for supplier updating with differing restricted fields
 export const supplierUpdateSchema = supplierSchema
   .omit({ supplierID: true, status: true, supplies: true }) // Exclude fields from being updated
   .partial();
