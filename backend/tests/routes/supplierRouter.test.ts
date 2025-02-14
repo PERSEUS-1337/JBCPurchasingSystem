@@ -10,11 +10,11 @@ import {
 } from "@jest/globals";
 import app from "../../src/app"; // Import your Express app
 import {
-  apiSupplierAll,
   apiSupplierHello,
   apiSupplierID,
   apiSupplierMain,
   apiSupplierSearch,
+  apiSupplierStatus,
 } from "../setup/refRoutes";
 import {
   connectDB,
@@ -124,7 +124,7 @@ describe("Supplier Routes", () => {
     });
   });
 
-  describe(`GET ${apiSupplierAll}`, () => {
+  describe(`GET ${apiSupplierMain}`, () => {
     let validToken: string;
 
     describe("Success Cases: GET all suppliers", () => {
@@ -135,7 +135,7 @@ describe("Supplier Routes", () => {
 
       it("Returns all suppliers when accessed with a valid token", async () => {
         const response = await request(app)
-          .get(apiSupplierAll)
+          .get(apiSupplierMain)
           .set("Authorization", `Bearer ${validToken}`);
 
         expect(response.status).toBe(200);
@@ -147,7 +147,7 @@ describe("Supplier Routes", () => {
 
     describe("Failure Cases: GET all suppliers", () => {
       it("Returns 401 when no token is provided", async () => {
-        const response = await request(app).get(apiSupplierAll);
+        const response = await request(app).get(apiSupplierMain);
 
         expect(response.status).toBe(401);
         expect(response.body.message).toBe("Access denied: No token provided");
@@ -156,7 +156,7 @@ describe("Supplier Routes", () => {
       it("Returns 404 and an empty array when no suppliers exist", async () => {
         await deleteMultipleSuppliers();
         const response = await request(app)
-          .get(apiSupplierAll)
+          .get(apiSupplierMain)
           .set("Authorization", `Bearer ${validToken}`);
 
         expect(response.status).toBe(404);
@@ -170,7 +170,7 @@ describe("Supplier Routes", () => {
           .mockRejectedValueOnce(new Error("Database error"));
 
         const response = await request(app)
-          .get(apiSupplierAll)
+          .get(apiSupplierMain)
           .set("Authorization", `Bearer ${validToken}`);
 
         expect(response.status).toBe(500);
@@ -252,125 +252,6 @@ describe("Supplier Routes", () => {
       });
     });
   });
-
-  // describe(`POST ${apiSupplierMain}`, () => {
-  //   let validToken: string;
-
-  //   beforeEach(async () => {
-  //     validToken = await preSaveUserAndGenJWT();
-  //   });
-
-  //   describe("Success Cases: Create Supplier", () => {
-  //     it("Creates a new supplier when provided with valid data", async () => {
-  //       const response = await request(app)
-  //         .post(apiSupplierMain)
-  //         .set("Authorization", `Bearer ${validToken}`)
-  //         .send(validSupplierComplete);
-  //       expect(response.status).toBe(201);
-  //       expect(response.body.message).toBe("Supplier created successfully");
-  //       expect(response.body.data._id).toBeDefined();
-  //       expect(response.body.data.supplierID).toBe(
-  //         validSupplierComplete.supplierID
-  //       );
-  //     });
-  //   });
-
-  //   describe("Failure Cases: Create Supplier", () => {
-  //     it("Returns 401 when no token is provided", async () => {
-  //       const response = await request(app)
-  //         .post(apiSupplierMain)
-  //         .send(validSupplierComplete);
-
-  //       expect(response.status).toBe(401);
-  //       expect(response.body.message).toBe("Access denied: No token provided");
-  //     });
-
-  //     it("Returns 400 when required fields are missing", async () => {
-  //       const response = await request(app)
-  //         .post(apiSupplierMain)
-  //         .set("Authorization", `Bearer ${validToken}`)
-  //         .send(missingRequiredFieldsSupplier);
-
-  //       expect(response.status).toBe(400);
-  //       expect(response.body.message).toContain("Validation failed");
-  //     });
-
-  //     it("Returns 400 when supplierID already exists", async () => {
-  //       await request(app)
-  //         .post(apiSupplierMain)
-  //         .set("Authorization", `Bearer ${validToken}`)
-  //         .send(validSupplierComplete); // First supplier creation
-
-  //       const duplicateResponse = await request(app)
-  //         .post(apiSupplierMain)
-  //         .set("Authorization", `Bearer ${validToken}`)
-  //         .send(validSupplierComplete); // Attempt duplicate creation
-
-  //       expect(duplicateResponse.status).toBe(400);
-  //       expect(duplicateResponse.body.message).toContain(
-  //         "Supplier ID already exists"
-  //       );
-  //     });
-
-  //     it("Returns 400 when email format is invalid", async () => {
-  //       const response = await request(app)
-  //         .post(apiSupplierMain)
-  //         .set("Authorization", `Bearer ${validToken}`)
-  //         .send(invalidSupplierEmails);
-
-  //       expect(response.status).toBe(400);
-  //       expect(response.body.message).toContain("Validation failed");
-  //       expect(response.body.errors[0].message).toContain(
-  //         "Invalid email format"
-  //       );
-  //     });
-
-  //     it("Returns 400 when contact number format is invalid", async () => {
-  //       // const invalidContactSupplier = {
-  //       //   ...validSupplierComplete,
-  //       //   contactNumbers: ["12345"], // Too short to be valid
-  //       // };
-
-  //       const response = await request(app)
-  //         .post(apiSupplierMain)
-  //         .set("Authorization", `Bearer ${validToken}`)
-  //         .send(invalidSupplierContactNumbers);
-
-  //       expect(response.status).toBe(400);
-  //       expect(response.body.message).toContain("Validation failed");
-  //       expect(response.body.errors[0].message).toContain(
-  //         "Contact number can only contain numbers and an optional '+' at the start"
-  //       );
-  //     });
-
-  //     it("Returns 400 when supplies contains invalid ObjectId", async () => {
-  //       const response = await request(app)
-  //         .post(apiSupplierMain)
-  //         .set("Authorization", `Bearer ${validToken}`)
-  //         .send(invalidSupplierSupplies);
-
-  //       expect(response.status).toBe(400);
-  //       expect(response.body.message).toContain("Validation failed");
-  //       expect(response.body.errors[0].message).toContain(
-  //         "Invalid ObjectId format"
-  //       );
-  //     });
-
-  //     it("Returns 500 when there is a server error", async () => {
-  //       jest
-  //         .spyOn(Supplier.prototype, "save")
-  //         .mockRejectedValueOnce(new Error("Database error"));
-
-  //       const response = await request(app)
-  //         .post(apiSupplierMain)
-  //         .set("Authorization", `Bearer ${validToken}`)
-  //         .send(validSupplierComplete);
-
-  //       expect(response.status).toBe(500);
-  //       expect(response.body.message).toBe("Internal server error");
-  //     });
-  //   });
-  // });
 
   describe(`POST ${apiSupplierMain}`, () => {
     let validToken: string;
@@ -634,7 +515,6 @@ describe("Supplier Routes", () => {
           .send(restrictedUpdateSupplierData);
 
         expect(response.status).toBe(400);
-        // console.log(response.body);
         expect(response.body.message).toBe("Validation failed");
         expect(response.body.errors).toEqual([
           {
@@ -661,7 +541,101 @@ describe("Supplier Routes", () => {
         expect(response.status).toBe(500);
         expect(response.body.message).toBe("Internal server error");
       });
+    });
+  });
 
+  describe(`PATCH ${apiSupplierStatus(":supplierID")}`, () => {
+    let validToken: string;
+    let validSupplierID: string;
+    let invalidSupplierID = "SUP-999";
+
+    beforeEach(async () => {
+      validToken = await preSaveUserAndGenJWT();
+      validSupplierID = validSupplierComplete.supplierID;
+      await preSaveSupplier();
+    });
+
+    describe("Success Cases: Update Supplier Status", () => {
+      it("Updates supplier status to active", async () => {
+        const response = await request(app)
+          .patch(apiSupplierStatus(validSupplierID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ status: "Active" });
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe(
+          "Supplier status updated successfully"
+        );
+        expect(response.body.data.status).toBe("Active");
+      });
+
+      it("Updates supplier status to inactive", async () => {
+        const response = await request(app)
+          .patch(apiSupplierStatus(validSupplierID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ status: "Inactive" });
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe(
+          "Supplier status updated successfully"
+        );
+        expect(response.body.data.status).toBe("Inactive");
+      });
+    });
+
+    describe("Failure Cases: Update Supplier Status", () => {
+      it("Returns 401 when no token is provided", async () => {
+        const response = await request(app)
+          .patch(apiSupplierStatus(validSupplierID))
+          .send({ status: "active" });
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
+
+      it("Returns 404 when supplierID does not exist", async () => {
+        const response = await request(app)
+          .patch(apiSupplierID(invalidSupplierID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ status: "Active" });
+
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("Supplier not found");
+      });
+
+      it("Returns 400 when no status is provided", async () => {
+        const response = await request(app)
+          .patch(apiSupplierStatus(validSupplierID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({});
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe("Invalid status value");
+      });
+
+      it("Returns 400 when status is not 'active' or 'inactive'", async () => {
+        const response = await request(app)
+          .patch(apiSupplierStatus(validSupplierID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ status: "pending" });
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe("Invalid status value");
+      });
+
+      it("Returns 500 when there is a server error", async () => {
+        jest
+          .spyOn(Supplier, "updateOne")
+          .mockRejectedValueOnce(new Error("Database error"));
+
+        const response = await request(app)
+          .patch(apiSupplierStatus(validSupplierID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ status: "Active" });
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
+      });
     });
   });
 

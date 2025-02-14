@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Supplier, { ISupplier } from "../models/supplierModel";
 import { SupplierInput } from "../validators/supplierValidator";
+import { supplierStatusEnums } from "../constants";
 
 export const getSupplierByID = async (
   req: Request,
@@ -174,6 +175,44 @@ export const updateSupplier = async (
   }
 };
 
+export const updateSupplierStatus = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { supplierID } = req.params;
+    const { status } = req.body;
+    console.log(req.params)
+
+    if (!status || !supplierStatusEnums.includes(status)) {
+      res.status(400).json({ message: "Invalid status value" });
+      return;
+    }
+
+    const supplier = await Supplier.findOne({ supplierID }).lean();
+    if (!supplier) {
+      res.status(404).json({ message: "Supplier not found" });
+      return;
+    }
+
+    await Supplier.updateOne({ supplierID }, { status });
+
+    const updatedSupplier = await Supplier.findOne({ supplierID }).lean();
+    if (!updatedSupplier) {
+      res.status(404).json({ message: "Supplier not found after update" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Supplier status updated successfully",
+      data: updatedSupplier,
+    });
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+  }
+};
 
 export const deleteSupplier = async (
   req: Request,

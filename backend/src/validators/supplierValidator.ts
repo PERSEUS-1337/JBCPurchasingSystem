@@ -1,5 +1,5 @@
 import { z, ZodIssueCode } from "zod";
-import { defaultSupplierStatus, supplierStatusEnums } from "../constants";
+import { defaultSupplierStatus, supplierRestrictedFields, supplierStatusEnums } from "../constants";
 import { Types } from "mongoose";
 import { contactNumberRegex, supplierIDRegex } from "../constants/regex";
 
@@ -60,9 +60,9 @@ export const supplierSchema = z.object({
 export const supplierUpdateSchema = supplierSchema
   .partial()
   .superRefine((data: any, ctx) => {
-    const restrictedFields = ["supplierID", "supplies"];
+    // const restrictedFields = ["supplierID", "supplies"];
 
-    for (const field of restrictedFields) {
+    for (const field of supplierRestrictedFields) {
       if (data[field] !== undefined) {
         ctx.addIssue({
           code: ZodIssueCode.custom,

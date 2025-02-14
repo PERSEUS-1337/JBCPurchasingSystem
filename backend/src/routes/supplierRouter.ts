@@ -17,6 +17,7 @@ import {
   removeSupply,
   addDocs,
   removeDocs,
+  updateSupplierStatus,
 } from "../controllers/supplierController";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import {
@@ -25,6 +26,7 @@ import {
 } from "../validators/supplierValidator";
 import {
   authorizeJWT,
+  authorizeSuperAdmin,
 } from "../middlewares/authorizationMiddleware";
 
 const router = express.Router();
@@ -34,8 +36,8 @@ router.get("/hello", (req, res) => {
 });
 
 // Get Supplier Info
+router.get("/", authorizeJWT, getAllSuppliers);
 router.get("/search", authorizeJWT, searchSuppliers);
-router.get("/all", authorizeJWT, getAllSuppliers);
 router.get("/:supplierID", authorizeJWT, getSupplierByID);
 
 // Create Supplier
@@ -51,6 +53,19 @@ router.patch(
 
 // Delete Supplier
 router.delete("/:supplierID", authorizeJWT, deleteSupplier);
+
+router.patch(
+  "/:supplierID/status",
+  authorizeJWT,
+  updateSupplierStatus
+);
+
+// TODO: Supplies
+// Add
+router.post("/:supplierID/supplies", authorizeJWT, addSupply);
+// Remove by supplyID
+router.delete("/:supplierID/supplies/:supplyID", authorizeJWT, removeSupply);
+
 
 // // TODO: Contact Numbers
 // // Add
@@ -72,30 +87,10 @@ router.delete("/:supplierID", authorizeJWT, deleteSupplier);
 // // Remove by index
 // router.delete("/:supplierID/contact-persons/:idx", authorizeJWT, removeContactPerson);
 
-// // TODO: Supplies
-// // Add
-// router.post("/:supplierID/supplies", authorizeJWT, addSupply);
-// // Remove by supplyID
-// router.delete("/:supplierID/supplies/:supplyID", authorizeJWT, removeSupply);
-
 // // TODO: Documentation
 // // Add document path
 // router.post("/:supplierID/docs", authorizeJWT, addDocs);
 // // Remove by index
 // router.delete("/:supplierID/docs", authorizeJWT, removeDocs);
-
-
-// router.patch(
-//   "/:id/status",
-//   authorizeJWT,
-//   authorizeSuperAdmin,
-//   updateSupplierStatus
-// );
-
-// ===============================================
-// // ✅ Add documentation to supplier
-// router.patch("/:id/add-documentation", addSupplierDocumentation);
-// // ✅ Remove specific documentation from supplier
-// router.patch("/:id/remove-documentation", removeSupplierDocumentation);
 
 export default router;

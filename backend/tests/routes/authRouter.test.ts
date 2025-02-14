@@ -305,7 +305,7 @@ describe("Authentication Routes", () => {
     });
   });
 
-  describe(`POST ${apiChangePassword}`, () => {
+  describe(`PATCH ${apiChangePassword}`, () => {
     let validToken: string;
 
     beforeEach(async () => {
@@ -315,7 +315,7 @@ describe("Authentication Routes", () => {
     describe("Success Cases", () => {
       it("Changes the password successfully for an authenticated user.", async () => {
         const response: Response = await request(app)
-          .post(apiChangePassword)
+          .patch(apiChangePassword)
           .set("Authorization", `Bearer ${validToken}`)
           .send(validChangePasswordData);
 
@@ -336,7 +336,7 @@ describe("Authentication Routes", () => {
     describe("Fail Cases", () => {
       it("Rejects password change when the current password is incorrect.", async () => {
         const response: Response = await request(app)
-          .post(apiChangePassword)
+          .patch(apiChangePassword)
           .set("Authorization", `Bearer ${validToken}`)
           .send(wrongOldChangePasswordData);
 
@@ -346,7 +346,7 @@ describe("Authentication Routes", () => {
 
       it("Rejects password change for an unauthenticated user.", async () => {
         const response: Response = await request(app)
-          .post(apiChangePassword)
+          .patch(apiChangePassword)
           .send(validChangePasswordData);
 
         expect(response.status).toBe(401);
@@ -355,7 +355,7 @@ describe("Authentication Routes", () => {
 
       it("Rejects password change when the token is invalid.", async () => {
         const response: Response = await request(app)
-          .post(apiChangePassword)
+          .patch(apiChangePassword)
           .set("Authorization", `Bearer ${invalidToken}`)
           .send(validChangePasswordData);
 
@@ -367,7 +367,7 @@ describe("Authentication Routes", () => {
         await User.deleteMany({}); // Simulate no users in the database
 
         const response: Response = await request(app)
-          .post(apiChangePassword)
+          .patch(apiChangePassword)
           .set("Authorization", `Bearer ${validToken}`)
           .send(validChangePasswordData);
 
@@ -382,7 +382,7 @@ describe("Authentication Routes", () => {
         .mockRejectedValueOnce(new Error("Unexpected error"));
 
       const response: Response = await request(app)
-        .post(apiChangePassword)
+        .patch(apiChangePassword)
         .set("Authorization", `Bearer ${validToken}`)
         .send(validChangePasswordData);
 
