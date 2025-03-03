@@ -6,18 +6,10 @@ import {
   updateSupplier,
   deleteSupplier,
   searchSuppliers,
-  addContactNumber,
-  removeContactNumber,
-  addEmail,
-  removeEmail,
-  addContactPerson,
-  updateContactPerson,
-  removeContactPerson,
   addSupply,
   removeSupply,
-  addDocs,
-  removeDocs,
   updateSupplierStatus,
+  getSuppliesOfSupplier
 } from "../controllers/supplierController";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import {
@@ -26,7 +18,6 @@ import {
 } from "../validators/supplierValidator";
 import {
   authorizeJWT,
-  authorizeSuperAdmin,
 } from "../middlewares/authorizationMiddleware";
 
 const router = express.Router();
@@ -61,6 +52,8 @@ router.patch(
 );
 
 // TODO: Supplies
+// Get
+router.get("/:supplierID/supplies", authorizeJWT, getSuppliesOfSupplier)
 // Add
 router.post("/:supplierID/supplies", authorizeJWT, addSupply);
 // Remove by supplyID

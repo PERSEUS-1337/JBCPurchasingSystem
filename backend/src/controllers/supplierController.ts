@@ -130,7 +130,6 @@ export const createSupplier = async (
   }
 };
 
-// TODO: General update supplier
 export const updateSupplier = async (
   req: Request,
   res: Response
@@ -244,6 +243,7 @@ export const removeEmail = async (): Promise<void> => {};
 export const addContactPerson = async (): Promise<void> => {};
 export const updateContactPerson = async (): Promise<void> => {};
 export const removeContactPerson = async (): Promise<void> => {};
+export const getSuppliesOfSupplier = async (): Promise<void> => {};
 export const addSupply = async (): Promise<void> => {};
 export const removeSupply = async (): Promise<void> => {};
 export const addDocs = async (): Promise<void> => {};
