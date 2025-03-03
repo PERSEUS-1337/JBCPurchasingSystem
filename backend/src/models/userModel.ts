@@ -1,11 +1,11 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import {
-  defaultRole,
-  defaultStatus,
-  roleList,
-  statusList,
-  superAdmin,
+  defaultUserRole,
+  defaultUserStatus,
+  userRoleEnums,
+  userStatusEnums,
+  userSuperAdmin,
 } from "../constants";
 
 interface IUserMethods {
@@ -23,8 +23,9 @@ export interface IUser extends Document, IUserMethods {
   role: string;
   position: string;
   department: string;
-  dateCreated: Date;
   status: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Static Methods (Available, regardless of instance)
@@ -58,8 +59,8 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
     role: {
       type: String,
       required: true,
-      enum: roleList,
-      default: defaultRole,
+      enum: userRoleEnums,
+      default: defaultUserRole,
     },
     position: {
       type: String,
@@ -69,18 +70,14 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
       type: String,
       required: true,
     },
-    dateCreated: {
-      type: Date,
-      default: Date.now,
-    },
     status: {
       type: String,
       required: true,
-      enum: statusList,
-      default: defaultStatus,
+      enum: userStatusEnums,
+      default: defaultUserStatus,
     },
   },
-  { strict: true }
+  { strict: true, timestamps: true }
 );
 
 // ### PRE and POST Hooks
@@ -99,20 +96,6 @@ UserSchema.pre("save", async function (next) {
   }
 });
 
-UserSchema.post("find", (docs) => {
-  docs.forEach((doc: { dateCreated: string | number | Date }) => {
-    if (doc.dateCreated && typeof doc.dateCreated === "string") {
-      doc.dateCreated = new Date(doc.dateCreated);
-    }
-  });
-});
-
-UserSchema.post("findOne", (doc) => {
-  if (doc && doc.dateCreated && typeof doc.dateCreated === "string") {
-    doc.dateCreated = new Date(doc.dateCreated);
-  }
-});
-
 // STATIC METHODS, regardless if User or Not
 UserSchema.statics.checkDuplicateUser = async function (
   email: string
@@ -124,7 +107,7 @@ UserSchema.statics.checkDuplicateUser = async function (
 UserSchema.statics.isSuperAdmin = async function (
   role: string
 ): Promise<boolean> {
-  return role === superAdmin;
+  return role === userSuperAdmin;
 };
 
 // INSTANCE METHODS for Individual User Objects

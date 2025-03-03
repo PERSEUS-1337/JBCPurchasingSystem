@@ -28,7 +28,7 @@ router.get("/protected", authorizeJWT, (req, res) => {
 });
 
 // Password Management
-router.post(
+router.patch(
   "/change-pwd",
   authorizeJWT,
   validateRequest(changePasswordSchema),

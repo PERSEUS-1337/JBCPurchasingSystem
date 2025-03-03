@@ -1,5 +1,5 @@
 // /constants.ts
-export const roleList = [
+export const userRoleEnums = [
   "Super Administrator",
   "Manager",
   "Staff",
@@ -8,9 +8,9 @@ export const roleList = [
   "Purchaser",
 ] as const;
 
-export const statusList = ["Active", "Inactive"] as const;
+export const userStatusEnums = ["Active", "Inactive"] as const;
 
 // Default values
-export const defaultRole = "Staff";
-export const defaultStatus = "Active";
-export const superAdmin = "Super Administrator";
+export const defaultUserRole = "Staff";
+export const defaultUserStatus = "Active";
+export const userSuperAdmin = "Super Administrator";

@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import User from "../../src/models/userModel";
+import User, { IUser } from "../../src/models/userModel";
 import {
   afterAll,
   beforeAll,
@@ -13,9 +13,9 @@ import { connectDB, disconnectDB, dropDB } from "../setup/globalSetupHelper";
 import { invalidStatusUser, validUser } from "../setup/mockUsers";
 import { wrongOldPassword } from "../setup/mockData";
 
-describe("Mongoose Model Validation: User", () => {
+describe("User Model Validation", () => {
   beforeAll(async () => {
-    await connectDB();
+    await connectDB(); 
   });
 
   beforeEach(async () => {
@@ -26,83 +26,78 @@ describe("Mongoose Model Validation: User", () => {
     await disconnectDB();
   });
 
-  it("require REQUIRED fields", async () => {
-    const user = new User({}); // Missing required fields
-    await expect(user.validate()).rejects.toThrow(); // Rejects the user since it has missing details
-  });
+  describe("Success Cases: User Creation and Validation", () => {
+    it("should save a user with valid fields", async () => {
+      const user = new User(validUser);
+      const savedUser = await user.save();
 
-  it("save user with VALID fields", async () => {
-    const user = new User(validUser);
-    const savedUser = await user.save(); // Save the user by inserting it to db
-
-    expect(savedUser._id).toBeDefined();
-    expect(savedUser.email).toBe(validUser.email);
-  });
-
-  it("default DATECREATED to now()", async () => {
-    const user = new User(validUser);
-    const savedUser = await user.save();
-    
-    expect(savedUser.dateCreated).toBeDefined(); // We ensure that date exists first
-    expect(savedUser.dateCreated.getTime()).toBeLessThanOrEqual(Date.now()); // We compare the date created to the latest date available
-  });
-
-  it("successfully HASH password", async () => {
-    const user = new User(validUser);
-
-    const savedUser = await user.save();
-
-    expect(savedUser._id).toBeDefined();
-    expect(savedUser.password).not.toBe(validUser.password); // Password should be hashed
-
-    expect(await bcrypt.compare(validUser.password, savedUser.password)).toBe(true); // Check if the hash matches
-  });
-
-  it("reject PASSWORD HASH errors", async () => {
-    // Mock bcrypt.genSalt to throw an error
-    jest.spyOn(bcrypt, "genSalt").mockImplementationOnce(() => {
-      throw new Error("Salt generation failed");
+      expect(savedUser._id).toBeDefined();
+      expect(savedUser.email).toBe(validUser.email);
     });
 
-    const user = new User(validUser);
+    it("should set the default 'createdAt' field to the current timestamp", async () => {
+      const user = new User(validUser);
+      const savedUser: IUser = await user.save();
 
-    await expect(user.save()).rejects.toThrow("Salt generation failed");
+      expect(savedUser.createdAt).toBeDefined();
+      expect(savedUser.createdAt.getTime()).toBeLessThanOrEqual(Date.now());
+    });
 
-    // Restore the original implementation of bcrypt.genSalt
-    jest.restoreAllMocks();
+    it("should hash the password before saving the user", async () => {
+      const user = new User(validUser);
+      const savedUser = await user.save();
+
+      expect(savedUser._id).toBeDefined();
+      expect(savedUser.password).not.toBe(validUser.password); // Ensure password is hashed
+      expect(await bcrypt.compare(validUser.password, savedUser.password)).toBe(
+        true
+      ); // Verify hash
+    });
+
+    it("should correctly compare a plaintext password with the hashed password", async () => {
+      const user = new User(validUser);
+      const savedUser = await user.save();
+
+      const isMatch = await savedUser.comparePassword(validUser.password);
+      expect(isMatch).toBe(true); // Correct password should match
+
+      const isNotMatch = await savedUser.comparePassword(wrongOldPassword);
+      expect(isNotMatch).toBe(false); // Incorrect password should not match
+    });
+
+    it("should not rehash the password if it is not modified", async () => {
+      const user = new User(validUser);
+      await user.save();
+
+      const hashedPassword = user.password;
+
+      user.fullname = "Johnathan Doe"; // Modify a non-password field
+      await user.save();
+
+      expect(user.password).toBe(hashedPassword); // Password should remain unchanged
+    });
   });
 
-  it("successfully COMPARE passwords", async () => {
-    const user = new User(validUser);
+  describe("Fail Cases: User Validation and Error Handling", () => {
+    it("should reject user creation if required fields are missing", async () => {
+      const user = new User({});
+      await expect(user.validate()).rejects.toThrow(); // Validation should fail
+    });
 
-    const savedUser = await user.save();
+    it("should reject user creation if the status field is invalid", async () => {
+      const user = new User(invalidStatusUser);
+      await expect(user.save()).rejects.toThrow(); // Invalid status should fail
+    });
 
-    // Test the comparePassword method
-    const isMatch = await savedUser.comparePassword(validUser.password);
-    expect(isMatch).toBe(true);
+    it("should throw an error if password hashing fails", async () => {
+      jest.spyOn(bcrypt, "genSalt").mockImplementationOnce(() => {
+        throw new Error("Salt generation failed");
+      });
 
-    const isNotMatch = await user.comparePassword(wrongOldPassword);
-    expect(isNotMatch).toBe(false);
-  });
+      const user = new User(validUser);
+      await expect(user.save()).rejects.toThrow("Salt generation failed");
 
-  it("skip HASH if password is unmodified", async () => {
-    const user = new User(validUser);
-
-    await user.save();
-
-    // Capture the hashed password
-    const hashedPassword = user.password;
-
-    // Update other fields without modifying the password
-    user.fullname = "Johnathan Doe";
-    await user.save();
-
-    // Ensure the password remains unchanged
-    expect(user.password).toBe(hashedPassword);
-  });
-
-  it("reject INVALID status", async () => {
-    const user = new User(invalidStatusUser);
-    await expect(user.save()).rejects.toThrow(); // Expects the save to throw an error, as defined by the enums in the model
+      jest.restoreAllMocks(); // Restore the original implementation
+    });
   });
 });

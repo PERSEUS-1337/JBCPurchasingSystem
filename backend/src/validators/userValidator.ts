@@ -1,10 +1,10 @@
 // /validators/userValidator.ts
 import { z } from "zod";
 import {
-  roleList,
-  statusList,
-  defaultStatus,
-  defaultRole,
+  userRoleEnums,
+  userStatusEnums,
+  defaultUserStatus,
+  defaultUserRole,
 } from "../constants";
 
 export const userSchema = z
@@ -13,16 +13,14 @@ export const userSchema = z
     fullname: z.string().min(1, "Fullname is required"),
     email: z.string().email("Invalid email format"),
     password: z.string().min(8, "Password must be at least 8 characters long"),
-    role: z.enum(roleList).default(defaultRole), // Reused constant
+    role: z.enum(userRoleEnums).default(defaultUserRole),
     position: z.string().min(1, "Position is required"),
     department: z.string().min(1, "Department is required"),
-    dateCreated: z.date().optional(),
-    status: z.enum(statusList).default(defaultStatus), // Reused constant
+    status: z.enum(userStatusEnums).default(defaultUserStatus),
   })
   .strict();
 
 export type UserInput = z.infer<typeof userSchema>;
-
 
 export const userUpdateSchema = z
   .object({
@@ -47,4 +45,27 @@ export const userUpdateSchema = z
 
 export type UserUpdateInput = z.infer<typeof userUpdateSchema>;
 
+// Schema for user profile view (general view)
+export const userViewSchema = z
+  .object({
+    fullname: z.string(),
+    email: z.string(),
+    position: z.string(),
+    department: z.string(),
+    createdAt: z.coerce.date().optional(), // Converts ISO string to Date object
+    updatedAt: z.coerce.date().optional(),
+  })
+  .strict();
 
+// Schema for admin view with extended fields
+export const userAdminViewSchema = userViewSchema
+  .extend({
+    userID: z.string(),
+    role: z.enum(userRoleEnums),
+    status: z.enum(userStatusEnums),
+  })
+  .strict();
+
+// Types for the schemas
+export type UserView = z.infer<typeof userViewSchema>;
+export type UserAdminView = z.infer<typeof userAdminViewSchema>;

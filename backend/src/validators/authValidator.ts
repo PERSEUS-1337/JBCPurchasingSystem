@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { defaultRole, roleList } from "../constants";
+import { defaultUserRole, userRoleEnums } from "../constants";
 
 export const registerSchema = z
   .object({
@@ -7,7 +7,7 @@ export const registerSchema = z
     fullname: z.string().min(1, "Fullname is required"),
     email: z.string().email("Invalid email format"),
     password: z.string().min(8, "Password must be at least 8 characters long"),
-    role: z.enum(roleList).default(defaultRole), // Reused constant
+    role: z.enum(userRoleEnums).default(defaultUserRole), // Reused constant
     position: z.string().min(1, "Position is required"),
     department: z.string().min(1, "Department is required"),
   })

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import User from "../models/userModel";
+import User, { IUser } from "../models/userModel";
 import { generateJWT } from "../utils/authUtils";
 import { LoginInput, RegisterInput } from "../validators";
 
@@ -16,12 +16,12 @@ export const registerUser = async (
       return;
     }
 
-    const newUser = new User(newUserData);
+    const newUser: IUser = new User(newUserData);
     await newUser.save();
 
     res.status(201).json({
       message: "User registered successfully",
-      data: { email: newUser.email, dateCreated: newUser.dateCreated },
+      data: { email: newUser.email, createdAt: newUser.createdAt },
     });
   } catch (err: any) {
     // Log and handle unexpected errors

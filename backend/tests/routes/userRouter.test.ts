@@ -80,7 +80,7 @@ describe("User Routes", () => {
 
         expect(response.status).toBe(403);
         expect(response.body.message).toBe(
-          "Access denied. Insufficient permissions."
+          "Forbidden: Insufficient permissions."
         );
       });
 
@@ -88,7 +88,7 @@ describe("User Routes", () => {
         const response = await request(app).get(apiUserID(superAdminUserID));
 
         expect(response.status).toBe(401);
-        expect(response.body.message).toBe("Access denied, no token provided");
+        expect(response.body.message).toBe("Access denied: No token provided");
       });
 
       it("Returns 404 if the userID does not exist.", async () => {
@@ -161,7 +161,7 @@ describe("User Routes", () => {
           .send(validEditUserData);
 
         expect(response.status).toBe(401);
-        expect(response.body.message).toBe("Access denied, no token provided");
+        expect(response.body.message).toBe("Access denied: No token provided");
       });
 
       it("Returns 403 if a regular user tries to update their own profile.", async () => {
@@ -172,7 +172,7 @@ describe("User Routes", () => {
 
         expect(response.status).toBe(403);
         expect(response.body.message).toBe(
-          "Access denied. Insufficient permissions."
+          "Forbidden: Insufficient permissions."
         );
       });
 
@@ -184,7 +184,7 @@ describe("User Routes", () => {
 
         expect(response.status).toBe(403);
         expect(response.body.message).toBe(
-          "Access denied. Insufficient permissions."
+          "Forbidden: Insufficient permissions."
         );
       });
 
@@ -266,7 +266,7 @@ describe("User Routes", () => {
 
         expect(response.status).toBe(403);
         expect(response.body.message).toBe(
-          "Access denied. Insufficient permissions."
+          "Forbidden: Insufficient permissions."
         );
       });
 
@@ -283,7 +283,7 @@ describe("User Routes", () => {
         const response = await request(app).delete(apiUserID(validUserID));
 
         expect(response.status).toBe(401);
-        expect(response.body.message).toBe("Access denied, no token provided");
+        expect(response.body.message).toBe("Access denied: No token provided");
       });
 
       it("Returns 500 for an unexpected server error", async () => {

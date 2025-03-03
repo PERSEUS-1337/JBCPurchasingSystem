@@ -12,11 +12,9 @@ import app from "../../src/app";
 import User from "../../src/models/userModel";
 import {
   validUser,
-  noUsernameUser,
   noPasswordUser,
   weakPasswordUser,
   unexpectedUser,
-  shortUsernameUser,
 } from "../setup/mockUsers";
 import {
   validLoginData,
@@ -70,7 +68,7 @@ describe("Authentication Routes", () => {
             message: "User registered successfully",
             data: {
               email: validUser.email,
-              dateCreated: expect.any(String)
+              createdAt: expect.any(String),
             },
           })
         );
@@ -284,7 +282,7 @@ describe("Authentication Routes", () => {
         const response: Response = await request(app).get(apiProtected);
 
         expect(response.status).toBe(401); // Forbidden
-        expect(response.body.message).toBe("Access denied, no token provided");
+        expect(response.body.message).toBe("Access denied: No token provided");
       });
 
       it("Denies access to a protected route when the token is invalid.", async () => {
@@ -307,7 +305,7 @@ describe("Authentication Routes", () => {
     });
   });
 
-  describe(`POST ${apiChangePassword}`, () => {
+  describe(`PATCH ${apiChangePassword}`, () => {
     let validToken: string;
 
     beforeEach(async () => {
@@ -317,7 +315,7 @@ describe("Authentication Routes", () => {
     describe("Success Cases", () => {
       it("Changes the password successfully for an authenticated user.", async () => {
         const response: Response = await request(app)
-          .post(apiChangePassword)
+          .patch(apiChangePassword)
           .set("Authorization", `Bearer ${validToken}`)
           .send(validChangePasswordData);
 
@@ -338,7 +336,7 @@ describe("Authentication Routes", () => {
     describe("Fail Cases", () => {
       it("Rejects password change when the current password is incorrect.", async () => {
         const response: Response = await request(app)
-          .post(apiChangePassword)
+          .patch(apiChangePassword)
           .set("Authorization", `Bearer ${validToken}`)
           .send(wrongOldChangePasswordData);
 
@@ -348,16 +346,16 @@ describe("Authentication Routes", () => {
 
       it("Rejects password change for an unauthenticated user.", async () => {
         const response: Response = await request(app)
-          .post(apiChangePassword)
+          .patch(apiChangePassword)
           .send(validChangePasswordData);
 
         expect(response.status).toBe(401);
-        expect(response.body.message).toBe("Access denied, no token provided");
+        expect(response.body.message).toBe("Access denied: No token provided");
       });
 
       it("Rejects password change when the token is invalid.", async () => {
         const response: Response = await request(app)
-          .post(apiChangePassword)
+          .patch(apiChangePassword)
           .set("Authorization", `Bearer ${invalidToken}`)
           .send(validChangePasswordData);
 
@@ -369,7 +367,7 @@ describe("Authentication Routes", () => {
         await User.deleteMany({}); // Simulate no users in the database
 
         const response: Response = await request(app)
-          .post(apiChangePassword)
+          .patch(apiChangePassword)
           .set("Authorization", `Bearer ${validToken}`)
           .send(validChangePasswordData);
 
@@ -384,7 +382,7 @@ describe("Authentication Routes", () => {
         .mockRejectedValueOnce(new Error("Unexpected error"));
 
       const response: Response = await request(app)
-        .post(apiChangePassword)
+        .patch(apiChangePassword)
         .set("Authorization", `Bearer ${validToken}`)
         .send(validChangePasswordData);
 

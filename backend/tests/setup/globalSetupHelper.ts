@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import User from "../../src/models/userModel";
 import { validSuperAdminUser, validUser } from "./mockUsers";
 import { generateJWT } from "../../src/utils/authUtils";
+import Supplier, { ISupplier } from "../../src/models/supplierModel";
+import { validSupplierComplete, validSupplierMinimum, validSuppliersList } from "./mockSuppliers";
 
 let mongoServer: MongoMemoryServer;
 
@@ -44,7 +46,6 @@ export const preSaveSuperAdminAndGenJWT = async (): Promise<string> => {
   return await generateJWT(user.userID);
 };
 
-
 export const preSaveUsersAndGenTokens = async (): Promise<{
   validToken: string;
   superAdminToken: string;
@@ -63,7 +64,38 @@ export const preSaveUsersAndGenTokens = async (): Promise<{
   return { validToken, superAdminToken };
 };
 
-
 export const deleteAllUsers = async () => {
   await User.deleteMany({});
+};
+
+export const preSaveSupplier = async () => {
+  await Supplier.deleteMany({});
+  await new Supplier(validSupplierComplete).save();
+  // const savedSuppliers = await Supplier.find({});
+  // console.log("Saved Suppliers:", savedSuppliers);
+};
+
+export const preSaveMultipleSuppliers = async () => {
+  await Supplier.deleteMany({});
+  await Supplier.insertMany(validSuppliersList);
+
+  // Fetch and log the saved suppliers
+  // const savedSuppliers = await Supplier.find({});
+  // console.log("Saved Suppliers:", savedSuppliers);
+};
+
+export const deleteMultipleSuppliers = async () => {
+  await Supplier.deleteMany({});
+};
+
+export const saveSupplierAndReturn = async <T extends Partial<ISupplier>>(
+  supplierData: T
+): Promise<ISupplier> => {
+  const supplier = new Supplier(supplierData);
+  await supplier.save();
+  const savedSupplier = await Supplier.findById(supplier._id).lean();
+  if (!savedSupplier) {
+    throw new Error("Supplier not found after creation");
+  }
+  return savedSupplier;
 };
