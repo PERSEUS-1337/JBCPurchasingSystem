@@ -15,13 +15,13 @@ export const validSupplierWithMultipleContactNumbers = {
   contactNumbers: ["09123456789", "09178510213"],
 };
 
-export const validSupplierWithSupplies = {
-  ...validSupplierMinimum,
-  supplies: [
-    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d73"),
-    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d74"),
-  ],
-};
+// export const validSupplierWithSupplies = {
+//   ...validSupplierMinimum,
+//   supplies: [
+//     new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d73"),
+//     new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d74"),
+//   ],
+// };
 
 export const validSupplierWithDocs = {
   ...validSupplierMinimum,
@@ -74,10 +74,10 @@ export const validSupplierComplete = {
       position: "Procurement Officer",
     },
   ],
-  supplies: [
-    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d73"),
-    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d74"),
-  ],
+  // supplies: [
+  //   new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d73"),
+  //   new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d74"),
+  // ],
   documentation: ["license.pdf", "certification.jpg", "permit.docx"],
   tags: ["Construction", "Maintenance"],
 };
@@ -136,10 +136,10 @@ export const invalidSupplierContactPersonEmail = {
   ],
 };
 
-export const invalidSupplierSupplies = {
-  ...validSupplierMinimum,
-  supplies: ["invalid-object-id"],
-};
+// export const invalidSupplierSupplies = {
+//   ...validSupplierMinimum,
+//   supplies: ["invalid-object-id"],
+// };
 
 export const invalidSupplierDocumentation = {
   ...validSupplierMinimum,
@@ -261,8 +261,8 @@ export const invalidUpdateSupplierEmail = {
 
 export const restrictedUpdateSupplierData = {
   supplierID: "SUP-999",
-  supplies: [
-    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
-    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d76"),
-  ]
+  // supplies: [
+  //   new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
+  //   new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d76"),
+  // ]
 };

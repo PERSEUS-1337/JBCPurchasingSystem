@@ -27,7 +27,6 @@ import {
 } from "../setup/globalSetupHelper";
 import {
   invalidSupplierEmails,
-  invalidSupplierSupplies,
   missingRequiredFieldsSupplier,
   validSupplierUpdateMinimumData,
   validSupplierComplete,
@@ -41,7 +40,6 @@ import {
   restrictedUpdateSupplierData,
 } from "../setup/mockSuppliers";
 import Supplier from "../../src/models/supplierModel";
-import { fromZodError } from "zod-validation-error";
 
 describe("Supplier Routes", () => {
   beforeAll(async () => {
@@ -348,18 +346,18 @@ describe("Supplier Routes", () => {
         );
       });
 
-      it("Returns 400 when supplies contains invalid ObjectId", async () => {
-        const response = await request(app)
-          .post(apiSupplierMain)
-          .set("Authorization", `Bearer ${validToken}`)
-          .send(invalidSupplierSupplies);
+      // it("Returns 400 when supplies contains invalid ObjectId", async () => {
+      //   const response = await request(app)
+      //     .post(apiSupplierMain)
+      //     .set("Authorization", `Bearer ${validToken}`)
+      //     .send(invalidSupplierSupplies);
 
-        expect(response.status).toBe(400);
-        expect(response.body.message).toContain("Validation failed");
-        expect(response.body.errors[0].message).toContain(
-          "Invalid ObjectId format"
-        );
-      });
+      //   expect(response.status).toBe(400);
+      //   expect(response.body.message).toContain("Validation failed");
+      //   expect(response.body.errors[0].message).toContain(
+      //     "Invalid ObjectId format"
+      //   );
+      // });
 
       it("Returns 400 when contactPersons are missing required fields", async () => {
         const response = await request(app)
@@ -521,10 +519,10 @@ describe("Supplier Routes", () => {
             path: "supplierID",
             message: "Update not allowed on restricted field: supplierID",
           },
-          {
-            path: "supplies",
-            message: "Update not allowed on restricted field: supplies",
-          },
+          // {
+          //   path: "supplies",
+          //   message: "Update not allowed on restricted field: supplies",
+          // },
         ]);
       });
 

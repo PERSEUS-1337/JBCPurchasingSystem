@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Schema, Types } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose";
 import {
   contactNumberRegex,
   emailRegex,
@@ -20,7 +20,6 @@ export interface ISupplier extends Document {
   emails: string[];
   contactPersons: IContactPerson[];
   address: string;
-  supplies: Types.ObjectId[];
   documentation: string[];
   primaryTag: string;
   tags: string[];
@@ -98,11 +97,6 @@ const SupplierSchema = new Schema<ISupplier>(
       default: [],
     },
     address: { type: String, required: true },
-    supplies: {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: "Supply",
-      default: [],
-    },
     documentation: { type: [String], default: [] },
     primaryTag: { type: String, required: true },
     tags: {
@@ -127,8 +121,7 @@ SupplierSchema.statics.checkDuplicateSupplier = async function (
   supplierID: string
 ): Promise<boolean> {
   const existingSupplier = await this.findOne({ supplierID });
-  // console.log(existingSupplier)
-  return !!existingSupplier; // Convert the result to a boolean
+  return !!existingSupplier;
 };
 
 const Supplier = mongoose.model<ISupplier, ISupplierModel>(

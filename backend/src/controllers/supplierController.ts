@@ -181,7 +181,7 @@ export const updateSupplierStatus = async (
   try {
     const { supplierID } = req.params;
     const { status } = req.body;
-    console.log(req.params)
+    // console.log(req.params)
 
     if (!status || !supplierStatusEnums.includes(status)) {
       res.status(400).json({ message: "Invalid status value" });

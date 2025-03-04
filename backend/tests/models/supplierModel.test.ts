@@ -15,16 +15,10 @@ import {
 } from "../setup/globalSetupHelper";
 import {
   validSupplierMinimum,
-  validSupplierWithDocs,
-  validSupplierWithContactPersons,
   validSupplierComplete,
-  validSupplierWithSupplies,
-  validSupplierWithMultipleContactNumbers,
-  validSupplierWithEmails,
   invalidSupplierEmails,
   invalidSupplierMissingContactPersonFields,
   invalidSupplierContactPersonEmail,
-  invalidSupplierSupplies,
   invalidSupplierDocumentation,
   missingRequiredFieldsSupplier,
 } from "../setup/mockSuppliers";
@@ -60,7 +54,7 @@ describe("Supplier Model Validation", () => {
       expect(savedSupplier.contactPersons).toEqual(
         validSupplierComplete.contactPersons
       );
-      expect(savedSupplier.supplies).toEqual(validSupplierComplete.supplies);
+      // expect(savedSupplier.supplies).toEqual(validSupplierComplete.supplies);
       expect(savedSupplier.documentation).toEqual(
         validSupplierComplete.documentation
       );
@@ -83,7 +77,7 @@ describe("Supplier Model Validation", () => {
       expect(savedSupplier.primaryTag).toBe(validSupplierMinimum.primaryTag);
       expect(savedSupplier.emails).toEqual([]);
       expect(savedSupplier.contactPersons).toEqual([]);
-      expect(savedSupplier.supplies).toEqual([]);
+      // expect(savedSupplier.supplies).toEqual([]);
       expect(savedSupplier.documentation).toEqual([]);
       expect(savedSupplier.tags).toEqual(validSupplierMinimum.tags);
     });
@@ -160,11 +154,11 @@ describe("Supplier Model Validation", () => {
         await expect(supplier.save()).rejects.toThrow();
       });
 
-      it("Should reject invalid ObjectId values in supplies array", async () => {
-        const supplier = new Supplier(invalidSupplierSupplies);
+      // it("Should reject invalid ObjectId values in supplies array", async () => {
+      //   const supplier = new Supplier(invalidSupplierSupplies);
 
-        await expect(supplier.save()).rejects.toThrow();
-      });
+      //   await expect(supplier.save()).rejects.toThrow();
+      // });
 
       it("Should reject non-string values in documentation array", async () => {
         const supplier = new Supplier(invalidSupplierDocumentation);

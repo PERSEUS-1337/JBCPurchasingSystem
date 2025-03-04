@@ -1,18 +1,14 @@
-import Supplier from "../../src/models/supplierModel";
 import {
   supplierSchema,
-  SupplierInput,
 } from "../../src/validators/supplierValidator";
-import { afterAll, beforeEach, describe, expect, it } from "@jest/globals";
+import { describe, expect, it } from "@jest/globals";
 import {
   validSupplierComplete,
-  validSupplierWithDocs,
   invalidSupplierEmails,
   invalidSupplierContactPersonPhoneNumber,
   invalidSupplierMissingContactPersonFields,
   validSupplierMinimum,
   missingRequiredFieldsSupplier,
-  invalidSupplierSupplies,
   invalidSupplierStatus,
 } from "../setup/mockSuppliers";
 import { fromZodError } from "zod-validation-error";
@@ -39,7 +35,7 @@ describe("Supplier Validator", () => {
         );
         expect(resultData.emails).toEqual(validSupplierComplete.emails);
         expect(resultData.tags).toEqual(validSupplierComplete.tags);
-        expect(resultData.supplies).toEqual(validSupplierComplete.supplies);
+        // expect(resultData.supplies).toEqual(validSupplierComplete.supplies);
         expect(resultData.documentation).toEqual(
           validSupplierComplete.documentation
         );
@@ -71,7 +67,7 @@ describe("Supplier Validator", () => {
         expect(resultData.primaryTag).toEqual(validSupplierMinimum.primaryTag);
         expect(resultData.emails).toEqual([]);
         expect(resultData.contactPersons).toEqual([]);
-        expect(resultData.supplies).toEqual([]);
+        // expect(resultData.supplies).toEqual([]);
         expect(resultData.documentation).toEqual([]);
         expect(resultData.tags).toEqual(validSupplierMinimum.tags);
       }
@@ -161,15 +157,15 @@ describe("Supplier Validator", () => {
       }
     });
 
-    it("Should fail if supplies ObjectID format is invalid", () => {
-      const result = supplierSchema.safeParse(invalidSupplierSupplies);
-      expect(result.success).toBe(false);
-      if (result.error) {
-        expect(fromZodError(result.error).message).toBe(
-          `Validation error: Invalid ObjectId format at "supplies[0]"`
-        );
-      }
-    });
+    // it("Should fail if supplies ObjectID format is invalid", () => {
+    //   const result = supplierSchema.safeParse(invalidSupplierSupplies);
+    //   expect(result.success).toBe(false);
+    //   if (result.error) {
+    //     expect(fromZodError(result.error).message).toBe(
+    //       `Validation error: Invalid ObjectId format at "supplies[0]"`
+    //     );
+    //   }
+    // });
 
     it("Should fail if contact person has invalid contact number", () => {
       const result = supplierSchema.safeParse(
