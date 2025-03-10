@@ -81,48 +81,6 @@ describe("Supplier Model Validation", () => {
       expect(savedSupplier.documentation).toEqual([]);
       expect(savedSupplier.tags).toEqual(validSupplierMinimum.tags);
     });
-
-    // it("Should store an array of supply references", async () => {
-    //   const savedSupplier = await saveSupplierAndReturn(validSupplierWithSupplies);
-    //   expect(savedSupplier.supplies).toEqual(
-    //     validSupplierWithSupplies.supplies
-    //   );
-    // });
-
-    // it("Should allow an array of document filenames in documentation", async () => {
-    //   const savedSupplier = await saveSupplierAndReturn(validSupplierWithDocs);
-
-    //   expect(savedSupplier.documentation).toEqual(
-    //     validSupplierWithDocs.documentation
-    //   );
-    // });
-
-    // it("Should save multiple contact numbers", async () => {
-    //   const savedSupplier = await saveSupplierAndReturn(
-    //     validSupplierWithMultipleContactNumbers
-    //   );
-    //   expect(savedSupplier.contactNumbers).toEqual(
-    //     validSupplierWithMultipleContactNumbers.contactNumbers
-    //   );
-    // });
-
-    // it("Should save multiple emails", async () => {
-    //   const savedSupplier = await saveSupplierAndReturn(
-    //     validSupplierWithEmails
-    //   );
-
-    //   expect(savedSupplier.emails).toEqual(validSupplierWithEmails.emails);
-    // });
-
-    // it("Should save contact persons with name, number, email, and position", async () => {
-    //   const savedSupplier = await saveSupplierAndReturn(
-    //     validSupplierWithContactPersons
-    //   );
-
-    //   expect(savedSupplier.contactPersons).toEqual(
-    //     validSupplierWithContactPersons.contactPersons
-    //   );
-    // });
   });
 
   // ========= FAIL CASES =========

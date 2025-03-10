@@ -4,7 +4,8 @@ import User from "../../src/models/userModel";
 import { validSuperAdminUser, validUser } from "./mockUsers";
 import { generateJWT } from "../../src/utils/authUtils";
 import Supplier, { ISupplier } from "../../src/models/supplierModel";
-import { validSupplierComplete, validSupplierMinimum, validSuppliersList } from "./mockSuppliers";
+import { validSupplierComplete, validSuppliersList } from "./mockSuppliers";
+import Supply, { ISupply } from "../../src/models/supplyModel";
 
 let mongoServer: MongoMemoryServer;
 
@@ -98,4 +99,16 @@ export const saveSupplierAndReturn = async <T extends Partial<ISupplier>>(
     throw new Error("Supplier not found after creation");
   }
   return savedSupplier;
+};
+
+export const saveSupplyAndReturn = async <T extends Partial<ISupply>>(
+  supplyData: T
+): Promise<ISupply> => {
+  const supply = new Supply(supplyData);
+  await supply.save();
+  const savedSupply = await Supply.findById(supply._id).lean();
+  if (!savedSupply) {
+    throw new Error("Supply not found after creation");
+  }
+  return savedSupply;
 };
