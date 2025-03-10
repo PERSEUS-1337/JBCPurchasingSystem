@@ -25,7 +25,9 @@ import {
 describe("Supply Model Validation", () => {
   beforeAll(async () => {
     await connectDB();
+    await Supply.syncIndexes(); // Reapply unique indexes
   });
+  
 
   beforeEach(async () => {
     await dropDB();
@@ -94,26 +96,28 @@ describe("Supply Model Validation", () => {
   });
 
   // ========= FAIL CASES =========
-  // describe("Fail Cases: Supply Validation and Error Handling", () => {
-  //   it("Should reject if required fields are missing", async () => {
-  //     const supply = new Supply(missingRequiredFieldsSupply);
-  //     await expect(supply.save()).rejects.toThrow();
-  //   });
+  describe("Fail Cases: Supply Validation and Error Handling", () => {
+    it("Should reject if required fields are missing", async () => {
+      const supply = new Supply(missingRequiredFieldsSupply);
+      await expect(supply.save({ validateBeforeSave: true })).rejects.toThrow();
+    });
 
-  //   it("Should enforce valid categories format", async () => {
-  //     const supply = new Supply(invalidSupplyCategories);
-  //     await expect(supply.save()).rejects.toThrow();
-  //   });
+    // it("Should enforce valid categories format", async () => {
+    //   const supply = new Supply(invalidSupplyCategories);
+    //   await expect(supply.save({ validateBeforeSave: true })).rejects.toThrow();
+    // });
 
-  //   it("Should reject invalid supplier pricing structure", async () => {
-  //     const supply = new Supply(invalidSupplySupplierPricing);
-  //     await expect(supply.save()).rejects.toThrow();
-  //   });
+    it("Should reject invalid supplier pricing structure", async () => {
+      const supply = new Supply(invalidSupplySupplierPricing);
+      await expect(supply.save({ validateBeforeSave: true })).rejects.toThrow();
+    });
 
-  //   it("Should enforce unique supplyID", async () => {
-  //     await saveSupplyAndReturn(validSupplyComplete);
-  //     const duplicateSupply = new Supply(validSupplyComplete);
-  //     await expect(duplicateSupply.save()).rejects.toThrow();
-  //   });
-  // });
+    // it("Should enforce unique supplyID", async () => {
+    //   await saveSupplyAndReturn(validSupplyComplete);
+    //   const duplicateSupply = new Supply(validSupplyComplete);
+    //   await expect(
+    //     duplicateSupply.save()
+    //   ).rejects.toThrow();
+    // });
+  });
 });

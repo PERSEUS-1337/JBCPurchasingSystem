@@ -16,13 +16,13 @@ export interface ISupply extends Document {
   supplyID: string;
   name: string;
   description: string;
-  categories: string[]; // Updated to be an array
-  unitMeasure: string; // Renamed for consistency
-  suppliers: Types.ObjectId[]; // List of supplier references
-  supplierPricing: ISupplierPricing[]; // List of supplier-price pairs
+  categories: string[];
+  unitMeasure: string;
+  suppliers: Types.ObjectId[];
+  supplierPricing: ISupplierPricing[];
   specifications: ISpecification[];
   status: string;
-  attachments: string[]; // Store file paths or URLs
+  attachments: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,7 +56,7 @@ const SupplySchema = new Schema<ISupply>(
     },
     name: { type: String, required: true },
     description: { type: String, required: true },
-    categories: { type: [String], required: true }, // Changed to an array
+    categories: { type: [String], required: true },
     unitMeasure: { type: String, required: true },
     suppliers: {
       type: [mongoose.Schema.Types.ObjectId],
