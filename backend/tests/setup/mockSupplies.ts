@@ -47,6 +47,91 @@ export const validSupplyMinimum = {
   attachments: [],
 };
 
+export const validSuppliesList = [
+  {
+    supplyID: "SPL-1002",
+    name: 'Stainless Steel Hex Bolt 1/2" x 2"',
+    description: 'Stainless Steel Hex Bolt 1/2" x 2" with nut',
+    categories: ["Hardware", "Fasteners"],
+    unitMeasure: "pc",
+    suppliers: [
+      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d77"),
+      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d78"),
+    ],
+    supplierPricing: [
+      {
+        supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d77"),
+        price: 12.5,
+      },
+      {
+        supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d78"),
+        price: 15.0,
+      },
+    ],
+    specifications: [
+      { specProperty: "Diameter", specValue: '1/2"' },
+      { specProperty: "Material", specValue: "Stainless Steel" },
+    ],
+    status: "Active",
+    attachments: ["specsheet.pdf"],
+  },
+  {
+    supplyID: "SPL-1003",
+    name: 'PVC Pipe 4" x 10ft',
+    description: 'PVC Pipe 4" diameter, 10 feet long',
+    categories: ["Plumbing", "Pipes"],
+    unitMeasure: "pc",
+    suppliers: [
+      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d79"),
+      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d80"),
+    ],
+    supplierPricing: [
+      {
+        supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d79"),
+        price: 25.0,
+      },
+      {
+        supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d80"),
+        price: 28.0,
+      },
+    ],
+    specifications: [
+      { specProperty: "Diameter", specValue: '4"' },
+      { specProperty: "Length", specValue: "10ft" },
+      { specProperty: "Material", specValue: "PVC" },
+    ],
+    status: "Active",
+    attachments: ["catalog.pdf"],
+  },
+  {
+    supplyID: "SPL-1004",
+    name: 'Wood Screw #8 x 1-1/2"',
+    description: 'Wood Screw #8 x 1-1/2", Phillips head',
+    categories: ["Hardware", "Fasteners"],
+    unitMeasure: "pc",
+    suppliers: [
+      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d81"),
+      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d82"),
+    ],
+    supplierPricing: [
+      {
+        supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d81"),
+        price: 0.5,
+      },
+      {
+        supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d82"),
+        price: 0.6,
+      },
+    ],
+    specifications: [
+      { specProperty: "Size", specValue: '#8 x 1-1/2"' },
+      { specProperty: "Material", specValue: "Steel" },
+    ],
+    status: "Active",
+    attachments: ["manual.pdf"],
+  },
+];
+
 // ========= INVALID SUPPLIES =========
 export const missingRequiredFieldsSupply = {
   name: "Incomplete Supply",

@@ -9,12 +9,11 @@ import {
   invalidSupplyInvalidSupplierPricing,
   validSupplyMinimum,
   invalidSupplyStatus,
-} from "../setup/mockSupplies"; // Adjust the import path as needed
+} from "../setup/mockSupplies";
 import { fromZodError } from "zod-validation-error";
 import { defaultSupplyStatus } from "../../src/constants";
 
 describe("Supply Validator", () => {
-  // ========= SUCCESS CASES =========
   describe("Success Cases: Supply Validation", () => {
     it("Should pass with a complete valid supply", () => {
       const result = supplySchema.safeParse(validSupplyComplete);
@@ -59,7 +58,6 @@ describe("Supply Validator", () => {
     });
   });
 
-  // ========= FAIL CASES =========
   describe("Fail Cases: Supply Validation Errors", () => {
     it("Should fail if required fields are missing", () => {
       const result = supplySchema.safeParse(missingRequiredFieldsSupply);
@@ -82,9 +80,6 @@ describe("Supply Validator", () => {
         expect(errorMessage).toContain(
           `Validation error: Specification property is required at \"specifications[0].specProperty\"; Required at \"specifications[0].specValue\"`
         );
-        // expect(errorMessage).toContain(
-        //   `Specification value is required at "specifications[0].specValue"`
-        // );
       }
     });
 

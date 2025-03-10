@@ -25,6 +25,40 @@ export const getSupplyByID = async (
   }
 };
 
+export const searchSupplies = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { query } = req.query;
+
+    // Check if query is missing
+    if (!query) {
+      res.status(400).json({ message: "Search query is required" });
+      return;
+    }
+
+    // Search supplies in the database
+    const supplies = await Supply.find({
+      name: { $regex: query, $options: "i" },
+    });
+
+    // Check if no supplies were found
+    if (supplies.length === 0) {
+      res.status(404).json({ message: "No supplies matched your search" });
+      return;
+    }
+
+    // Return the found supplies
+    res.status(200).json({ message: "Supplies retrieved", data: supplies });
+  } catch (err: any) {
+    // Handle internal server errors
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: err.message });
+  }
+};
+
 export const getAllSupplies = async (
   _req: Request,
   res: Response
@@ -65,13 +99,11 @@ export const createSupply = async (
     const newSupply: ISupply = new Supply(newSupplyData);
     await newSupply.save();
 
-    res
-      .status(201)
-      .json({
-        message: "Supply created successfully",
-        data: newSupply,
-        createdAt: newSupply.createdAt,
-      });
+    res.status(201).json({
+      message: "Supply created successfully",
+      data: newSupply,
+      createdAt: newSupply.createdAt,
+    });
   } catch (err: any) {
     res
       .status(500)
@@ -127,23 +159,6 @@ export const deleteSupply = async (
     res
       .status(200)
       .json({ message: "Supply deleted successfully", data: supply });
-  } catch (err: any) {
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
-  }
-};
-
-export const searchSupplies = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { query } = req.query;
-    const supplies = await Supply.find({
-      name: { $regex: query, $options: "i" },
-    });
-    res.status(200).json({ message: "Supplies retrieved", data: supplies });
   } catch (err: any) {
     res
       .status(500)
@@ -247,12 +262,10 @@ export const getSuppliersOfSupply = async (
       return;
     }
 
-    res
-      .status(200)
-      .json({
-        message: "Suppliers retrieved successfully",
-        data: supply.suppliers,
-      });
+    res.status(200).json({
+      message: "Suppliers retrieved successfully",
+      data: supply.suppliers,
+    });
   } catch (err: any) {
     res
       .status(500)

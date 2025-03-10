@@ -32,3 +32,8 @@ export const apiSupplierDocsIdx = (supplierID: string, idx: string) =>
   `/api/supplier/${supplierID}/docs/${idx}`;
 export const apiSupplierStatus = (supplierID: string) =>
   `/api/supplier/${supplierID}/status`;
+
+export const apiSupplyMain = "/api/supply";
+export const apiSupplyHello = "/api/supply/hello";
+export const apiSupplySearch = "/api/supply/search";
+export const apiSupplyID = (supplyID: string) => `/api/supply/${supplyID}`;

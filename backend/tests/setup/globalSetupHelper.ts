@@ -6,6 +6,7 @@ import { generateJWT } from "../../src/utils/authUtils";
 import Supplier, { ISupplier } from "../../src/models/supplierModel";
 import { validSupplierComplete, validSuppliersList } from "./mockSuppliers";
 import Supply, { ISupply } from "../../src/models/supplyModel";
+import { validSuppliesList, validSupplyComplete } from "./mockSupplies";
 
 let mongoServer: MongoMemoryServer;
 
@@ -100,6 +101,28 @@ export const saveSupplierAndReturn = async <T extends Partial<ISupplier>>(
   }
   return savedSupplier;
 };
+
+
+export const preSaveSupply = async () => {
+  await Supply.deleteMany({});
+  await new Supply(validSupplyComplete).save();
+  // const savedSuppliers = await Supplier.find({});
+  // console.log("Saved Suppliers:", savedSuppliers);
+};
+
+export const preSaveMultipleSupplies = async () => {
+  await Supply.deleteMany({});
+  await Supply.insertMany(validSuppliesList);
+
+  // Fetch and log the saved suppliers
+  // const savedSuppliers = await Supplier.find({});
+  // console.log("Saved Suppliers:", savedSuppliers);
+};
+
+export const deleteMultipleSupplies = async () => {
+  await Supply.deleteMany({});
+};
+
 
 export const saveSupplyAndReturn = async <T extends Partial<ISupply>>(
   supplyData: T
