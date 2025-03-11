@@ -191,3 +191,21 @@ export const invalidSupplyStatus = {
   suppliers: [new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75")],
   status: "Invalid", // Invalid status
 };
+
+// ========= UPDATE MOCK DATA =========
+export const validUpdateSupply = {
+  name: 'Updated G.I. U-Bolt 8" x 3/8dia',
+  description: "Updated description for the supply with enhanced features",
+  categories: ["Hardware", "Fasteners", "Premium"],
+  unitMeasure: "pc",
+  status: "Active",
+};
+
+export const validPartialUpdateSupply = {
+  description: "Updated only the description field",
+};
+
+export const invalidUpdateSupply = {
+  name: "",             // Invalid: name should not be empty
+  categories: 123,      // Invalid: categories should be an array of strings
+};

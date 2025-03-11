@@ -22,6 +22,7 @@ import {
   missingRequiredFieldsSupply,
   validSupplyComplete,
   validSupplyMinimum,
+  validUpdateSupply,
 } from "../setup/mockSupplies";
 import {
   apiSupplyID,
@@ -172,7 +173,7 @@ describe("Supply Routes", () => {
           .set("Authorization", `Bearer ${validToken}`);
 
         expect(response.status).toBe(200);
-        expect(response.body.message).toBe("No supplies matched your search");
+        expect(response.body.message).toBe("Supplies retrieved");
         expect(response.body.data).toEqual([]);
       });
     });
@@ -197,7 +198,7 @@ describe("Supply Routes", () => {
           .set("Authorization", `Bearer ${validToken}`);
 
         expect(response.status).toBe(500);
-        expect(response.body.message).toBe("Internal Server Error");
+        expect(response.body.message).toBe("Internal server error");
       });
     });
   });
@@ -269,6 +270,62 @@ describe("Supply Routes", () => {
           .post(apiSupplyMain)
           .set("Authorization", `Bearer ${validToken}`)
           .send(validSupplyMinimum);
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
+      });
+    });
+  });
+
+  describe(`PATCH ${apiSupplyMain}/:supplyID`, () => {
+    describe("Success Cases: Update Supply", () => {
+      it("Updates an existing supply with valid update data and token", async () => {
+        await preSaveSupply();
+
+        const response = await request(app)
+          .patch(apiSupplyID(validSupplyID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validUpdateSupply);
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("Supply updated successfully");
+        expect(response.body.data.categories).toEqual(
+          validUpdateSupply.categories
+        );
+      });
+    });
+
+    describe("Failure Cases: Update Supply", () => {
+      it("Returns 400 when no update data is provided", async () => {
+        await preSaveSupply();
+
+        const response = await request(app)
+          .patch(apiSupplyID(validSupplyID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({});
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe("No valid update data provided");
+      });
+
+      it("Returns 404 when supply is not found", async () => {
+        const response = await request(app)
+          .patch(`${apiSupplyMain}/nonExistingSupplyID`)
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validUpdateSupply);
+
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("Supply not found");
+      });
+
+      it("Returns 500 when there's a server error", async () => {
+        jest.spyOn(Supply, "findOneAndUpdate").mockImplementationOnce(() => {
+          throw new Error("Database error");
+        });
+        const response = await request(app)
+          .patch(apiSupplyID(validSupplyID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validUpdateSupply);
 
         expect(response.status).toBe(500);
         expect(response.body.message).toBe("Internal server error");
