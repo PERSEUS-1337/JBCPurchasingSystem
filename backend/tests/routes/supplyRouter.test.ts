@@ -26,6 +26,7 @@ import {
 } from "../setup/mockSupplies";
 import {
   apiSupplyID,
+  apiSupplyIDStatus,
   apiSupplyMain,
   apiSupplySearch,
 } from "../setup/refRoutes";
@@ -381,6 +382,63 @@ describe("Supply Routes", () => {
 
         expect(response.status).toBe(500);
         expect(response.body.message).toBe("Internal server error");
+      });
+    });
+  });
+
+  describe(`PATCH ${apiSupplyMain}/:supplyID/status`, () => {
+    describe("Success Cases: Update Supply Status", () => {
+      it("should update supply status successfully with a valid token", async () => {
+        await preSaveSupply();
+        const newStatus = "Inactive";
+
+        const response = await request(app)
+          .patch(apiSupplyIDStatus(validSupplyID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ status: newStatus });
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe(
+          "Supply status updated successfully"
+        );
+        expect(response.body.data.status).toBe(newStatus);
+      });
+    });
+
+    describe("Failure Cases: Update Supply Status", () => {
+      it("should return 404 if the supply is not found", async () => {
+        const response = await request(app)
+          .patch(apiSupplyIDStatus("non-existing-id"))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ status: "Inactive" });
+
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("Supply not found");
+      });
+
+      it("should return 401 when no token is provided", async () => {
+        await preSaveSupply();
+        const response = await request(app)
+          .patch(apiSupplyIDStatus(validSupplyID))
+          .send({ status: "Inactive" });
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
+
+      it("should return 500 when there is a server error", async () => {
+        jest.spyOn(Supply, "findOneAndUpdate").mockImplementationOnce(() => {
+          throw new Error("Database error");
+        });
+
+        const response = await request(app)
+          .patch(apiSupplyIDStatus(validSupplyID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ status: "Inactive" });
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
+        expect(response.body.error).toBe("Database error");
       });
     });
   });
