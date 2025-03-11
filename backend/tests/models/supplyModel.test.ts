@@ -18,7 +18,6 @@ import {
   validSupplyComplete,
   validSupplyMinimum,
   missingRequiredFieldsSupply,
-  invalidSupplyCategories,
   invalidSupplySupplierPricing,
 } from "../setup/mockSupplies";
 

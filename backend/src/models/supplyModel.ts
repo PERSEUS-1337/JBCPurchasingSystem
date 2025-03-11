@@ -58,13 +58,16 @@ const SupplySchema = new Schema<ISupply>(
     description: { type: String, required: true },
     categories: { type: [String], required: true },
     unitMeasure: { type: String, required: true },
-    suppliers: {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: "Supplier",
-      required: true,
-    },
+    // Using explicit array-of-objects notation for clarity
+    suppliers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Supplier",
+        required: true,
+      },
+    ],
     supplierPricing: { type: [SupplierPricingSchema], default: [] },
-    specifications: { type: [SpecificationSchema], default: [] }, // Added field
+    specifications: { type: [SpecificationSchema], default: [] },
     status: {
       type: String,
       enum: supplyStatusEnums,
@@ -79,8 +82,9 @@ const SupplySchema = new Schema<ISupply>(
 SupplySchema.statics.checkDuplicateSupply = async function (
   supplyID: string
 ): Promise<boolean> {
-  const existingSupply = await this.findOne({ supplyID });
-  return !!existingSupply;
+  // Using exists for performance, as it only returns a boolean result
+  const exists = await this.exists({ supplyID });
+  return !!exists;
 };
 
 const Supply = mongoose.model<ISupply, ISupplyModel>(

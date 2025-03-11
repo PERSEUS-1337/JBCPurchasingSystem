@@ -92,11 +92,11 @@ describe("Supply Validator", () => {
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
         expect(errorMessage).toContain(
-          `Invalid ObjectId format at "supplierPricing[0].supplier"`
+          `Validation error: Invalid ObjectId format at \"supplierPricing[0].supplier\"; Price must be non-negative at \"supplierPricing[0].price\"`
         );
-        expect(errorMessage).toContain(
-          `Price must be a positive number at "supplierPricing[0].price"`
-        );
+        // expect(errorMessage).toContain(
+        //   `Price must be a positive number at "supplierPricing[0].price"`
+        // );
       }
     });
 

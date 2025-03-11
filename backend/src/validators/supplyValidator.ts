@@ -1,7 +1,11 @@
 import { z, ZodIssueCode } from "zod";
 import { Types } from "mongoose";
 import { supplyIDRegex } from "../constants/regex";
-import { defaultSupplyStatus, supplyRestrictedFields, supplyStatusEnums } from "../constants";
+import {
+  defaultSupplyStatus,
+  supplyRestrictedFields,
+  supplyStatusEnums,
+} from "../constants";
 
 // Base Schema for Supply Inputs
 const objectIdSchema = z.union([
@@ -12,31 +16,30 @@ const objectIdSchema = z.union([
 ]);
 
 const specificationSchema = z.object({
-  specProperty: z.string().min(1, "Specification property is required"),
-  specValue: z
-    .union([z.string(), z.number()])
-    .refine((val) => val !== undefined, {
-      message: "Specification value is required",
-    }),
+  specProperty: z.string().trim().min(1, "Specification property is required"),
+  // Removed redundant refinement on specValue as it's already required by default
+  specValue: z.union([z.string(), z.number()]),
 });
 
 const supplierPricingSchema = z.object({
   supplier: objectIdSchema,
-  price: z.number().min(0, "Price must be a positive number"),
+  price: z.number().min(0, "Price must be non-negative"),
 });
 
 export const supplySchema = z.object({
   supplyID: z
     .string()
+    .trim()
     .min(1, "Supply ID is required")
     .regex(supplyIDRegex, "Supply ID must follow the correct format"),
   name: z
     .string()
+    .trim()
     .min(1, "Name is required")
     .max(100, "Name must not exceed 100 characters"),
-  description: z.string().min(1, "Description is required"),
+  description: z.string().trim().min(1, "Description is required"),
   categories: z.array(z.string()).min(1, "At least one category is required"),
-  unitMeasure: z.string().min(1, "Unit of measure is required"),
+  unitMeasure: z.string().trim().min(1, "Unit of measure is required"),
   suppliers: z
     .array(objectIdSchema)
     .min(1, "At least one supplier is required"),
