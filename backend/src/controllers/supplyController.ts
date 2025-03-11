@@ -71,19 +71,19 @@ export const getAllSupplies = async (
     const supplies = await Supply.find({}, { _id: 0, __v: 0 });
 
     if (supplies.length === 0) {
-      res.status(404).json({ message: "No supplies found", data: [] });
-      return;
+      res.status(200).json({ message: "No data yet", data: [] });
+    } else {
+      res
+        .status(200)
+        .json({ message: "Supplies retrieved successfully", data: supplies });
     }
-
-    res
-      .status(200)
-      .json({ message: "Supplies retrieved successfully", data: supplies });
   } catch (err: any) {
     res
       .status(500)
       .json({ message: "Internal server error", error: err.message });
   }
 };
+
 
 export const createSupply = async (
   req: Request,
