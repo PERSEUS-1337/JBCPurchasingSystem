@@ -26,8 +26,11 @@ import {
 } from "../setup/refRoutes";
 
 describe("Supply Routes", () => {
+  let validToken: string;
+
   beforeAll(async () => {
     await connectDB();
+    validToken = await preSaveUserAndGenJWT();
   });
 
   beforeEach(async () => {
@@ -39,12 +42,10 @@ describe("Supply Routes", () => {
   });
 
   describe(`GET ${apiSupplyID(":supplyID")}`, () => {
-    let validToken: string;
     let validSupplyID: string;
 
     describe("Success Cases: GET supplies by ID", () => {
       beforeEach(async () => {
-        validToken = await preSaveUserAndGenJWT();
         await preSaveSupply();
         validSupplyID = validSupplyComplete.supplyID;
       });
@@ -63,9 +64,9 @@ describe("Supply Routes", () => {
     });
 
     describe("Failure Cases: GET supplies by ID", () => {
-      beforeEach(async () => {
-        validToken = await preSaveUserAndGenJWT();
-      });
+      // beforeEach(async () => {
+      //   validToken = await preSaveUserAndGenJWT();
+      // });
 
       it("Returns 404 when supply does not exist", async () => {
         const response = await request(app)
@@ -99,11 +100,11 @@ describe("Supply Routes", () => {
   });
 
   describe(`GET ${apiSupplyMain}`, () => {
-    let validToken: string;
+    // let validToken: string;
 
     describe("Success Cases: GET all supplies", () => {
       beforeEach(async () => {
-        validToken = await preSaveUserAndGenJWT();
+        // validToken = await preSaveUserAndGenJWT();
         await preSaveMultipleSupplies();
       });
 
@@ -119,9 +120,9 @@ describe("Supply Routes", () => {
     });
 
     describe("Failure Cases: GET all supplies", () => {
-      beforeEach(async () => {
-        validToken = await preSaveUserAndGenJWT();
-      });
+      // beforeEach(async () => {
+      //   validToken = await preSaveUserAndGenJWT();
+      // });
 
       it("Returns 401 when no token is provided", async () => {
         const response = await request(app).get(apiSupplyMain);
@@ -155,11 +156,11 @@ describe("Supply Routes", () => {
   });
 
   describe(`GET ${apiSupplySearch}`, () => {
-    let validToken: string;
+    // let validToken: string;
 
     describe("Success Cases: Search Supplies", () => {
       beforeEach(async () => {
-        validToken = await preSaveUserAndGenJWT();
+        // validToken = await preSaveUserAndGenJWT();
         await preSaveMultipleSupplies();
       });
 
@@ -173,12 +174,32 @@ describe("Supply Routes", () => {
           response.body.data.some((s: any) => s.name.includes("Bolt"))
         ).toBe(true);
       });
+
+      it("Returns empty array and message when no query parameter", async () => {
+        const response = await request(app)
+          .get(apiSupplySearch)
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("No supplies matched your search");
+        expect(response.body.data).toEqual([]);
+      });
+
+      it("Returns empty array and message when no matches found", async () => {
+        const response = await request(app)
+          .get(`${apiSupplySearch}?query=NonExistent`)
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("No supplies matched your search");
+        expect(response.body.data).toEqual([]);
+      });
     });
 
     describe("Failure Cases: Search Supplies", () => {
-      beforeEach(async () => {
-        validToken = await preSaveUserAndGenJWT();
-      });
+      // beforeEach(async () => {
+      //   validToken = await preSaveUserAndGenJWT();
+      // });
 
       it("Returns 401 when no token is provided", async () => {
         const response = await request(app).get(
@@ -187,24 +208,6 @@ describe("Supply Routes", () => {
 
         expect(response.status).toBe(401);
         expect(response.body.message).toBe("Access denied: No token provided");
-      });
-
-      it("Returns 400 when no query parameter", async () => {
-        const response = await request(app)
-          .get(apiSupplySearch)
-          .set("Authorization", `Bearer ${validToken}`);
-
-        expect(response.status).toBe(400);
-        expect(response.body.message).toBe("Search query is required");
-      });
-
-      it("Returns 404 when no matches found", async () => {
-        const response = await request(app)
-          .get(`${apiSupplySearch}?query=NonExistent`)
-          .set("Authorization", `Bearer ${validToken}`);
-
-        expect(response.status).toBe(404);
-        expect(response.body.message).toBe("No supplies matched your search");
       });
 
       it("Returns 500 on server error", async () => {
@@ -223,12 +226,12 @@ describe("Supply Routes", () => {
   });
 
   describe(`POST ${apiSupplyMain}`, () => {
-    let validToken: string;
+    // let validToken: string;
 
     describe("Success Cases: Create Supply", () => {
-      beforeEach(async () => {
-        validToken = await preSaveUserAndGenJWT();
-      });
+      // beforeEach(async () => {
+      //   validToken = await preSaveUserAndGenJWT();
+      // });
 
       it("Creates a new supply with valid data and token", async () => {
         const response = await request(app)
@@ -245,7 +248,7 @@ describe("Supply Routes", () => {
 
     describe("Failure Cases: Create Supply", () => {
       beforeEach(async () => {
-        validToken = await preSaveUserAndGenJWT();
+        // validToken = await preSaveUserAndGenJWT();
         await Supply.create(validSupplyComplete); // Pre-create for duplicate test
       });
 
@@ -296,12 +299,12 @@ describe("Supply Routes", () => {
   });
 
   describe(`DELETE ${apiSupplyID(":supplyID")}`, () => {
-    let validToken: string;
+    // let validToken: string;
     let existingSupplyID: string;
 
     describe("Success Cases: Delete Supply", () => {
       beforeEach(async () => {
-        validToken = await preSaveUserAndGenJWT();
+        // validToken = await preSaveUserAndGenJWT();
         await preSaveSupply();
         existingSupplyID = validSupplyComplete.supplyID;
       });
@@ -323,9 +326,9 @@ describe("Supply Routes", () => {
     });
 
     describe("Failure Cases: Delete Supply", () => {
-      beforeEach(async () => {
-        validToken = await preSaveUserAndGenJWT();
-      });
+      // beforeEach(async () => {
+      //   validToken = await preSaveUserAndGenJWT();
+      // });
 
       it("Returns 401 when no token is provided", async () => {
         const response = await request(app).delete(apiSupplyID("anyid"));

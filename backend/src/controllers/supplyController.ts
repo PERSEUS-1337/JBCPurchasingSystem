@@ -32,9 +32,11 @@ export const searchSupplies = async (
   try {
     const { query } = req.query;
 
-    // Check if query is missing
+    // If no query is provided, return a success response with an empty array
     if (!query) {
-      res.status(400).json({ message: "Search query is required" });
+      res
+        .status(200)
+        .json({ message: "No supplies matched your search", data: [] });
       return;
     }
 
@@ -43,9 +45,11 @@ export const searchSupplies = async (
       name: { $regex: query, $options: "i" },
     });
 
-    // Check if no supplies were found
+    // If no supplies are found, return success with an empty array
     if (supplies.length === 0) {
-      res.status(404).json({ message: "No supplies matched your search" });
+      res
+        .status(200)
+        .json({ message: "No supplies matched your search", data: [] });
       return;
     }
 

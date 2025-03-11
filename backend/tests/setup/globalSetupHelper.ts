@@ -102,7 +102,6 @@ export const saveSupplierAndReturn = async <T extends Partial<ISupplier>>(
   return savedSupplier;
 };
 
-
 export const preSaveSupply = async () => {
   await Supply.deleteMany({});
   await new Supply(validSupplyComplete).save();
@@ -119,10 +118,6 @@ export const preSaveMultipleSupplies = async () => {
   // console.log("Saved Suppliers:", savedSuppliers);
 };
 
-export const deleteMultipleSupplies = async () => {
-  await Supply.deleteMany({});
-};
-
 
 export const saveSupplyAndReturn = async <T extends Partial<ISupply>>(
   supplyData: T
@@ -134,4 +129,21 @@ export const saveSupplyAndReturn = async <T extends Partial<ISupply>>(
     throw new Error("Supply not found after creation");
   }
   return savedSupply;
+};
+
+export const saveMultipleSuppliesAndReturn = async <T extends Partial<ISupply>>(
+  suppliesData: T[]
+): Promise<ISupply[]> => {
+  const supplies = suppliesData.map((data) => new Supply(data));
+  // Bulk insert the supplies
+  const insertedSupplies = await Supply.insertMany(supplies);
+  // Retrieve the full documents to ensure a complete object is returned
+  const savedSupplies = await Supply.find({
+    _id: { $in: insertedSupplies.map((s) => s._id) },
+  }).lean();
+  return savedSupplies;
+};
+
+export const deleteMultipleSupplies = async () => {
+  await Supply.deleteMany({});
 };
