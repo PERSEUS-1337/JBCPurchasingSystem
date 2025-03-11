@@ -19,37 +19,11 @@ import {
 } from "../setup/globalSetupHelper";
 import Supply from "../../src/models/supplyModel";
 import { validSupplyComplete, validSupplyMinimum } from "../setup/mockSupplies";
-import { apiSupplyID, apiSupplyMain, apiSupplySearch } from "../setup/refRoutes";
-
-
-// // API Endpoints
-// const apiSupplyMain = "/api/supplies";
-// const apiSupplySearch = "/api/supplies/search";
-// const apiSupplyID = (id: string) => `/api/supplies/${id}`;
-
-// // Test Helpers
-// const preSaveUserAndGenJWT = async (): Promise<string> => {
-//   const user = await User.create({
-//     username: "testuser",
-//     password: "testpass",
-//     role: "procurement",
-//   });
-//   return jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
-//     expiresIn: "1h",
-//   });
-// };
-
-// const preSaveSupply = async () => {
-//   await Supply.create(validSupplyMinimum);
-// };
-
-// const preSaveMultipleSupplies = async () => {
-//   await Supply.create([validSupplyComplete, validSupplyMinimum]);
-// };
-
-// const deleteSupplies = async () => {
-//   await Supply.deleteMany({});
-// };
+import {
+  apiSupplyID,
+  apiSupplyMain,
+  apiSupplySearch,
+} from "../setup/refRoutes";
 
 describe("Supply Routes", () => {
   beforeAll(async () => {
@@ -244,6 +218,142 @@ describe("Supply Routes", () => {
 
         expect(response.status).toBe(500);
         expect(response.body.message).toBe("Internal Server Error");
+      });
+    });
+  });
+
+  describe(`POST ${apiSupplyMain}`, () => {
+    let validToken: string;
+
+    describe("Success Cases: Create Supply", () => {
+      beforeEach(async () => {
+        validToken = await preSaveUserAndGenJWT();
+      });
+
+      it("Creates a new supply with valid data and token", async () => {
+        const response = await request(app)
+          .post(apiSupplyMain)
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validSupplyComplete);
+
+        expect(response.status).toBe(201);
+        expect(response.body.message).toBe("Supply created successfully");
+        expect(response.body.data.supplyID).toBe(validSupplyComplete.supplyID);
+        expect(response.body.createdAt).toBeDefined();
+      });
+    });
+
+    describe("Failure Cases: Create Supply", () => {
+      beforeEach(async () => {
+        validToken = await preSaveUserAndGenJWT();
+        await Supply.create(validSupplyComplete); // Pre-create for duplicate test
+      });
+
+      it("Returns 401 when no token is provided", async () => {
+        const response = await request(app)
+          .post(apiSupplyMain)
+          .send(validSupplyComplete);
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
+
+      it("Returns 400 when supplyID is duplicate", async () => {
+        const response = await request(app)
+          .post(apiSupplyMain)
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validSupplyComplete);
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe("Supply ID already exists");
+      });
+
+      it("Returns 400 when invalid data is sent", async () => {
+        const invalidSupply = { ...validSupplyMinimum, supplyID: undefined };
+        const response = await request(app)
+          .post(apiSupplyMain)
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(invalidSupply);
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toMatch(/validation failed/i);
+      });
+
+      it("Returns 500 when there's a server error", async () => {
+        jest.spyOn(Supply.prototype, "save").mockImplementationOnce(() => {
+          throw new Error("Database error");
+        });
+
+        const response = await request(app)
+          .post(apiSupplyMain)
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validSupplyMinimum);
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
+      });
+    });
+  });
+
+  describe(`DELETE ${apiSupplyID(":supplyID")}`, () => {
+    let validToken: string;
+    let existingSupplyID: string;
+
+    describe("Success Cases: Delete Supply", () => {
+      beforeEach(async () => {
+        validToken = await preSaveUserAndGenJWT();
+        await preSaveSupply();
+        existingSupplyID = validSupplyComplete.supplyID;
+      });
+
+      it("Deletes an existing supply with valid token and supplyID", async () => {
+        const response = await request(app)
+          .delete(apiSupplyID(existingSupplyID))
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("Supply deleted successfully");
+        expect(response.body.data.supplyID).toBe(existingSupplyID);
+
+        const deletedSupply = await Supply.findOne({
+          supplyID: existingSupplyID,
+        });
+        expect(deletedSupply).toBeNull();
+      });
+    });
+
+    describe("Failure Cases: Delete Supply", () => {
+      beforeEach(async () => {
+        validToken = await preSaveUserAndGenJWT();
+      });
+
+      it("Returns 401 when no token is provided", async () => {
+        const response = await request(app).delete(apiSupplyID("anyid"));
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
+
+      it("Returns 404 when supplyID does not exist", async () => {
+        const response = await request(app)
+          .delete(apiSupplyID("nonexistent123"))
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("Supply not found");
+      });
+
+      it("Returns 500 when there's a server error", async () => {
+        jest.spyOn(Supply, "findOneAndDelete").mockImplementationOnce(() => {
+          throw new Error("Database error");
+        });
+
+        const response = await request(app)
+          .delete(apiSupplyID("validID"))
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
       });
     });
   });
