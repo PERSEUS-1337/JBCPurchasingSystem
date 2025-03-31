@@ -1,7 +1,12 @@
+import { supplierSchema } from "../../src/validators/supplierValidator";
 import {
-  supplierSchema,
-} from "../../src/validators/supplierValidator";
-import { describe, expect, it } from "@jest/globals";
+  describe,
+  expect,
+  it,
+  beforeAll,
+  afterAll,
+  beforeEach,
+} from "@jest/globals";
 import {
   validSupplierComplete,
   invalidSupplierEmails,
@@ -12,8 +17,26 @@ import {
   invalidSupplierStatus,
 } from "../setup/mockSuppliers";
 import { fromZodError } from "zod-validation-error";
+import {
+  connectDB,
+  disconnectDB,
+  clearCollection,
+} from "../setup/globalSetupHelper";
+import Supplier from "../../src/models/supplierModel";
 
 describe("Supplier Validator", () => {
+  beforeAll(async () => {
+    await connectDB();
+  });
+
+  beforeEach(async () => {
+    await clearCollection(Supplier);
+  });
+
+  afterAll(async () => {
+    await disconnectDB();
+  });
+
   // ========= SUCCESS CASES =========
   describe("Success Cases: Supplier Validation", () => {
     it("Should pass with a complete valid supplier", () => {
