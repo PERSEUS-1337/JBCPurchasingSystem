@@ -2,7 +2,14 @@ import { Request, Response } from "express";
 import Supply, { ISupply } from "../models/supplyModel";
 import { SupplyInput } from "../validators/supplyValidator";
 
-// Get supply by supplyID
+/**
+ * Retrieves a supply by its unique supply ID
+ * @param req Express Request object containing supplyID in params
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply not found
+ * @throws 500 if server error occurs
+ */
 export const getSupplyByID = async (
   req: Request,
   res: Response
@@ -24,7 +31,13 @@ export const getSupplyByID = async (
   }
 };
 
-// Search supplies by name (case-insensitive)
+/**
+ * Searches supplies by name using case-insensitive matching
+ * @param req Express Request object containing search query in query params
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 500 if server error occurs
+ */
 export const searchSupplies = async (
   req: Request,
   res: Response
@@ -48,7 +61,13 @@ export const searchSupplies = async (
   }
 };
 
-// Get all supplies (exclude _id and __v)
+/**
+ * Retrieves all supplies in the system, excluding MongoDB internal fields
+ * @param _req Express Request object (unused)
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 500 if server error occurs
+ */
 export const getAllSupplies = async (
   _req: Request,
   res: Response
@@ -68,7 +87,14 @@ export const getAllSupplies = async (
   }
 };
 
-// Create a new supply (using the model's static method to check for duplicates)
+/**
+ * Creates a new supply after checking for duplicate supply IDs
+ * @param req Express Request object containing supply data in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 400 if supply ID already exists
+ * @throws 500 if server error occurs
+ */
 export const createSupply = async (
   req: Request,
   res: Response
@@ -96,7 +122,15 @@ export const createSupply = async (
   }
 };
 
-// Update supply (prevent updating immutable fields like supplyID)
+/**
+ * Updates a supply's details while preventing modification of immutable fields
+ * @param req Express Request object containing supplyID in params and update data in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 400 if attempting to update supplyID or no valid update data provided
+ * @throws 404 if supply not found
+ * @throws 500 if server error occurs
+ */
 export const updateSupply = async (
   req: Request,
   res: Response
@@ -132,7 +166,14 @@ export const updateSupply = async (
   }
 };
 
-// Delete a supply
+/**
+ * Deletes a supply from the system
+ * @param req Express Request object containing supplyID in params
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply not found
+ * @throws 500 if server error occurs
+ */
 export const deleteSupply = async (
   req: Request,
   res: Response
@@ -154,7 +195,14 @@ export const deleteSupply = async (
   }
 };
 
-// Update only the status of a supply
+/**
+ * Updates only the status field of a supply
+ * @param req Express Request object containing supplyID in params and status in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply not found
+ * @throws 500 if server error occurs
+ */
 export const updateSupplyStatus = async (
   req: Request,
   res: Response
@@ -181,7 +229,14 @@ export const updateSupplyStatus = async (
   }
 };
 
-// Get suppliers of a supply with population
+/**
+ * Retrieves all suppliers associated with a specific supply
+ * @param req Express Request object containing supplyID in params
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply not found
+ * @throws 500 if server error occurs
+ */
 export const getSuppliersOfSupply = async (
   req: Request,
   res: Response
@@ -204,7 +259,14 @@ export const getSuppliersOfSupply = async (
   }
 };
 
-// Add a supplier to a supply
+/**
+ * Associates a supplier with a supply
+ * @param req Express Request object containing supplyID in params and supplierID in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply not found
+ * @throws 500 if server error occurs
+ */
 export const addSupplierToSupply = async (
   req: Request,
   res: Response
@@ -231,7 +293,14 @@ export const addSupplierToSupply = async (
   }
 };
 
-// Remove a supplier from a supply
+/**
+ * Removes a supplier association from a supply
+ * @param req Express Request object containing supplyID and supplierID in params
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply not found
+ * @throws 500 if server error occurs
+ */
 export const removeSupplierFromSupply = async (
   req: Request,
   res: Response
@@ -259,7 +328,15 @@ export const removeSupplierFromSupply = async (
 
 // ----- Additional Endpoints for Nested Fields -----
 
-// Manage supplierPricing
+/**
+ * Adds pricing information for a supplier to a supply
+ * @param req Express Request object containing supplyID in params and pricing details in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply not found
+ * @throws 400 if supplier pricing already exists
+ * @throws 500 if server error occurs
+ */
 export const addSupplierPricing = async (
   req: Request,
   res: Response
@@ -302,6 +379,14 @@ export const addSupplierPricing = async (
   }
 };
 
+/**
+ * Updates pricing information for a supplier of a supply
+ * @param req Express Request object containing supplyID in params and updated price in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply or supplier pricing not found
+ * @throws 500 if server error occurs
+ */
 export const updateSupplierPricing = async (
   req: Request,
   res: Response
@@ -334,6 +419,14 @@ export const updateSupplierPricing = async (
   }
 };
 
+/**
+ * Removes pricing information for a supplier from a supply
+ * @param req Express Request object containing supplyID and supplier in params
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply not found
+ * @throws 500 if server error occurs
+ */
 export const removeSupplierPricing = async (
   req: Request,
   res: Response
@@ -360,7 +453,15 @@ export const removeSupplierPricing = async (
   }
 };
 
-// Manage specifications
+/**
+ * Adds a specification to a supply
+ * @param req Express Request object containing supplyID in params and specification details in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply not found
+ * @throws 400 if specification already exists
+ * @throws 500 if server error occurs
+ */
 export const addSpecification = async (
   req: Request,
   res: Response
@@ -396,6 +497,14 @@ export const addSpecification = async (
   }
 };
 
+/**
+ * Updates a specification of a supply
+ * @param req Express Request object containing supplyID in params and updated specification in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply or specification not found
+ * @throws 500 if server error occurs
+ */
 export const updateSpecification = async (
   req: Request,
   res: Response
@@ -428,6 +537,14 @@ export const updateSpecification = async (
   }
 };
 
+/**
+ * Removes a specification from a supply
+ * @param req Express Request object containing supplyID and specProperty in params
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply not found
+ * @throws 500 if server error occurs
+ */
 export const removeSpecification = async (
   req: Request,
   res: Response
@@ -454,7 +571,14 @@ export const removeSpecification = async (
   }
 };
 
-// Manage attachments
+/**
+ * Adds an attachment to a supply
+ * @param req Express Request object containing supplyID in params and attachment in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply not found
+ * @throws 500 if server error occurs
+ */
 export const addAttachment = async (
   req: Request,
   res: Response
@@ -482,6 +606,14 @@ export const addAttachment = async (
   }
 };
 
+/**
+ * Removes an attachment from a supply
+ * @param req Express Request object containing supplyID and attachment in params
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supply not found
+ * @throws 500 if server error occurs
+ */
 export const removeAttachment = async (
   req: Request,
   res: Response

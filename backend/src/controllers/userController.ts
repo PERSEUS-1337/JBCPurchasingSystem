@@ -1,6 +1,12 @@
 import { Request, Response } from "express";
 import User from "../models/userModel";
 
+/**
+ * Retrieves the profile of the currently authenticated user
+ * @param req Express Request object containing user info from JWT in req.user
+ * @param res Express Response object
+ * @returns Promise<void>
+ */
 export const getUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userID } = req.user;
@@ -22,6 +28,13 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+/**
+ * Retrieves user details by userID (Admin view)
+ * @param req Express Request object containing userID in params
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @requires SuperAdmin authorization middleware
+ */
 export const getUserByID = async (
   req: Request,
   res: Response
@@ -48,6 +61,13 @@ export const getUserByID = async (
   }
 };
 
+/**
+ * Updates user details by userID
+ * @param req Express Request object containing userID in params and update data in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @note Password and role fields are excluded from the update projection
+ */
 export const editUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userID } = req.params;
@@ -82,6 +102,12 @@ export const editUser = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+/**
+ * Deletes a user by userID
+ * @param req Express Request object containing userID in params
+ * @param res Express Response object
+ * @returns Promise<void>
+ */
 export const deleteUser = async (
   req: Request,
   res: Response

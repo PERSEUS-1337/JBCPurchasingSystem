@@ -3,6 +3,14 @@ import Supplier, { ISupplier } from "../models/supplierModel";
 import { SupplierInput } from "../validators/supplierValidator";
 import { supplierStatusEnums } from "../constants";
 
+/**
+ * Retrieves a supplier by their unique supplier ID
+ * @param req Express Request object containing supplierID in params
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supplier not found
+ * @throws 500 if server error occurs
+ */
 export const getSupplierByID = async (
   req: Request,
   res: Response
@@ -27,6 +35,14 @@ export const getSupplierByID = async (
   }
 };
 
+/**
+ * Retrieves all suppliers in the system
+ * @param _req Express Request object (unused)
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if no suppliers found
+ * @throws 500 if server error occurs
+ */
 export const getAllSuppliers = async (
   _req: Request,
   res: Response
@@ -49,6 +65,15 @@ export const getAllSuppliers = async (
   }
 };
 
+/**
+ * Searches suppliers based on multiple criteria including name, tags, contact info
+ * @param req Express Request object containing search query in query params
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 400 if search query is missing or invalid
+ * @throws 404 if no suppliers match search criteria
+ * @throws 500 if server error occurs
+ */
 export const searchSuppliers = async (
   req: Request,
   res: Response
@@ -95,6 +120,14 @@ export const searchSuppliers = async (
   }
 };
 
+/**
+ * Creates a new supplier in the system
+ * @param req Express Request object containing supplier data in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 400 if supplier ID already exists
+ * @throws 500 if server error occurs
+ */
 export const createSupplier = async (
   req: Request,
   res: Response
@@ -130,6 +163,15 @@ export const createSupplier = async (
   }
 };
 
+/**
+ * Updates supplier information
+ * @param req Express Request object containing supplierID in params and update data in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 400 if no update data provided
+ * @throws 404 if supplier not found
+ * @throws 500 if server error occurs
+ */
 export const updateSupplier = async (
   req: Request,
   res: Response
@@ -174,6 +216,15 @@ export const updateSupplier = async (
   }
 };
 
+/**
+ * Updates supplier status
+ * @param req Express Request object containing supplierID in params and status in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 400 if status value is invalid
+ * @throws 404 if supplier not found
+ * @throws 500 if server error occurs
+ */
 export const updateSupplierStatus = async (
   req: Request,
   res: Response
@@ -181,7 +232,6 @@ export const updateSupplierStatus = async (
   try {
     const { supplierID } = req.params;
     const { status } = req.body;
-    // console.log(req.params)
 
     if (!status || !supplierStatusEnums.includes(status)) {
       res.status(400).json({ message: "Invalid status value" });
@@ -213,6 +263,14 @@ export const updateSupplierStatus = async (
   }
 };
 
+/**
+ * Deletes a supplier from the system
+ * @param req Express Request object containing supplierID in params
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if supplier not found
+ * @throws 500 if server error occurs
+ */
 export const deleteSupplier = async (
   req: Request,
   res: Response
@@ -236,6 +294,7 @@ export const deleteSupplier = async (
   }
 };
 
+// TODO: Implement the following supplier management functions
 export const addContactNumber = async (): Promise<void> => {};
 export const removeContactNumber = async (): Promise<void> => {};
 export const addEmail = async (): Promise<void> => {};
@@ -249,6 +308,7 @@ export const removeSupply = async (): Promise<void> => {};
 export const addDocs = async (): Promise<void> => {};
 export const removeDocs = async (): Promise<void> => {};
 
+// Commented out legacy code
 // export const updateSupplierStatus = async (
 //   req: Request,
 //   res: Response

@@ -216,8 +216,6 @@ describe("Supply Routes", () => {
           .post(apiSupplyMain)
           .set("Authorization", `Bearer ${validToken}`)
           .send(validSupplyComplete);
-        console.log("validSupplyComplete", validSupplyComplete);
-        console.log("response.body", response.body);
 
         expect(response.status).toBe(201);
         expect(response.body.message).toBe("Supply created successfully");
