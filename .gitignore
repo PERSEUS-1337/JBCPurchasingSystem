@@ -132,10 +132,23 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# VS Code settings (anywhere in the project)
+.vscode/
+**/.vscode/
 
+# IDE settings (anywhere in the project)
+.idea/
+**/.idea/
+
+# Cursor settings (anywhere in the project)
+.cursor/
+**/.cursor/
+.cursorignore
+**/.cursorignore
+.cursorrules
+**/.cursorrules
+
+# Mac OS files (anywhere in the project)
 .DS_Store
-
-.idea*
-
-.vscode*
+**/.DS_Store
 

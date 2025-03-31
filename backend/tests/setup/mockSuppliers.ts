@@ -1,5 +1,17 @@
 import mongoose from "mongoose";
 
+// Define supplier IDs that are referenced in mockSupplies.ts
+export const SUPPLIER_IDS = {
+  SUPPLIER_1: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
+  SUPPLIER_2: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d76"),
+  SUPPLIER_3: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d77"),
+  SUPPLIER_4: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d78"),
+  SUPPLIER_5: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d79"),
+  SUPPLIER_6: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d80"),
+  SUPPLIER_7: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d81"),
+  SUPPLIER_8: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d82"),
+};
+
 export const validSupplierMinimum = {
   supplierID: "SUP-001",
   name: "ABC Supplies",
@@ -153,6 +165,7 @@ export const invalidSupplierStatus = {
 
 export const validSuppliersList = [
   {
+    _id: SUPPLIER_IDS.SUPPLIER_1,
     supplierID: "SUP-001",
     name: "ABC Supplies",
     contactNumbers: ["0123456789", "0987654321"],
@@ -178,6 +191,7 @@ export const validSuppliersList = [
     status: "Active",
   },
   {
+    _id: SUPPLIER_IDS.SUPPLIER_2,
     supplierID: "SUP-002",
     name: "XYZ Industrial",
     contactNumbers: ["09123456789"],
@@ -197,6 +211,7 @@ export const validSuppliersList = [
     status: "Active",
   },
   {
+    _id: SUPPLIER_IDS.SUPPLIER_3,
     supplierID: "SUP-003",
     name: "Global Materials Ltd.",
     contactNumbers: ["09987654321"],
@@ -213,6 +228,106 @@ export const validSuppliersList = [
     documentation: ["ISO_certification.pdf"],
     primaryTag: "Raw Materials",
     tags: ["Steel", "Cement", "Construction"],
+    status: "Active",
+  },
+  {
+    _id: SUPPLIER_IDS.SUPPLIER_4,
+    supplierID: "SUP-004",
+    name: "Fastener Solutions",
+    contactNumbers: ["09123456789"],
+    emails: ["fastener@example.com"],
+    address: "789 Fastener St",
+    contactPersons: [
+      {
+        name: "Charlie Brown",
+        contactNumber: "09123456789",
+        email: "charlie@fastener.com",
+        position: "Sales Manager",
+      },
+    ],
+    documentation: ["business_permit.pdf"],
+    primaryTag: "Fasteners",
+    tags: ["Hardware", "Construction"],
+    status: "Active",
+  },
+  {
+    _id: SUPPLIER_IDS.SUPPLIER_5,
+    supplierID: "SUP-005",
+    name: "Plumbing Pro",
+    contactNumbers: ["09123456789"],
+    emails: ["plumbing@pro.com"],
+    address: "123 Pipe St",
+    contactPersons: [
+      {
+        name: "David Wilson",
+        contactNumber: "09123456789",
+        email: "david@plumbing.com",
+        position: "Manager",
+      },
+    ],
+    documentation: ["license.pdf"],
+    primaryTag: "Plumbing",
+    tags: ["Pipes", "Fittings"],
+    status: "Active",
+  },
+  {
+    _id: SUPPLIER_IDS.SUPPLIER_6,
+    supplierID: "SUP-006",
+    name: "Pipe Solutions",
+    contactNumbers: ["09123456789"],
+    emails: ["pipe@solution.com"],
+    address: "456 Pipe Rd",
+    contactPersons: [
+      {
+        name: "Eve Smith",
+        contactNumber: "09123456789",
+        email: "eve@pipe.com",
+        position: "Sales Director",
+      },
+    ],
+    documentation: ["permit.pdf"],
+    primaryTag: "Plumbing",
+    tags: ["PVC", "Pipes"],
+    status: "Active",
+  },
+  {
+    _id: SUPPLIER_IDS.SUPPLIER_7,
+    supplierID: "SUP-007",
+    name: "Screw Masters",
+    contactNumbers: ["09123456789"],
+    emails: ["screw@masters.com"],
+    address: "789 Screw Ave",
+    contactPersons: [
+      {
+        name: "Frank Johnson",
+        contactNumber: "09123456789",
+        email: "frank@screw.com",
+        position: "Owner",
+      },
+    ],
+    documentation: ["license.pdf"],
+    primaryTag: "Hardware",
+    tags: ["Screws", "Fasteners"],
+    status: "Active",
+  },
+  {
+    _id: SUPPLIER_IDS.SUPPLIER_8,
+    supplierID: "SUP-008",
+    name: "Hardware Hub",
+    contactNumbers: ["09123456789"],
+    emails: ["hardware@hub.com"],
+    address: "123 Hardware St",
+    contactPersons: [
+      {
+        name: "Grace Lee",
+        contactNumber: "09123456789",
+        email: "grace@hardware.com",
+        position: "Manager",
+      },
+    ],
+    documentation: ["permit.pdf"],
+    primaryTag: "Hardware",
+    tags: ["Tools", "Fasteners"],
     status: "Active",
   },
 ];
@@ -257,7 +372,6 @@ export const invalidUpdateSupplierEmail = {
   ...validSupplierUpdateMinimumData,
   emails: ["invalid-email"],
 };
-
 
 export const restrictedUpdateSupplierData = {
   supplierID: "SUP-999",

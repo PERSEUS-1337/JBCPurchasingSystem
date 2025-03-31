@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { SUPPLIER_IDS } from "./mockSuppliers";
 
 // ========= VALID SUPPLIES =========
 
@@ -9,11 +10,14 @@ export const validSupplyMinimum = {
   description: "Steel Bolt M10 standard size",
   categories: ["Fasteners"],
   unitMeasure: "pc",
-  suppliers: [new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75")],
+  suppliers: [SUPPLIER_IDS.SUPPLIER_1],
   supplierPricing: [
     {
-      supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
+      supplier: SUPPLIER_IDS.SUPPLIER_1,
       price: 50.0,
+      priceValidity: new Date("2024-12-31"),
+      unitQuantity: 1,
+      unitPrice: 50.0,
     },
   ],
   specifications: [],
@@ -27,18 +31,21 @@ export const validSupplyComplete = {
   name: 'G.I. U-Bolt 8" x 3/8dia',
   description: 'G.I. U-Bolt 8" x 3/8dia with double washer and nut',
   categories: ["Hardware", "Fasteners"],
-  suppliers: [
-    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
-    new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d76"),
-  ],
+  suppliers: [SUPPLIER_IDS.SUPPLIER_1, SUPPLIER_IDS.SUPPLIER_2],
   supplierPricing: [
     {
-      supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
-      price: 50.0,
+      supplier: SUPPLIER_IDS.SUPPLIER_1,
+      price: 500.0,
+      priceValidity: new Date("2024-12-31"),
+      unitQuantity: 5,
+      unitPrice: 100.0,
     },
     {
-      supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d76"),
-      price: 69.0,
+      supplier: SUPPLIER_IDS.SUPPLIER_2,
+      price: 690.0,
+      priceValidity: new Date("2024-12-31"),
+      unitQuantity: 5,
+      unitPrice: 138.0,
     },
   ],
   specifications: [
@@ -58,18 +65,21 @@ export const validSuppliesList = [
     description: 'Stainless Steel Hex Bolt 1/2" x 2" with nut',
     categories: ["Hardware", "Fasteners"],
     unitMeasure: "pc",
-    suppliers: [
-      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d77"),
-      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d78"),
-    ],
+    suppliers: [SUPPLIER_IDS.SUPPLIER_3, SUPPLIER_IDS.SUPPLIER_4],
     supplierPricing: [
       {
-        supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d77"),
-        price: 12.5,
+        supplier: SUPPLIER_IDS.SUPPLIER_3,
+        price: 125.0,
+        priceValidity: new Date("2024-12-31"),
+        unitQuantity: 10,
+        unitPrice: 12.5,
       },
       {
-        supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d78"),
-        price: 15.0,
+        supplier: SUPPLIER_IDS.SUPPLIER_4,
+        price: 150.0,
+        priceValidity: new Date("2024-12-31"),
+        unitQuantity: 10,
+        unitPrice: 15.0,
       },
     ],
     specifications: [
@@ -86,18 +96,21 @@ export const validSuppliesList = [
     description: 'PVC Pipe 4" diameter, 10 feet long',
     categories: ["Plumbing", "Pipes"],
     unitMeasure: "pc",
-    suppliers: [
-      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d79"),
-      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d80"),
-    ],
+    suppliers: [SUPPLIER_IDS.SUPPLIER_5, SUPPLIER_IDS.SUPPLIER_6],
     supplierPricing: [
       {
-        supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d79"),
-        price: 25.0,
+        supplier: SUPPLIER_IDS.SUPPLIER_5,
+        price: 250.0,
+        priceValidity: new Date("2024-12-31"),
+        unitQuantity: 1,
+        unitPrice: 250.0,
       },
       {
-        supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d80"),
-        price: 28.0,
+        supplier: SUPPLIER_IDS.SUPPLIER_6,
+        price: 280.0,
+        priceValidity: new Date("2024-12-31"),
+        unitQuantity: 1,
+        unitPrice: 280.0,
       },
     ],
     specifications: [
@@ -115,18 +128,21 @@ export const validSuppliesList = [
     description: 'Wood Screw #8 x 1-1/2", Phillips head',
     categories: ["Hardware", "Fasteners"],
     unitMeasure: "pc",
-    suppliers: [
-      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d81"),
-      new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d82"),
-    ],
+    suppliers: [SUPPLIER_IDS.SUPPLIER_7, SUPPLIER_IDS.SUPPLIER_8],
     supplierPricing: [
       {
-        supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d81"),
-        price: 0.5,
+        supplier: SUPPLIER_IDS.SUPPLIER_7,
+        price: 50.0,
+        priceValidity: new Date("2024-12-31"),
+        unitQuantity: 100,
+        unitPrice: 0.5,
       },
       {
-        supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d82"),
-        price: 0.6,
+        supplier: SUPPLIER_IDS.SUPPLIER_8,
+        price: 60.0,
+        priceValidity: new Date("2024-12-31"),
+        unitQuantity: 100,
+        unitPrice: 0.6,
       },
     ],
     specifications: [
@@ -141,8 +157,6 @@ export const validSuppliesList = [
 // ========= INVALID SUPPLIES =========
 
 // missingRequiredFieldsSupply: Remove key required fields from the complete supply.
-// Here we use object destructuring to remove supplyID, name, description, categories,
-// unitMeasure, suppliers, and supplierPricing, which we assume are required.
 export const {
   supplyID,
   name,
@@ -163,8 +177,11 @@ export const invalidSupplyComplete = {
   suppliers: [],
   supplierPricing: [
     {
-      supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
+      supplier: SUPPLIER_IDS.SUPPLIER_1,
       price: -10.0,
+      priceValidity: new Date("2024-12-31"),
+      unitQuantity: 1,
+      unitPrice: -10.0,
     },
   ],
   specifications: [{ specProperty: "", specValue: "" }],
@@ -182,10 +199,19 @@ export const invalidSupplyInvalidSpecification = {
 export const invalidSupplyInvalidSupplierPricing = {
   ...validSupplyMinimum,
   supplierPricing: [
-    { supplier: "not-an-object-id", price: 50.0 },
     {
-      supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
+      supplier: "not-an-object-id",
+      price: 50.0,
+      priceValidity: new Date(),
+      unitQuantity: 1,
+      unitPrice: 50.0,
+    },
+    {
+      supplier: SUPPLIER_IDS.SUPPLIER_1,
       price: "free", // Price should be a number, not a string.
+      priceValidity: new Date(),
+      unitQuantity: 1,
+      unitPrice: "free",
     },
   ],
 };

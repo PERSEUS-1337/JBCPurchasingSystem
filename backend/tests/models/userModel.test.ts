@@ -9,17 +9,21 @@ import {
   it,
   jest,
 } from "@jest/globals";
-import { connectDB, disconnectDB, dropDB } from "../setup/globalSetupHelper";
+import {
+  connectDB,
+  disconnectDB,
+  clearCollection,
+} from "../setup/globalSetupHelper";
 import { invalidStatusUser, validUser } from "../setup/mockUsers";
 import { wrongOldPassword } from "../setup/mockData";
 
 describe("User Model Validation", () => {
   beforeAll(async () => {
-    await connectDB(); 
+    await connectDB();
   });
 
   beforeEach(async () => {
-    await dropDB();
+    await clearCollection(User);
   });
 
   afterAll(async () => {

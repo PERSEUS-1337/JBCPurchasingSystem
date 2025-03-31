@@ -266,7 +266,8 @@ export const addSupplierPricing = async (
 ): Promise<void> => {
   try {
     const { supplyID } = req.params;
-    const { supplier, price } = req.body;
+    const { supplier, price, priceValidity, unitQuantity, unitPrice } =
+      req.body;
     const supply = await Supply.findOne({ supplyID });
     if (!supply) {
       res.status(404).json({ message: "Supply not found" });
@@ -282,7 +283,13 @@ export const addSupplierPricing = async (
         .json({ message: "Supplier pricing already exists for this supplier" });
       return;
     }
-    supply.supplierPricing.push({ supplier, price });
+    supply.supplierPricing.push({
+      supplier,
+      price,
+      priceValidity,
+      unitQuantity,
+      unitPrice,
+    });
     await supply.save();
     res.status(200).json({
       message: "Supplier pricing added successfully",

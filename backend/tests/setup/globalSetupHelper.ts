@@ -1,5 +1,5 @@
 import { MongoMemoryServer } from "mongodb-memory-server";
-import mongoose from "mongoose";
+import mongoose, { Model, Document } from "mongoose";
 import User from "../../src/models/userModel";
 import { validSuperAdminUser, validUser } from "./mockUsers";
 import { generateJWT } from "../../src/utils/authUtils";
@@ -10,6 +10,7 @@ import { validSuppliesList, validSupplyComplete } from "./mockSupplies";
 
 let mongoServer: MongoMemoryServer;
 
+// Database Connection Management
 export const connectDB = async () => {
   mongoServer = await MongoMemoryServer.create();
   await mongoose.connect(mongoServer.getUri());
@@ -25,26 +26,44 @@ export const disconnectDB = async () => {
   await mongoServer.stop();
 };
 
-// Delete Existing and Pre-Save Valid User
-export const preSaveValidUser = async () => {
-  await User.deleteMany({});
-  await new User(validUser).save();
+// Generic Database Operations
+export const clearCollection = async <T extends Document>(model: Model<T>) => {
+  await model.deleteMany({});
 };
 
-export const preSaveSuperAdminUser = async () => {
-  await User.deleteMany({});
-  await new User(validUser).save();
+export const saveAndReturn = async <T extends Document>(
+  model: Model<T>,
+  data: Partial<T>
+): Promise<T> => {
+  const document = new model(data);
+  await document.save();
+  const savedDocument = await model.findById(document._id).lean();
+  if (!savedDocument) {
+    throw new Error(`${model.modelName} not found after creation`);
+  }
+  return savedDocument as T;
 };
 
-export const preSaveUserAndGenJWT = async (): Promise<string> => {
-  await User.deleteMany({});
-  const user = await new User(validUser).save();
-  return await generateJWT(user.userID);
+export const saveMultipleAndReturn = async <T extends Document>(
+  model: Model<T>,
+  dataList: Partial<T>[]
+): Promise<T[]> => {
+  const documents = dataList.map((data) => new model(data));
+  const insertedDocs = await model.insertMany(documents);
+  const savedDocs = await model
+    .find({
+      _id: { $in: insertedDocs.map((doc) => doc._id) },
+    })
+    .lean();
+  return savedDocs as T[];
 };
 
-export const preSaveSuperAdminAndGenJWT = async (): Promise<string> => {
-  await User.deleteMany({});
-  const user = await new User(validSuperAdminUser).save();
+// User-specific Operations
+export const preSaveUserAndGenJWT = async (
+  userData = validUser
+): Promise<string> => {
+  await clearCollection(User);
+  const user = await new User(userData).save();
   return await generateJWT(user.userID);
 };
 
@@ -52,98 +71,58 @@ export const preSaveUsersAndGenTokens = async (): Promise<{
   validToken: string;
   superAdminToken: string;
 }> => {
-  await User.deleteMany({}); // Clear the users
+  await clearCollection(User);
 
-  // Save regular user and generate token
-  const user = await new User(validUser).save();
-  const validToken = await generateJWT(user.userID);
+  const [user, superAdmin] = await Promise.all([
+    new User(validUser).save(),
+    new User(validSuperAdminUser).save(),
+  ]);
 
-  // Save super admin user and generate token
-  const superAdmin = await new User(validSuperAdminUser).save();
-  const superAdminToken = await generateJWT(superAdmin.userID);
+  const [validToken, superAdminToken] = await Promise.all([
+    generateJWT(user.userID),
+    generateJWT(superAdmin.userID),
+  ]);
 
-  // Return both tokens
   return { validToken, superAdminToken };
 };
 
-export const deleteAllUsers = async () => {
-  await User.deleteMany({});
-};
-
+// Supplier-specific Operations
 export const preSaveSupplier = async () => {
-  await Supplier.deleteMany({});
-  await new Supplier(validSupplierComplete).save();
-  // const savedSuppliers = await Supplier.find({});
-  // console.log("Saved Suppliers:", savedSuppliers);
+  await clearCollection(Supplier);
+  await saveAndReturn(Supplier, validSupplierComplete);
 };
 
 export const preSaveMultipleSuppliers = async () => {
-  await Supplier.deleteMany({});
-  await Supplier.insertMany(validSuppliersList);
-
-  // Fetch and log the saved suppliers
-  // const savedSuppliers = await Supplier.find({});
-  // console.log("Saved Suppliers:", savedSuppliers);
+  await clearCollection(Supplier);
+  await saveMultipleAndReturn(Supplier, validSuppliersList);
 };
 
-export const deleteMultipleSuppliers = async () => {
-  await Supplier.deleteMany({});
-};
-
-export const saveSupplierAndReturn = async <T extends Partial<ISupplier>>(
-  supplierData: T
-): Promise<ISupplier> => {
-  const supplier = new Supplier(supplierData);
-  await supplier.save();
-  const savedSupplier = await Supplier.findById(supplier._id).lean();
-  if (!savedSupplier) {
-    throw new Error("Supplier not found after creation");
-  }
-  return savedSupplier;
-};
-
+// Supply-specific Operations
 export const preSaveSupply = async () => {
-  await Supply.deleteMany({});
-  await new Supply(validSupplyComplete).save();
-  // const savedSuppliers = await Supplier.find({});
-  // console.log("Saved Suppliers:", savedSuppliers);
+  await clearCollection(Supply);
+  await saveAndReturn(Supply, validSupplyComplete);
 };
 
 export const preSaveMultipleSupplies = async () => {
-  await Supply.deleteMany({});
-  await Supply.insertMany(validSuppliesList);
-
-  // Fetch and log the saved suppliers
-  // const savedSuppliers = await Supplier.find({});
-  // console.log("Saved Suppliers:", savedSuppliers);
+  await clearCollection(Supply);
+  await saveMultipleAndReturn(Supply, validSuppliesList);
 };
 
+// Type-safe convenience functions
+export const saveSupplierAndReturn = async <T extends Partial<ISupplier>>(
+  supplierData: T
+): Promise<ISupplier> => {
+  return saveAndReturn(Supplier, supplierData);
+};
 
 export const saveSupplyAndReturn = async <T extends Partial<ISupply>>(
   supplyData: T
 ): Promise<ISupply> => {
-  const supply = new Supply(supplyData);
-  await supply.save();
-  const savedSupply = await Supply.findById(supply._id).lean();
-  if (!savedSupply) {
-    throw new Error("Supply not found after creation");
-  }
-  return savedSupply;
+  return saveAndReturn(Supply, supplyData);
 };
 
 export const saveMultipleSuppliesAndReturn = async <T extends Partial<ISupply>>(
   suppliesData: T[]
 ): Promise<ISupply[]> => {
-  const supplies = suppliesData.map((data) => new Supply(data));
-  // Bulk insert the supplies
-  const insertedSupplies = await Supply.insertMany(supplies);
-  // Retrieve the full documents to ensure a complete object is returned
-  const savedSupplies = await Supply.find({
-    _id: { $in: insertedSupplies.map((s) => s._id) },
-  }).lean();
-  return savedSupplies;
-};
-
-export const deleteMultipleSupplies = async () => {
-  await Supply.deleteMany({});
+  return saveMultipleAndReturn(Supply, suppliesData);
 };

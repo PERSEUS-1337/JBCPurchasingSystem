@@ -16,6 +16,7 @@ import {
   connectDB,
   disconnectDB,
   preSaveUsersAndGenTokens,
+  clearCollection,
 } from "../setup/globalSetupHelper";
 import { invalidToken, validEditUserData } from "../setup/mockData";
 import { userAdminViewSchema, userViewSchema } from "../../src/validators";
@@ -27,6 +28,10 @@ describe("User Routes", () => {
 
   afterAll(async () => {
     await disconnectDB();
+  });
+
+  beforeEach(async () => {
+    await clearCollection(User);
   });
 
   describe(`GET ${apiUserID(":userID")}`, () => {

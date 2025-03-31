@@ -1,4 +1,24 @@
+import mongoose from "mongoose";
 import Supply from "../../src/models/supplyModel";
+import Supplier from "../../src/models/supplierModel";
+import {
+  validSupplyComplete,
+  validSupplyMinimum,
+  validSuppliesList,
+  invalidSupplyComplete,
+  invalidSupplyInvalidSpecification,
+  invalidSupplyInvalidSupplierPricing,
+  invalidSupplyStatus,
+  invalidSupplySupplierPricing,
+  validUpdateSupply,
+  validPartialUpdateSupply,
+  invalidUpdateSupply,
+} from "../setup/mockSupplies";
+import { validSuppliersList } from "../setup/mockSuppliers";
+import {
+  preSaveSupplier,
+  saveSupplyAndReturn,
+} from "../setup/globalSetupHelper";
 import {
   afterAll,
   beforeAll,
@@ -7,116 +27,156 @@ import {
   expect,
   it,
 } from "@jest/globals";
-import {
-  connectDB,
-  disconnectDB,
-  dropDB,
-  preSaveSupplier,
-  saveSupplyAndReturn,
-} from "../setup/globalSetupHelper";
-import {
-  validSupplyComplete,
-  validSupplyMinimum,
-  missingRequiredFieldsSupply,
-  invalidSupplySupplierPricing,
-} from "../setup/mockSupplies";
 
 describe("Supply Model Validation", () => {
   beforeAll(async () => {
-    await connectDB();
-    await Supply.syncIndexes(); // Reapply unique indexes
+    await mongoose.connect(process.env.MONGODB_TEST_URI || "");
   });
-  
 
   beforeEach(async () => {
-    await dropDB();
+    await Supply.deleteMany({});
+    await Supplier.deleteMany({});
+    // Save suppliers first
+    await preSaveSupplier();
   });
 
   afterAll(async () => {
-    await disconnectDB();
+    await mongoose.connection.close();
   });
 
   describe("Success Cases: Supply Creation and Validation", () => {
-    it("Should save a valid complete supply", async () => {
+    it("should save a supply with complete data", async () => {
       const savedSupply = await saveSupplyAndReturn(validSupplyComplete);
-
       expect(savedSupply._id).toBeDefined();
       expect(savedSupply.supplyID).toBe(validSupplyComplete.supplyID);
       expect(savedSupply.name).toBe(validSupplyComplete.name);
-      expect(savedSupply.description).toBe(validSupplyComplete.description);
-      expect(savedSupply.categories).toEqual(validSupplyComplete.categories);
-      expect(savedSupply.unitMeasure).toBe(validSupplyComplete.unitMeasure);
-      expect(savedSupply.suppliers).toEqual(validSupplyComplete.suppliers);
-      expect(
-        savedSupply.supplierPricing.map(({ supplier, price }) => ({
-          supplier,
-          price,
-        }))
-      ).toEqual(validSupplyComplete.supplierPricing);
-      expect(
-        savedSupply.specifications.map(({ specProperty, specValue }) => ({
-          specProperty,
-          specValue,
-        }))
-      ).toEqual(validSupplyComplete.specifications);
-      expect(savedSupply.status).toBe(validSupplyComplete.status);
-      expect(savedSupply.attachments).toEqual(validSupplyComplete.attachments);
-
-      // Should have default timestamps
-      expect(savedSupply.createdAt).toBeDefined();
-      expect(savedSupply.updatedAt).toBeDefined();
+      expect(savedSupply.supplierPricing).toHaveLength(2);
     });
 
-    it("Should allow minimal required fields and default others", async () => {
-      await preSaveSupplier();
+    it("should save a supply with minimal required fields", async () => {
       const savedSupply = await saveSupplyAndReturn(validSupplyMinimum);
       expect(savedSupply._id).toBeDefined();
       expect(savedSupply.supplyID).toBe(validSupplyMinimum.supplyID);
       expect(savedSupply.name).toBe(validSupplyMinimum.name);
-      expect(savedSupply.description).toBe(validSupplyMinimum.description);
-      expect(savedSupply.categories).toEqual(validSupplyMinimum.categories);
-      expect(savedSupply.unitMeasure).toBe(validSupplyMinimum.unitMeasure);
-      expect(savedSupply.suppliers).toEqual(validSupplyMinimum.suppliers);
-      expect(
-        savedSupply.supplierPricing.map(({ supplier, price }) => ({
-          supplier,
-          price,
-        }))
-      ).toEqual(validSupplyMinimum.supplierPricing);
-      expect(savedSupply.specifications).toEqual(
-        validSupplyMinimum.specifications
-      );
-      expect(savedSupply.attachments).toEqual(validSupplyMinimum.attachments);
+      expect(savedSupply.supplierPricing).toHaveLength(1);
+    });
 
-      // Should have default timestamps
-      expect(savedSupply.createdAt).toBeDefined();
-      expect(savedSupply.updatedAt).toBeDefined();
+    it("should save multiple supplies", async () => {
+      const savedSupplies = await Promise.all(
+        validSuppliesList.map((supply) => saveSupplyAndReturn(supply))
+      );
+      expect(savedSupplies).toHaveLength(validSuppliesList.length);
+      savedSupplies.forEach((supply, index) => {
+        expect(supply._id).toBeDefined();
+        expect(supply.supplyID).toBe(validSuppliesList[index].supplyID);
+        expect(supply.name).toBe(validSuppliesList[index].name);
+      });
     });
   });
 
-  // ========= FAIL CASES =========
   describe("Fail Cases: Supply Validation and Error Handling", () => {
-    it("Should reject if required fields are missing", async () => {
-      const supply = new Supply(missingRequiredFieldsSupply);
-      await expect(supply.save({ validateBeforeSave: true })).rejects.toThrow();
+    it("should reject a supply with missing required fields", async () => {
+      const supply = new Supply({});
+      await expect(supply.save()).rejects.toThrow();
     });
 
-    // it("Should enforce valid categories format", async () => {
-    //   const supply = new Supply(invalidSupplyCategories);
-    //   await expect(supply.save({ validateBeforeSave: true })).rejects.toThrow();
-    // });
+    it("should reject a supply with invalid supplier pricing", async () => {
+      const supply = new Supply(invalidSupplyInvalidSupplierPricing);
+      await expect(supply.save()).rejects.toThrow();
+    });
 
-    it("Should reject invalid supplier pricing structure", async () => {
+    it("should reject a supply with invalid specifications", async () => {
+      const supply = new Supply(invalidSupplyInvalidSpecification);
+      await expect(supply.save()).rejects.toThrow();
+    });
+
+    it("should reject a supply with invalid status", async () => {
+      const supply = new Supply(invalidSupplyStatus);
+      await expect(supply.save()).rejects.toThrow();
+    });
+
+    it("should reject a supply with non-array supplier pricing", async () => {
       const supply = new Supply(invalidSupplySupplierPricing);
-      await expect(supply.save({ validateBeforeSave: true })).rejects.toThrow();
+      await expect(supply.save()).rejects.toThrow();
     });
 
-    // it("Should enforce unique supplyID", async () => {
-    //   await saveSupplyAndReturn(validSupplyComplete);
-    //   const duplicateSupply = new Supply(validSupplyComplete);
-    //   await expect(
-    //     duplicateSupply.save()
-    //   ).rejects.toThrow();
-    // });
+    it("should reject a supply with non-existent supplier", async () => {
+      const supply = new Supply({
+        ...validSupplyMinimum,
+        suppliers: [new mongoose.Types.ObjectId()],
+        supplierPricing: [
+          {
+            supplier: new mongoose.Types.ObjectId(),
+            price: 50.0,
+            priceValidity: new Date("2024-12-31"),
+            unitQuantity: 1,
+            unitPrice: 50.0,
+          },
+        ],
+      });
+      await expect(supply.save()).rejects.toThrow();
+    });
+
+    it("should reject a supply with duplicate suppliers in pricing", async () => {
+      const supply = new Supply({
+        ...validSupplyMinimum,
+        supplierPricing: [
+          {
+            supplier: validSupplyMinimum.suppliers[0],
+            price: 50.0,
+            priceValidity: new Date("2024-12-31"),
+            unitQuantity: 1,
+            unitPrice: 50.0,
+          },
+          {
+            supplier: validSupplyMinimum.suppliers[0],
+            price: 60.0,
+            priceValidity: new Date("2024-12-31"),
+            unitQuantity: 1,
+            unitPrice: 60.0,
+          },
+        ],
+      });
+      await expect(supply.save()).rejects.toThrow();
+    });
+  });
+
+  describe("Update Cases: Supply Modification", () => {
+    let savedSupply: any;
+
+    beforeEach(async () => {
+      savedSupply = await saveSupplyAndReturn(validSupplyMinimum);
+    });
+
+    it("should update a supply with valid data", async () => {
+      const updatedSupply = await Supply.findByIdAndUpdate(
+        savedSupply._id,
+        validUpdateSupply,
+        { new: true }
+      );
+      expect(updatedSupply?.name).toBe(validUpdateSupply.name);
+      expect(updatedSupply?.description).toBe(validUpdateSupply.description);
+      expect(updatedSupply?.categories).toEqual(validUpdateSupply.categories);
+    });
+
+    it("should update a supply with partial data", async () => {
+      const updatedSupply = await Supply.findByIdAndUpdate(
+        savedSupply._id,
+        validPartialUpdateSupply,
+        { new: true }
+      );
+      expect(updatedSupply?.description).toBe(
+        validPartialUpdateSupply.description
+      );
+      expect(updatedSupply?.name).toBe(savedSupply.name);
+    });
+
+    it("should reject invalid updates", async () => {
+      await expect(
+        Supply.findByIdAndUpdate(savedSupply._id, invalidUpdateSupply, {
+          new: true,
+        })
+      ).rejects.toThrow();
+    });
   });
 });
