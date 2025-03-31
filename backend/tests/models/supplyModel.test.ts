@@ -16,7 +16,10 @@ import {
 } from "../setup/mockSupplies";
 import { validSuppliersList } from "../setup/mockSuppliers";
 import {
-  preSaveSupplier,
+  connectDB,
+  disconnectDB,
+  clearCollection,
+  preSaveMultipleSuppliers,
   saveSupplyAndReturn,
 } from "../setup/globalSetupHelper";
 import {
@@ -30,18 +33,20 @@ import {
 
 describe("Supply Model Validation", () => {
   beforeAll(async () => {
-    await mongoose.connect(process.env.MONGODB_TEST_URI || "");
+    await connectDB();
   });
 
   beforeEach(async () => {
-    await Supply.deleteMany({});
-    await Supplier.deleteMany({});
-    // Save suppliers first
-    await preSaveSupplier();
+    // Clear both collections
+    await clearCollection(Supply);
+    await clearCollection(Supplier);
+
+    // Save suppliers first since supplies depend on them
+    await preSaveMultipleSuppliers();
   });
 
   afterAll(async () => {
-    await mongoose.connection.close();
+    await disconnectDB();
   });
 
   describe("Success Cases: Supply Creation and Validation", () => {
@@ -170,11 +175,11 @@ describe("Supply Model Validation", () => {
       );
       expect(updatedSupply?.name).toBe(savedSupply.name);
     });
-
     it("should reject invalid updates", async () => {
       await expect(
         Supply.findByIdAndUpdate(savedSupply._id, invalidUpdateSupply, {
           new: true,
+          runValidators: true // Add this option to enforce validation on update
         })
       ).rejects.toThrow();
     });
