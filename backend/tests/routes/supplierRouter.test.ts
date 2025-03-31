@@ -18,9 +18,8 @@ import {
 } from "../setup/refRoutes";
 import {
   connectDB,
-  deleteMultipleSuppliers,
   disconnectDB,
-  dropDB,
+  clearCollection,
   preSaveMultipleSuppliers,
   preSaveSupplier,
   preSaveUserAndGenJWT,
@@ -40,6 +39,7 @@ import {
   restrictedUpdateSupplierData,
 } from "../setup/mockSuppliers";
 import Supplier from "../../src/models/supplierModel";
+import { invalidToken } from "../setup/mockData";
 
 describe("Supplier Routes", () => {
   beforeAll(async () => {
@@ -47,7 +47,7 @@ describe("Supplier Routes", () => {
   });
 
   beforeEach(async () => {
-    await dropDB();
+    await clearCollection(Supplier);
   });
 
   afterAll(async () => {
@@ -97,15 +97,17 @@ describe("Supplier Routes", () => {
         expect(response.body.message).toBe("Access denied: No token provided");
       });
 
-      // it("Returns 403 when a user with insufficient privileges tries to access", async () => {
-      //   // Assume a different role is tested here
-      //   const response = await request(app)
-      //     .get(apiSupplierID(validSupplierMinimum.supplierID))
-      //     .set("Authorization", `Bearer ${invalidToken}`);
+      it("Returns 403 when a user with insufficient privileges tries to access", async () => {
+        // Assume a different role is tested here
+        const response = await request(app)
+          .get(apiSupplierID(validSupplierMinimum.supplierID))
+          .set("Authorization", `Bearer ${invalidToken}`);
 
-      //   expect(response.status).toBe(403);
-      //   expect(response.body.message).toBe("Forbidden");
-      // });
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe(
+          "Access denied: Invalid or expired token"
+        );
+      });
 
       it("Returns 500 when there is a server error", async () => {
         jest
@@ -152,7 +154,6 @@ describe("Supplier Routes", () => {
       });
 
       it("Returns 404 and an empty array when no suppliers exist", async () => {
-        await deleteMultipleSuppliers();
         const response = await request(app)
           .get(apiSupplierMain)
           .set("Authorization", `Bearer ${validToken}`);

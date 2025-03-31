@@ -75,7 +75,9 @@ describe("User Routes", () => {
           .set("Authorization", `Bearer ${invalidToken}`);
 
         expect(response.status).toBe(401);
-        expect(response.body.message).toBe("Invalid or expired token");
+        expect(response.body.message).toBe(
+          "Access denied: Invalid or expired token"
+        );
       });
 
       it("Returns 403 if a regular user tries to access another user's profile.", async () => {
@@ -157,7 +159,9 @@ describe("User Routes", () => {
           .send(validEditUserData);
 
         expect(response.status).toBe(401);
-        expect(response.body.message).toBe("Invalid or expired token");
+        expect(response.body.message).toBe(
+          "Access denied: Invalid or expired token"
+        );
       });
 
       it("Returns 1 if no token is provided.", async () => {

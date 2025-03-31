@@ -24,6 +24,11 @@ const specificationSchema = z.object({
 const supplierPricingSchema = z.object({
   supplier: objectIdSchema,
   price: z.number().min(0, "Price must be non-negative"),
+  priceValidity: z
+    .union([z.string(), z.date()])
+    .transform((val) => (typeof val === "string" ? new Date(val) : val)),
+  unitQuantity: z.number().min(1, "Unit quantity must be at least 1"),
+  unitPrice: z.number().min(0, "Unit price must be non-negative"),
 });
 
 export const supplySchema = z.object({

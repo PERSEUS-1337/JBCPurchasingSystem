@@ -1,7 +1,12 @@
+import { supplySchema } from "../../src/validators/supplyValidator";
 import {
-  supplySchema,
-} from "../../src/validators/supplyValidator";
-import { describe, expect, it } from "@jest/globals";
+  describe,
+  expect,
+  it,
+  beforeAll,
+  afterAll,
+  beforeEach,
+} from "@jest/globals";
 import {
   validSupplyComplete,
   missingRequiredFieldsSupply,
@@ -12,8 +17,28 @@ import {
 } from "../setup/mockSupplies";
 import { fromZodError } from "zod-validation-error";
 import { defaultSupplyStatus } from "../../src/constants";
+import {
+  connectDB,
+  disconnectDB,
+  clearCollection,
+} from "../setup/globalSetupHelper";
+import Supply from "../../src/models/supplyModel";
+import Supplier from "../../src/models/supplierModel";
 
 describe("Supply Validator", () => {
+  beforeAll(async () => {
+    await connectDB();
+  });
+
+  beforeEach(async () => {
+    await clearCollection(Supply);
+    await clearCollection(Supplier);
+  });
+
+  afterAll(async () => {
+    await disconnectDB();
+  });
+
   describe("Success Cases: Supply Validation", () => {
     it("Should pass with a complete valid supply", () => {
       const result = supplySchema.safeParse(validSupplyComplete);
@@ -27,9 +52,22 @@ describe("Supply Validator", () => {
         expect(resultData.categories).toEqual(validSupplyComplete.categories);
         expect(resultData.unitMeasure).toBe(validSupplyComplete.unitMeasure);
         expect(resultData.suppliers).toEqual(validSupplyComplete.suppliers);
-        expect(resultData.supplierPricing).toEqual(
-          validSupplyComplete.supplierPricing
-        );
+        expect(resultData.supplierPricing).toHaveLength(2);
+        resultData.supplierPricing.forEach((pricing, index) => {
+          expect(pricing.supplier).toBe(
+            validSupplyComplete.supplierPricing[index].supplier
+          );
+          expect(pricing.price).toBe(
+            validSupplyComplete.supplierPricing[index].price
+          );
+          expect(pricing.priceValidity).toBeInstanceOf(Date);
+          expect(pricing.unitQuantity).toBe(
+            validSupplyComplete.supplierPricing[index].unitQuantity
+          );
+          expect(pricing.unitPrice).toBe(
+            validSupplyComplete.supplierPricing[index].unitPrice
+          );
+        });
         expect(resultData.specifications).toEqual(
           validSupplyComplete.specifications
         );
@@ -50,7 +88,19 @@ describe("Supply Validator", () => {
         expect(resultData.categories).toEqual(validSupplyMinimum.categories);
         expect(resultData.unitMeasure).toBe(validSupplyMinimum.unitMeasure);
         expect(resultData.suppliers).toEqual(validSupplyMinimum.suppliers);
-        expect(resultData.supplierPricing).toEqual(validSupplyMinimum.supplierPricing); // Default value
+        expect(resultData.supplierPricing).toHaveLength(1);
+        const pricing = resultData.supplierPricing[0];
+        expect(pricing.supplier).toBe(
+          validSupplyMinimum.supplierPricing[0].supplier
+        );
+        expect(pricing.price).toBe(validSupplyMinimum.supplierPricing[0].price);
+        expect(pricing.priceValidity).toBeInstanceOf(Date);
+        expect(pricing.unitQuantity).toBe(
+          validSupplyMinimum.supplierPricing[0].unitQuantity
+        );
+        expect(pricing.unitPrice).toBe(
+          validSupplyMinimum.supplierPricing[0].unitPrice
+        );
         expect(resultData.specifications).toEqual([]); // Default value
         expect(resultData.status).toBe(defaultSupplyStatus); // Default value
         expect(resultData.attachments).toEqual([]); // Default value
@@ -94,9 +144,6 @@ describe("Supply Validator", () => {
         expect(errorMessage).toContain(
           `Validation error: Invalid ObjectId format at \"supplierPricing[0].supplier\"; Expected number, received string at \"supplierPricing[1].price\"`
         );
-        // expect(errorMessage).toContain(
-        //   `Price must be a positive number at "supplierPricing[0].price"`
-        // );
       }
     });
 

@@ -12,12 +12,14 @@ import app from "../../src/app";
 import {
   connectDB,
   disconnectDB,
-  dropDB,
+  clearCollection,
   preSaveMultipleSupplies,
   preSaveSupply,
   preSaveUserAndGenJWT,
+  preSaveMultipleSuppliers,
 } from "../setup/globalSetupHelper";
 import Supply from "../../src/models/supplyModel";
+import Supplier from "../../src/models/supplierModel";
 import {
   missingRequiredFieldsSupply,
   validSupplyComplete,
@@ -41,7 +43,10 @@ describe("Supply Routes", () => {
   });
 
   beforeEach(async () => {
-    await dropDB();
+    await clearCollection(Supply);
+    await clearCollection(Supplier);
+    // Save suppliers first since supplies depend on them
+    await preSaveMultipleSuppliers();
   });
 
   afterAll(async () => {
@@ -211,6 +216,8 @@ describe("Supply Routes", () => {
           .post(apiSupplyMain)
           .set("Authorization", `Bearer ${validToken}`)
           .send(validSupplyComplete);
+        console.log("validSupplyComplete", validSupplyComplete);
+        console.log("response.body", response.body);
 
         expect(response.status).toBe(201);
         expect(response.body.message).toBe("Supply created successfully");
