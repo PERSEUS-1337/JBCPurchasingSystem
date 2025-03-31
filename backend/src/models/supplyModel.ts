@@ -58,7 +58,6 @@ const SupplySchema = new Schema<ISupply>(
     description: { type: String, required: true },
     categories: { type: [String], required: true },
     unitMeasure: { type: String, required: true },
-    // Using explicit array-of-objects notation for clarity
     suppliers: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -66,8 +65,16 @@ const SupplySchema = new Schema<ISupply>(
         required: true,
       },
     ],
-    supplierPricing: { type: [SupplierPricingSchema], default: [] },
-    specifications: { type: [SpecificationSchema], default: [] },
+    supplierPricing: {
+      type: [SupplierPricingSchema],
+      default: [],
+      required: true,
+    },
+    specifications: {
+      type: [SpecificationSchema],
+      default: [],
+      required: true,
+    },
     status: {
       type: String,
       enum: supplyStatusEnums,

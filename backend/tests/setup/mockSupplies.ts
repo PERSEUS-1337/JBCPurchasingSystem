@@ -1,16 +1,36 @@
 import mongoose from "mongoose";
 
 // ========= VALID SUPPLIES =========
+
+// Minimal valid supply data
+export const validSupplyMinimum = {
+  supplyID: "SPL-1002",
+  name: "Steel Bolt M10",
+  description: "Steel Bolt M10 standard size",
+  categories: ["Fasteners"],
+  unitMeasure: "pc",
+  suppliers: [new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75")],
+  supplierPricing: [
+    {
+      supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
+      price: 50.0,
+    },
+  ],
+  specifications: [],
+  attachments: [],
+};
+
+// A complete supply record built from the minimum and additional fields
 export const validSupplyComplete = {
+  ...validSupplyMinimum,
   supplyID: "SPL-1001",
   name: 'G.I. U-Bolt 8" x 3/8dia',
   description: 'G.I. U-Bolt 8" x 3/8dia with double washer and nut',
   categories: ["Hardware", "Fasteners"],
-  unitMeasure: "pc",
   suppliers: [
     new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
     new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d76"),
-  ], // ObjectId references
+  ],
   supplierPricing: [
     {
       supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
@@ -29,26 +49,10 @@ export const validSupplyComplete = {
   attachments: ["brochure.pdf"],
 };
 
-export const validSupplyMinimum = {
-  supplyID: "SPL-1002",
-  name: "Steel Bolt M10",
-  description: "Steel Bolt M10 standard size",
-  categories: ["Fasteners"],
-  unitMeasure: "pc",
-  suppliers: [new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75")],
-  supplierPricing: [
-    {
-      supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
-      price: 50.0,
-    },
-  ],
-  specifications: [],
-  status: "Active",
-  attachments: [],
-};
-
+// A list of valid supplies using the minimum as a baseline
 export const validSuppliesList = [
   {
+    ...validSupplyMinimum,
     supplyID: "SPL-1002",
     name: 'Stainless Steel Hex Bolt 1/2" x 2"',
     description: 'Stainless Steel Hex Bolt 1/2" x 2" with nut',
@@ -76,6 +80,7 @@ export const validSuppliesList = [
     attachments: ["specsheet.pdf"],
   },
   {
+    ...validSupplyMinimum,
     supplyID: "SPL-1003",
     name: 'PVC Pipe 4" x 10ft',
     description: 'PVC Pipe 4" diameter, 10 feet long',
@@ -104,6 +109,7 @@ export const validSuppliesList = [
     attachments: ["catalog.pdf"],
   },
   {
+    ...validSupplyMinimum,
     supplyID: "SPL-1004",
     name: 'Wood Screw #8 x 1-1/2"',
     description: 'Wood Screw #8 x 1-1/2", Phillips head',
@@ -133,66 +139,71 @@ export const validSuppliesList = [
 ];
 
 // ========= INVALID SUPPLIES =========
-export const missingRequiredFieldsSupply = {
-  name: "Incomplete Supply",
-};
 
-export const invalidSupplyCategories = {
-  ...validSupplyComplete,
-  categories: 123, // Invalid type
-};
+// missingRequiredFieldsSupply: Remove key required fields from the complete supply.
+// Here we use object destructuring to remove supplyID, name, description, categories,
+// unitMeasure, suppliers, and supplierPricing, which we assume are required.
+export const {
+  supplyID,
+  name,
+  description,
+  categories,
+  unitMeasure,
+  suppliers,
+  supplierPricing,
+  ...missingRequiredFieldsSupply
+} = validSupplyComplete;
 
-export const invalidSupplySupplierPricing = {
-  ...validSupplyComplete,
+export const invalidSupplyComplete = {
+  supplyID: "BAD-1001",
+  name: "",
+  description: "",
+  categories: [],
+  unitMeasure: "",
+  suppliers: [],
   supplierPricing: [
     {
-      supplier: "Invalid ObjectId", // Should be a valid ObjectId
-      price: "Fifty", // Should be a number
+      supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
+      price: -10.0,
     },
   ],
+  specifications: [{ specProperty: "", specValue: "" }],
+  status: "NotAStatus",
+  attachments: "invalidAttachment",
 };
 
+// invalidSupplyInvalidSpecification: An object with a specifications field that is invalid.
 export const invalidSupplyInvalidSpecification = {
-  supplyID: "SPL-1003",
-  name: "Widget D",
-  description: "A widget with invalid specs",
-  categories: ["Electronics"],
-  unitMeasure: "pieces",
-  suppliers: [new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75")],
-  specifications: [
-    {
-      specProperty: "", // Invalid: missing required field
-      specValue: undefined, // Invalid: missing required field
-    },
-  ],
+  ...validSupplyMinimum,
+  specifications: [123, true, { specProperty: "", specValue: "" }],
 };
 
+// invalidSupplyInvalidSupplierPricing: An object with a supplierPricing array containing invalid entries.
 export const invalidSupplyInvalidSupplierPricing = {
-  supplyID: "SPL-1004",
-  name: "Widget E",
-  description: "A widget with invalid pricing",
-  categories: ["Electronics"],
-  unitMeasure: "pieces",
-  suppliers: [new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75")],
+  ...validSupplyMinimum,
   supplierPricing: [
+    { supplier: "not-an-object-id", price: 50.0 },
     {
-      supplier: "invalidObjectId", // Invalid ObjectId
-      price: -10, // Invalid: negative price
+      supplier: new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75"),
+      price: "free", // Price should be a number, not a string.
     },
   ],
 };
 
+// invalidSupplyStatus: An object where the status field is invalid.
 export const invalidSupplyStatus = {
-  supplyID: "SPL-1005",
-  name: "Widget F",
-  description: "A widget with invalid status",
-  categories: ["Electronics"],
-  unitMeasure: "pieces",
-  suppliers: [new mongoose.Types.ObjectId("60c72b2f5f1b2c001c8e4d75")],
-  status: "Invalid", // Invalid status
+  ...validSupplyMinimum,
+  status: "NotAStatus",
+};
+
+// invalidSupplySupplierPricing: An object where the supplierPricing field is not an array.
+export const invalidSupplySupplierPricing = {
+  ...validSupplyMinimum,
+  supplierPricing: "not-an-array",
 };
 
 // ========= UPDATE MOCK DATA =========
+
 export const validUpdateSupply = {
   name: 'Updated G.I. U-Bolt 8" x 3/8dia',
   description: "Updated description for the supply with enhanced features",
@@ -206,6 +217,6 @@ export const validPartialUpdateSupply = {
 };
 
 export const invalidUpdateSupply = {
-  name: "",             // Invalid: name should not be empty
-  categories: 123,      // Invalid: categories should be an array of strings
+  name: "", // Invalid: name should not be empty
+  categories: 123, // Invalid: categories should be an array of strings
 };

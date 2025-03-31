@@ -181,6 +181,29 @@ export const updateSupplyStatus = async (
   }
 };
 
+// Get suppliers of a supply with population
+export const getSuppliersOfSupply = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { supplyID } = req.params;
+    const supply = await Supply.findOne({ supplyID }).populate("suppliers");
+    if (!supply) {
+      res.status(404).json({ message: "Supply not found" });
+      return;
+    }
+    res.status(200).json({
+      message: "Suppliers retrieved successfully",
+      data: supply.suppliers,
+    });
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+  }
+};
+
 // Add a supplier to a supply
 export const addSupplierToSupply = async (
   req: Request,
@@ -227,29 +250,6 @@ export const removeSupplierFromSupply = async (
     res
       .status(200)
       .json({ message: "Supplier removed successfully", data: supply });
-  } catch (err: any) {
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
-  }
-};
-
-// Get suppliers of a supply with population
-export const getSuppliersOfSupply = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { supplyID } = req.params;
-    const supply = await Supply.findOne({ supplyID }).populate("suppliers");
-    if (!supply) {
-      res.status(404).json({ message: "Supply not found" });
-      return;
-    }
-    res.status(200).json({
-      message: "Suppliers retrieved successfully",
-      data: supply.suppliers,
-    });
   } catch (err: any) {
     res
       .status(500)

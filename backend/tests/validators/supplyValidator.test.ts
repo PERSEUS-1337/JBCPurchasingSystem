@@ -66,7 +66,7 @@ describe("Supply Validator", () => {
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
         expect(errorMessage).toContain(
-          `Validation error: Required at \"supplyID\"; Required at \"description\"; Required at \"categories\"; Required at \"unitMeasure\"; Required at \"suppliers\"`
+          `Validation error: Required at \"supplyID\"; Required at \"name\"; Required at \"description\"; Required at \"categories\"; Required at \"unitMeasure\"; Required at \"suppliers\"`
         );
       }
     });
@@ -78,7 +78,7 @@ describe("Supply Validator", () => {
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
         expect(errorMessage).toContain(
-          `Validation error: Specification property is required at \"specifications[0].specProperty\"; Required at \"specifications[0].specValue\"`
+          `Validation error: Expected object, received number at \"specifications[0]\"; Expected object, received boolean at \"specifications[1]\"; Specification property is required at \"specifications[2].specProperty\"`
         );
       }
     });
@@ -92,7 +92,7 @@ describe("Supply Validator", () => {
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
         expect(errorMessage).toContain(
-          `Validation error: Invalid ObjectId format at \"supplierPricing[0].supplier\"; Price must be non-negative at \"supplierPricing[0].price\"`
+          `Validation error: Invalid ObjectId format at \"supplierPricing[0].supplier\"; Expected number, received string at \"supplierPricing[1].price\"`
         );
         // expect(errorMessage).toContain(
         //   `Price must be a positive number at "supplierPricing[0].price"`
@@ -107,7 +107,7 @@ describe("Supply Validator", () => {
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
         expect(errorMessage).toContain(
-          `Invalid enum value. Expected 'Active' | 'Inactive', received 'Invalid' at "status"`
+          `Validation error: Invalid enum value. Expected 'Active' | 'Inactive', received 'NotAStatus' at \"status\"`
         );
       }
     });
