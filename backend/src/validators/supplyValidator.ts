@@ -57,6 +57,17 @@ export const supplySchema = z.object({
 export const supplyUpdateSchema = supplySchema
   .partial()
   .superRefine((data: any, ctx) => {
+    // Check if the object is empty
+    const isEmpty = Object.keys(data).length === 0;
+    if (isEmpty) {
+      ctx.addIssue({
+        code: ZodIssueCode.custom,
+        path: [],
+        message: "At least one field must be updated.",
+      });
+    }
+
+    // Check for restricted fields being updated
     for (const field of supplyRestrictedFields) {
       if (data[field] !== undefined) {
         ctx.addIssue({
@@ -67,6 +78,7 @@ export const supplyUpdateSchema = supplySchema
       }
     }
   });
+
 
 export type SupplyInput = z.infer<typeof supplySchema>;
 export type SpecificationInput = z.infer<typeof specificationSchema>;

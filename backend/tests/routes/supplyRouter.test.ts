@@ -220,7 +220,7 @@ describe("Supply Routes", () => {
         expect(response.status).toBe(201);
         expect(response.body.message).toBe("Supply created successfully");
         expect(response.body.data.supplyID).toBe(validSupplyComplete.supplyID);
-        expect(response.body.createdAt).toBeDefined();
+        expect(response.body.data.createdAt).toBeDefined();
       });
 
       it("Creates a new supply with valid minimum data and token", async () => {
@@ -232,7 +232,7 @@ describe("Supply Routes", () => {
         expect(response.status).toBe(201);
         expect(response.body.message).toBe("Supply created successfully");
         expect(response.body.data.supplyID).toBe(validSupplyMinimum.supplyID);
-        expect(response.body.createdAt).toBeDefined();
+        expect(response.body.data.createdAt).toBeDefined();
       });
     });
 
@@ -309,9 +309,8 @@ describe("Supply Routes", () => {
           .patch(apiSupplyID(validSupplyID))
           .set("Authorization", `Bearer ${validToken}`)
           .send({});
-
         expect(response.status).toBe(400);
-        expect(response.body.message).toBe("No valid update data provided");
+        expect(response.body.message).toBe("Validation failed");
       });
 
       it("Returns 404 when supply is not found", async () => {
@@ -325,9 +324,14 @@ describe("Supply Routes", () => {
       });
 
       it("Returns 500 when there's a server error", async () => {
+        // Mock the database operation to throw an error
         jest.spyOn(Supply, "findOneAndUpdate").mockImplementationOnce(() => {
           throw new Error("Database error");
         });
+
+        // Save a supply first so we have a valid ID to test with
+        await preSaveSupply();
+
         const response = await request(app)
           .patch(apiSupplyID(validSupplyID))
           .set("Authorization", `Bearer ${validToken}`)
@@ -381,10 +385,12 @@ describe("Supply Routes", () => {
           throw new Error("Database error");
         });
 
-        const response = await request(app)
-          .delete(apiSupplyID("validID"))
-          .set("Authorization", `Bearer ${validToken}`);
+        await preSaveSupply();
+        validSupplyID = validSupplyComplete.supplyID;
 
+        const response = await request(app)
+          .delete(apiSupplyID(validSupplyID))
+          .set("Authorization", `Bearer ${validToken}`);
         expect(response.status).toBe(500);
         expect(response.body.message).toBe("Internal server error");
       });
@@ -435,6 +441,9 @@ describe("Supply Routes", () => {
         jest.spyOn(Supply, "findOneAndUpdate").mockImplementationOnce(() => {
           throw new Error("Database error");
         });
+
+        await preSaveSupply();
+        validSupplyID = validSupplyComplete.supplyID;
 
         const response = await request(app)
           .patch(apiSupplyIDStatus(validSupplyID))
