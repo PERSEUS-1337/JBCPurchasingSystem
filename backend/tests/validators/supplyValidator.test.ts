@@ -101,7 +101,7 @@ describe("Supply Validator", () => {
         expect(pricing.unitPrice).toBe(
           validSupplyMinimum.supplierPricing[0].unitPrice
         );
-        expect(resultData.specifications).toEqual([]); // Default value
+        expect(resultData.specifications).toEqual(validSupplyMinimum.specifications); // Default value
         expect(resultData.status).toBe(defaultSupplyStatus); // Default value
         expect(resultData.attachments).toEqual([]); // Default value
       }
@@ -155,6 +155,22 @@ describe("Supply Validator", () => {
         const errorMessage = fromZodError(result.error).message;
         expect(errorMessage).toContain(
           `Validation error: Invalid enum value. Expected 'Active' | 'Inactive', received 'NotAStatus' at \"status\"`
+        );
+      }
+    });
+
+    it("Should fail if specifications are empty", () => {
+      const supplyWithEmptySpecs = {
+        ...validSupplyMinimum,
+        specifications: [], // Empty specifications
+      };
+      const result = supplySchema.safeParse(supplyWithEmptySpecs);
+      expect(result.success).toBe(false);
+
+      if (result.error) {
+        const errorMessage = fromZodError(result.error).message;
+        expect(errorMessage).toContain(
+          `Validation error: Specifications cannot be empty at \"specifications\"`
         );
       }
     });

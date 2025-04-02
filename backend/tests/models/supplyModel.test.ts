@@ -5,7 +5,6 @@ import {
   validSupplyComplete,
   validSupplyMinimum,
   validSuppliesList,
-  invalidSupplyComplete,
   invalidSupplyInvalidSpecification,
   invalidSupplyInvalidSupplierPricing,
   invalidSupplyStatus,
@@ -14,7 +13,6 @@ import {
   validPartialUpdateSupply,
   invalidUpdateSupply,
 } from "../setup/mockSupplies";
-import { validSuppliersList } from "../setup/mockSuppliers";
 import {
   connectDB,
   disconnectDB,

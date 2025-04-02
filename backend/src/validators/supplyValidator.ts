@@ -1,4 +1,4 @@
-import { z, ZodIssueCode } from "zod";
+import { z, ZodIssueCode, RefinementCtx } from "zod";
 import { Types } from "mongoose";
 import { supplyIDRegex } from "../constants/regex";
 import {
@@ -15,23 +15,45 @@ const objectIdSchema = z.union([
   z.instanceof(Types.ObjectId),
 ]);
 
-const specificationSchema = z.object({
-  specProperty: z.string().trim().min(1, "Specification property is required"),
-  // Removed redundant refinement on specValue as it's already required by default
-  specValue: z.union([z.string(), z.number()]),
-});
+const specificationSchema = z
+  .object({
+    specProperty: z
+      .string()
+      .trim()
+      .min(1, "Specification property is required"),
+    specValue: z.union([z.string(), z.number()]),
+  })
+  .refine(
+    (spec) => spec.specProperty.length > 0 && spec.specValue !== undefined,
+    {
+      message: "Specification property and value are required",
+    }
+  );
 
-const supplierPricingSchema = z.object({
-  supplier: objectIdSchema,
-  price: z.number().min(0, "Price must be non-negative"),
-  priceValidity: z
-    .union([z.string(), z.date()])
-    .transform((val) => (typeof val === "string" ? new Date(val) : val)),
-  unitQuantity: z.number().min(1, "Unit quantity must be at least 1"),
-  unitPrice: z.number().min(0, "Unit price must be non-negative"),
-});
+const MAX_PRICE = 1e6; // Define a maximum price limit
 
-export const supplySchema = z.object({
+const supplierPricingSchema = z
+  .object({
+    supplier: objectIdSchema,
+    price: z
+      .number()
+      .min(0, "Price must be non-negative")
+      .max(MAX_PRICE, "Price exceeds maximum limit"),
+    priceValidity: z
+      .union([z.string(), z.date()])
+      .transform((val) => (typeof val === "string" ? new Date(val) : val)),
+    unitQuantity: z.number().min(1, "Unit quantity must be at least 1"),
+    unitPrice: z
+      .number()
+      .min(0, "Unit price must be non-negative")
+      .max(MAX_PRICE, "Unit price exceeds maximum limit"),
+  })
+  .refine((data) => data.price === data.unitPrice * data.unitQuantity, {
+    message: "Price must equal unitPrice * unitQuantity",
+  });
+
+// Base schema without refinements
+const baseSupplySchema = z.object({
   supplyID: z
     .string()
     .trim()
@@ -48,15 +70,49 @@ export const supplySchema = z.object({
   suppliers: z
     .array(objectIdSchema)
     .min(1, "At least one supplier is required"),
-  supplierPricing: z.array(supplierPricingSchema).default([]),
-  specifications: z.array(specificationSchema).default([]),
+  supplierPricing: z
+    .array(supplierPricingSchema)
+    .min(1, "Supply must have at least one supplier with pricing"),
+  specifications: z
+    .array(specificationSchema)
+    .min(1, "Specifications cannot be empty"),
   status: z.enum(supplyStatusEnums).default(defaultSupplyStatus),
   attachments: z.array(z.string()).default([]),
 });
 
-export const supplyUpdateSchema = supplySchema
+// Full schema with refinements
+export const supplySchema = baseSupplySchema
+  .refine(
+    (specs) => {
+      const specProperties = new Set();
+      for (const spec of specs.specifications) {
+        if (specProperties.has(spec.specProperty)) {
+          return false;
+        }
+        specProperties.add(spec.specProperty);
+      }
+      return true;
+    },
+    {
+      message: "Duplicate specification property found",
+    }
+  )
+  .refine(
+    (data) => {
+      const pricingSuppliers = new Set(
+        data.supplierPricing.map((p) => p.supplier.toString())
+      );
+      return data.suppliers.every((s) => pricingSuppliers.has(s.toString()));
+    },
+    {
+      message: "All suppliers in pricing must exist in suppliers array",
+    }
+  );
+
+// Update schema with partial fields and additional validations
+export const supplyUpdateSchema = baseSupplySchema
   .partial()
-  .superRefine((data: any, ctx) => {
+  .superRefine((data, ctx: RefinementCtx) => {
     // Check if the object is empty
     const isEmpty = Object.keys(data).length === 0;
     if (isEmpty) {
@@ -69,7 +125,7 @@ export const supplyUpdateSchema = supplySchema
 
     // Check for restricted fields being updated
     for (const field of supplyRestrictedFields) {
-      if (data[field] !== undefined) {
+      if (field in data) {
         ctx.addIssue({
           code: ZodIssueCode.custom,
           path: [field],
@@ -78,7 +134,6 @@ export const supplyUpdateSchema = supplySchema
       }
     }
   });
-
 
 export type SupplyInput = z.infer<typeof supplySchema>;
 export type SpecificationInput = z.infer<typeof specificationSchema>;

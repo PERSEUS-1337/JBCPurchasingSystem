@@ -1,6 +1,7 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import { supplyIDRegex } from "../constants/regex";
 import { defaultSupplyStatus, supplyStatusEnums } from "../constants";
+import { supplySchema } from "../validators/supplyValidator";
 
 export interface ISpecification {
   specProperty: string;
@@ -35,8 +36,6 @@ interface ISupplyModel extends Model<ISupply> {
   checkDuplicateSupply(supplyID: string): Promise<boolean>;
 }
 
-const MAX_PRICE = 1e6; // Define a maximum price limit
-
 const SupplierPricingSchema = new Schema<ISupplierPricing>({
   supplier: {
     type: mongoose.Schema.Types.ObjectId,
@@ -46,8 +45,6 @@ const SupplierPricingSchema = new Schema<ISupplierPricing>({
   price: {
     type: Number,
     required: true,
-    min: 0,
-    max: MAX_PRICE, // Add max validation
   },
   priceValidity: {
     type: Date,
@@ -56,14 +53,11 @@ const SupplierPricingSchema = new Schema<ISupplierPricing>({
   unitQuantity: {
     type: Number,
     required: true,
-    min: 1,
     default: 1,
   },
   unitPrice: {
     type: Number,
     required: true,
-    min: 0,
-    max: MAX_PRICE, // Add max validation
   },
 });
 
@@ -93,25 +87,19 @@ const SupplySchema = new Schema<ISupply>(
     ],
     supplierPricing: {
       type: [SupplierPricingSchema],
-      default: [],
       required: true,
       validate: {
         validator: function (pricing: ISupplierPricing[]) {
-          return pricing.length > 0;
+          const supplierIds = pricing.map((p) => p.supplier.toString());
+          const uniqueSupplierIds = new Set(supplierIds);
+          return supplierIds.length === uniqueSupplierIds.size;
         },
-        message: "Supply must have at least one supplier with pricing",
+        message: "Duplicate suppliers found in supplier pricing",
       },
     },
     specifications: {
       type: [SpecificationSchema],
-      default: [],
       required: true,
-      validate: {
-        validator: function (specs: ISpecification[]) {
-          return specs.length > 0; // Ensure specifications are not empty
-        },
-        message: "Specifications cannot be empty",
-      },
     },
     status: {
       type: String,
@@ -123,61 +111,21 @@ const SupplySchema = new Schema<ISupply>(
   { timestamps: true }
 );
 
-// Pre-save hook for validation
+// Pre-save hook for various validation
 SupplySchema.pre("save", async function (next) {
   try {
-    // 1. Validate specifications are unique
-    const specProperties = new Set();
-    for (const spec of this.specifications) {
-      if (specProperties.has(spec.specProperty)) {
-        throw new Error("Duplicate specification property found");
-      }
-      specProperties.add(spec.specProperty);
+    // Zod validation pre-save hook
+    const validationResult = supplySchema.safeParse(this.toObject());
+    if (!validationResult.success) {
+      return next(
+        new Error(
+          validationResult.error.errors.map((e) => e.message).join(", ")
+        )
+      );
     }
-
-    // 2. Validate suppliers exist in database
-    const Supplier = mongoose.model("Supplier");
-    const supplierIds = this.suppliers.map((s) => s.toString());
-    const existingSuppliers = await Supplier.find({
-      _id: { $in: supplierIds },
-    });
-
-    if (existingSuppliers.length !== supplierIds.length) {
-      throw new Error("One or more suppliers do not exist in the database");
-    }
-
-    // 3. Validate no duplicate suppliers in pricing
-    const pricingSuppliers = new Set();
-    for (const pricing of this.supplierPricing) {
-      if (pricingSuppliers.has(pricing.supplier.toString())) {
-        throw new Error("Duplicate supplier pricing found");
-      }
-      pricingSuppliers.add(pricing.supplier.toString());
-    }
-
-    // 4. Validate all suppliers in pricing exist in suppliers array
-    const hasAllSuppliers = Array.from(pricingSuppliers).every((supplierId) =>
-      supplierIds.includes(supplierId as string)
-    );
-
-    if (!hasAllSuppliers) {
-      throw new Error("All suppliers in pricing must exist in suppliers array");
-    }
-
-    // 5. Validate unitPrice calculation
-    for (const pricing of this.supplierPricing) {
-      if (pricing.price !== pricing.unitPrice * pricing.unitQuantity) {
-        throw new Error("Price must equal unitPrice * unitQuantity");
-      }
-    }
-
     next();
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      next(error);
-    } else {
-      next(new Error("An unknown error occurred during validation"));
-    }
+  } catch (error) {
+    next(error instanceof Error ? error : new Error(String(error)));
   }
 });
 
