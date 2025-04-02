@@ -35,6 +35,8 @@ interface ISupplyModel extends Model<ISupply> {
   checkDuplicateSupply(supplyID: string): Promise<boolean>;
 }
 
+const MAX_PRICE = 1e6; // Define a maximum price limit
+
 const SupplierPricingSchema = new Schema<ISupplierPricing>({
   supplier: {
     type: mongoose.Schema.Types.ObjectId,
@@ -45,6 +47,7 @@ const SupplierPricingSchema = new Schema<ISupplierPricing>({
     type: Number,
     required: true,
     min: 0,
+    max: MAX_PRICE, // Add max validation
   },
   priceValidity: {
     type: Date,
@@ -60,6 +63,7 @@ const SupplierPricingSchema = new Schema<ISupplierPricing>({
     type: Number,
     required: true,
     min: 0,
+    max: MAX_PRICE, // Add max validation
   },
 });
 
@@ -102,6 +106,12 @@ const SupplySchema = new Schema<ISupply>(
       type: [SpecificationSchema],
       default: [],
       required: true,
+      validate: {
+        validator: function (specs: ISpecification[]) {
+          return specs.length > 0; // Ensure specifications are not empty
+        },
+        message: "Specifications cannot be empty",
+      },
     },
     status: {
       type: String,

@@ -179,9 +179,80 @@ describe("Supply Model Validation", () => {
       await expect(
         Supply.findByIdAndUpdate(savedSupply._id, invalidUpdateSupply, {
           new: true,
-          runValidators: true // Add this option to enforce validation on update
+          runValidators: true, // Add this option to enforce validation on update
         })
       ).rejects.toThrow();
+    });
+  });
+
+  describe("Edge Cases: Supply Validation", () => {
+    it("should reject a supply with extremely large price", async () => {
+      const supply = new Supply({
+        ...validSupplyMinimum,
+        supplierPricing: [
+          {
+            supplier: validSupplyMinimum.suppliers[0],
+            price: Number.MAX_VALUE, // Extremely large price
+            priceValidity: new Date("2024-12-31"),
+            unitQuantity: 1,
+            unitPrice: Number.MAX_VALUE,
+          },
+        ],
+      });
+      await expect(supply.save()).rejects.toThrow();
+    });
+
+    it("should reject a supply with zero unit quantity", async () => {
+      const supply = new Supply({
+        ...validSupplyMinimum,
+        supplierPricing: [
+          {
+            supplier: validSupplyMinimum.suppliers[0],
+            price: 50.0,
+            priceValidity: new Date("2024-12-31"),
+            unitQuantity: 0, // Invalid unit quantity
+            unitPrice: 50.0,
+          },
+        ],
+      });
+      await expect(supply.save()).rejects.toThrow();
+    });
+
+    it("should reject a supply with empty specifications", async () => {
+      const supply = new Supply({
+        ...validSupplyMinimum,
+        specifications: [], // Empty specifications
+      });
+      await expect(supply.save()).rejects.toThrow();
+    });
+
+    it("should reject a supply with empty supplier pricing", async () => {
+      const supply = new Supply({
+        ...validSupplyMinimum,
+        supplierPricing: [], // Empty supplier pricing
+      });
+      await expect(supply.save()).rejects.toThrow();
+    });
+  });
+
+  describe("Concurrency: Supply Operations", () => {
+    it("should handle concurrent saves without errors", async () => {
+      const savePromises = validSuppliesList.map((supply) => {
+        return saveSupplyAndReturn(supply);
+      });
+      await expect(Promise.all(savePromises)).resolves.not.toThrow();
+    });
+  });
+
+  describe("Performance: Bulk Operations", () => {
+    it("should save multiple supplies quickly", async () => {
+      const startTime = Date.now();
+      const savePromises = validSuppliesList.map((supply) =>
+        saveSupplyAndReturn(supply)
+      );
+      await Promise.all(savePromises);
+      const duration = Date.now() - startTime;
+      expect(duration).toBeLessThan(2000); // Expect to save within 2 seconds
     });
   });
 });

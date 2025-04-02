@@ -20,7 +20,7 @@ export const validSupplyMinimum = {
       unitPrice: 50.0,
     },
   ],
-  specifications: [],
+  specifications: [{ specProperty: "Size", specValue: "M10" }],
   attachments: [],
 };
 
@@ -184,7 +184,7 @@ export const invalidSupplyComplete = {
       unitPrice: -10.0,
     },
   ],
-  specifications: [{ specProperty: "", specValue: "" }],
+  specifications: [{ specProperty: 69, specValue: "Invalid" }],
   status: "NotAStatus",
   attachments: "invalidAttachment",
 };
