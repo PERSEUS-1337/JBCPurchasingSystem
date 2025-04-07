@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Supply, { ISupply } from "../models/supplyModel";
+import Supply, { ISupply, ISupplierPricing } from "../models/supplyModel";
 import { SupplyInput } from "../validators/supplyValidator";
 import { sendResponse, sendError } from "../utils/responseUtils";
 
@@ -107,7 +107,6 @@ export const createSupply = async (
  * @param res Express Response object
  * @returns Promise<void>
  * @throws 400 if attempting to update supplyID or no valid update data provided
- * @throws 404 if supply not found
  * @throws 500 if server error occurs
  */
 export const updateSupply = async (
@@ -116,12 +115,29 @@ export const updateSupply = async (
 ): Promise<void> => {
   try {
     const updates = req.body;
-    const supply = await Supply.findOneAndUpdate(
-      { supplyID: req.params.supplyID },
+    const supply = req.supply; // Supply is already attached by the middleware
+
+    if (!supply) {
+      return sendError(res, 500, "Supply not found in request");
+    }
+
+    // Prevent updating supplyID
+    if (updates.supplyID) {
+      return sendError(res, 400, "Cannot update supplyID");
+    }
+
+    // Update the supply
+    const updatedSupply = await Supply.findOneAndUpdate(
+      { supplyID: supply.supplyID },
       updates,
       { new: true, runValidators: true }
     );
-    sendResponse(res, 200, "Supply updated successfully", supply);
+
+    if (!updatedSupply) {
+      return sendError(res, 500, "Failed to update supply");
+    }
+
+    sendResponse(res, 200, "Supply updated successfully", updatedSupply);
   } catch (err: any) {
     sendError(res, 500, "Internal server error", err.message);
   }
@@ -132,7 +148,6 @@ export const updateSupply = async (
  * @param req Express Request object containing supplyID in params
  * @param res Express Response object
  * @returns Promise<void>
- * @throws 404 if supply not found
  * @throws 500 if server error occurs
  */
 export const deleteSupply = async (
@@ -140,9 +155,13 @@ export const deleteSupply = async (
   res: Response
 ): Promise<void> => {
   try {
-    const supply = await Supply.findOneAndDelete({
-      supplyID: req.params.supplyID,
-    });
+    const supply = req.supply; // Supply is already attached by the middleware
+
+    if (!supply) {
+      return sendError(res, 500, "Supply not found in request");
+    }
+
+    await supply.deleteOne();
     sendResponse(res, 200, "Supply deleted successfully", supply);
   } catch (err: any) {
     sendError(res, 500, "Internal server error", err.message);
@@ -154,7 +173,6 @@ export const deleteSupply = async (
  * @param req Express Request object containing supplyID in params and status in body
  * @param res Express Response object
  * @returns Promise<void>
- * @throws 404 if supply not found
  * @throws 500 if server error occurs
  */
 export const updateSupplyStatus = async (
@@ -163,11 +181,15 @@ export const updateSupplyStatus = async (
 ): Promise<void> => {
   try {
     const { status } = req.body;
-    const supply = await Supply.findOneAndUpdate(
-      { supplyID: req.params.supplyID },
-      { status },
-      { new: true, runValidators: true }
-    );
+    const supply = req.supply; // Supply is already attached by the middleware
+
+    if (!supply) {
+      return sendError(res, 500, "Supply not found in request");
+    }
+
+    supply.status = status;
+    await supply.save();
+
     sendResponse(res, 200, "Supply status updated successfully", supply);
   } catch (err: any) {
     sendError(res, 500, "Internal server error", err.message);
@@ -179,7 +201,6 @@ export const updateSupplyStatus = async (
  * @param req Express Request object containing supplyID in params
  * @param res Express Response object
  * @returns Promise<void>
- * @throws 404 if supply not found
  * @throws 500 if server error occurs
  */
 export const getSuppliersOfSupply = async (
@@ -187,30 +208,28 @@ export const getSuppliersOfSupply = async (
   res: Response
 ): Promise<void> => {
   try {
-    const supply = await Supply.findOne({
-      supplyID: req.params.supplyID,
-    }).populate("suppliers");
+    const supply = req.supply; // Supply is already attached by the middleware
+
     if (!supply) {
-      sendError(res, 404, "Supply not found");
-      return;
+      return sendError(res, 500, "Supply not found in request");
     }
-    sendResponse(
-      res,
-      200,
-      "Suppliers retrieved successfully",
-      supply.suppliers
+
+    // Extract unique suppliers from supplierPricing
+    const suppliers = supply.supplierPricing.map(
+      (pricing: ISupplierPricing) => pricing.supplier
     );
+    sendResponse(res, 200, "Suppliers retrieved successfully", suppliers);
   } catch (err: any) {
     sendError(res, 500, "Internal server error", err.message);
   }
 };
 
 /**
- * Associates a supplier with a supply
- * @param req Express Request object containing supplyID in params and supplierID in body
+ * Associates a supplier with a supply and adds their pricing information
+ * @param req Express Request object containing supplyID in params and supplier details in body
  * @param res Express Response object
  * @returns Promise<void>
- * @throws 404 if supply not found
+ * @throws 400 if supplier already exists
  * @throws 500 if server error occurs
  */
 export const addSupplierToSupply = async (
@@ -218,12 +237,33 @@ export const addSupplierToSupply = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { supplierID } = req.body;
-    const supply = await Supply.findOneAndUpdate(
-      { supplyID: req.params.supplyID },
-      { $addToSet: { suppliers: supplierID } },
-      { new: true }
+    const { supplierID, price, priceValidity, unitQuantity, unitPrice } =
+      req.body;
+    const supply = req.supply; // Supply is already attached by the middleware
+
+    if (!supply) {
+      return sendError(res, 500, "Supply not found in request");
+    }
+
+    // Check if the supplier already exists in the supply's supplierPricing
+    const existingPricing = supply.supplierPricing.find(
+      (pricing: ISupplierPricing) => pricing.supplier.toString() === supplierID
     );
+
+    if (existingPricing) {
+      return sendError(res, 400, "Supplier already exists in this supply");
+    }
+
+    // Add the supplier with pricing information
+    supply.supplierPricing.push({
+      supplier: supplierID,
+      price,
+      priceValidity,
+      unitQuantity,
+      unitPrice,
+    });
+
+    await supply.save();
     sendResponse(res, 200, "Supplier added successfully", supply);
   } catch (err: any) {
     sendError(res, 500, "Internal server error", err.message);
@@ -235,7 +275,6 @@ export const addSupplierToSupply = async (
  * @param req Express Request object containing supplyID and supplierID in params
  * @param res Express Response object
  * @returns Promise<void>
- * @throws 404 if supply not found
  * @throws 500 if server error occurs
  */
 export const removeSupplierFromSupply = async (
@@ -244,12 +283,23 @@ export const removeSupplierFromSupply = async (
 ): Promise<void> => {
   try {
     const { supplierID } = req.params;
-    const supply = await Supply.findOneAndUpdate(
-      { supplyID: req.params.supplyID },
-      { $pull: { suppliers: supplierID } },
+    const supply = req.supply; // Supply is already attached by the middleware
+
+    if (!supply) {
+      return sendError(res, 500, "Supply not found in request");
+    }
+
+    const updatedSupply = await Supply.findOneAndUpdate(
+      { supplyID: supply.supplyID },
+      { $pull: { supplierPricing: { supplier: supplierID } } },
       { new: true }
     );
-    sendResponse(res, 200, "Supplier removed successfully", supply);
+
+    if (!updatedSupply) {
+      return sendError(res, 500, "Failed to remove supplier from supply");
+    }
+
+    sendResponse(res, 200, "Supplier removed successfully", updatedSupply);
   } catch (err: any) {
     sendError(res, 500, "Internal server error", err.message);
   }

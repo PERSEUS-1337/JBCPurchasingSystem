@@ -2,6 +2,7 @@ import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import { supplyIDRegex } from "../constants/regex";
 import { defaultSupplyStatus, supplyStatusEnums } from "../constants";
 import { supplySchema } from "../validators/supplyValidator";
+import Supplier from "./supplierModel";
 
 export interface ISpecification {
   specProperty: string;
@@ -22,7 +23,6 @@ export interface ISupply extends Document {
   description: string;
   categories: string[];
   unitMeasure: string;
-  suppliers: Types.ObjectId[];
   supplierPricing: ISupplierPricing[];
   specifications: ISpecification[];
   status: string;
@@ -34,6 +34,7 @@ export interface ISupply extends Document {
 // Static Methods (Available regardless of instance)
 interface ISupplyModel extends Model<ISupply> {
   checkDuplicateSupply(supplyID: string): Promise<boolean>;
+  getSuppliers(supplyID: string): Promise<Types.ObjectId[]>;
 }
 
 const SupplierPricingSchema = new Schema<ISupplierPricing>({
@@ -78,24 +79,9 @@ const SupplySchema = new Schema<ISupply>(
     description: { type: String, required: true },
     categories: { type: [String], required: true },
     unitMeasure: { type: String, required: true },
-    suppliers: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Supplier",
-        required: true,
-      },
-    ],
     supplierPricing: {
       type: [SupplierPricingSchema],
       required: true,
-      validate: {
-        validator: function (pricing: ISupplierPricing[]) {
-          const supplierIds = pricing.map((p) => p.supplier.toString());
-          const uniqueSupplierIds = new Set(supplierIds);
-          return supplierIds.length === uniqueSupplierIds.size;
-        },
-        message: "Duplicate suppliers found in supplier pricing",
-      },
     },
     specifications: {
       type: [SpecificationSchema],
@@ -123,6 +109,25 @@ SupplySchema.pre("save", async function (next) {
         )
       );
     }
+
+    // Check for duplicate suppliers in supplierPricing
+    const supplierIds = this.supplierPricing.map((pricing) =>
+      pricing.supplier.toString()
+    );
+    const uniqueSupplierIds = new Set(supplierIds);
+
+    if (supplierIds.length !== uniqueSupplierIds.size) {
+      return next(new Error("Duplicate suppliers found in supplier pricing"));
+    }
+
+    // Validate that all suppliers exist in the Supplier collection
+    for (const supplierId of uniqueSupplierIds) {
+      const supplierExists = await Supplier.exists({ _id: supplierId });
+      if (!supplierExists) {
+        return next(new Error(`Supplier with ID ${supplierId} does not exist`));
+      }
+    }
+
     next();
   } catch (error) {
     next(error instanceof Error ? error : new Error(String(error)));
@@ -136,6 +141,19 @@ SupplySchema.statics.checkDuplicateSupply = async function (
   // Using exists for performance, as it only returns a boolean result
   const exists = await this.exists({ supplyID });
   return !!exists;
+};
+
+// Helper method to get all suppliers for a supply
+SupplySchema.statics.getSuppliers = async function (
+  supplyID: string
+): Promise<Types.ObjectId[]> {
+  const supply = await this.findOne({ supplyID });
+  if (!supply) return [];
+
+  // Extract just the supplier IDs from supplierPricing
+  return supply.supplierPricing.map(
+    (pricing: ISupplierPricing) => pricing.supplier
+  );
 };
 
 const Supply = mongoose.model<ISupply, ISupplyModel>(

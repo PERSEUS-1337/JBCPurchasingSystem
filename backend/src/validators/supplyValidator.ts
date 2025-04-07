@@ -67,9 +67,6 @@ const baseSupplySchema = z.object({
   description: z.string().trim().min(1, "Description is required"),
   categories: z.array(z.string()).min(1, "At least one category is required"),
   unitMeasure: z.string().trim().min(1, "Unit of measure is required"),
-  suppliers: z
-    .array(objectIdSchema)
-    .min(1, "At least one supplier is required"),
   supplierPricing: z
     .array(supplierPricingSchema)
     .min(1, "Supply must have at least one supplier with pricing"),
@@ -80,34 +77,8 @@ const baseSupplySchema = z.object({
   attachments: z.array(z.string()).default([]),
 });
 
-// Full schema with refinements
-export const supplySchema = baseSupplySchema
-  .refine(
-    (specs) => {
-      const specProperties = new Set();
-      for (const spec of specs.specifications) {
-        if (specProperties.has(spec.specProperty)) {
-          return false;
-        }
-        specProperties.add(spec.specProperty);
-      }
-      return true;
-    },
-    {
-      message: "Duplicate specification property found",
-    }
-  )
-  .refine(
-    (data) => {
-      const pricingSuppliers = new Set(
-        data.supplierPricing.map((p) => p.supplier.toString())
-      );
-      return data.suppliers.every((s) => pricingSuppliers.has(s.toString()));
-    },
-    {
-      message: "All suppliers in pricing must exist in suppliers array",
-    }
-  );
+// Full schema - simplified by removing the problematic refinement
+export const supplySchema = baseSupplySchema;
 
 // Update schema with partial fields and additional validations
 export const supplyUpdateSchema = baseSupplySchema

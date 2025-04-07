@@ -12,6 +12,12 @@ import {
   validUpdateSupply,
   validPartialUpdateSupply,
   invalidUpdateSupply,
+  invalidSupplyNonExistentSupplier,
+  invalidSupplyDuplicateSuppliers,
+  invalidSupplyLargePrice,
+  invalidSupplyZeroQuantity,
+  invalidSupplyEmptySpecifications,
+  invalidSupplyEmptyPricing,
 } from "../setup/mockSupplies";
 import {
   connectDB,
@@ -104,42 +110,12 @@ describe("Supply Model Validation", () => {
     });
 
     it("should reject a supply with non-existent supplier", async () => {
-      const supply = new Supply({
-        ...validSupplyMinimum,
-        suppliers: [new mongoose.Types.ObjectId()],
-        supplierPricing: [
-          {
-            supplier: new mongoose.Types.ObjectId(),
-            price: 50.0,
-            priceValidity: new Date("2024-12-31"),
-            unitQuantity: 1,
-            unitPrice: 50.0,
-          },
-        ],
-      });
+      const supply = new Supply(invalidSupplyNonExistentSupplier);
       await expect(supply.save()).rejects.toThrow();
     });
 
     it("should reject a supply with duplicate suppliers in pricing", async () => {
-      const supply = new Supply({
-        ...validSupplyMinimum,
-        supplierPricing: [
-          {
-            supplier: validSupplyMinimum.suppliers[0],
-            price: 50.0,
-            priceValidity: new Date("2024-12-31"),
-            unitQuantity: 1,
-            unitPrice: 50.0,
-          },
-          {
-            supplier: validSupplyMinimum.suppliers[0],
-            price: 60.0,
-            priceValidity: new Date("2024-12-31"),
-            unitQuantity: 1,
-            unitPrice: 60.0,
-          },
-        ],
-      });
+      const supply = new Supply(invalidSupplyDuplicateSuppliers);
       await expect(supply.save()).rejects.toThrow();
     });
   });
@@ -173,6 +149,7 @@ describe("Supply Model Validation", () => {
       );
       expect(updatedSupply?.name).toBe(savedSupply.name);
     });
+
     it("should reject invalid updates", async () => {
       await expect(
         Supply.findByIdAndUpdate(savedSupply._id, invalidUpdateSupply, {
@@ -185,50 +162,22 @@ describe("Supply Model Validation", () => {
 
   describe("Edge Cases: Supply Validation", () => {
     it("should reject a supply with extremely large price", async () => {
-      const supply = new Supply({
-        ...validSupplyMinimum,
-        supplierPricing: [
-          {
-            supplier: validSupplyMinimum.suppliers[0],
-            price: Number.MAX_VALUE, // Extremely large price
-            priceValidity: new Date("2024-12-31"),
-            unitQuantity: 1,
-            unitPrice: Number.MAX_VALUE,
-          },
-        ],
-      });
+      const supply = new Supply(invalidSupplyLargePrice);
       await expect(supply.save()).rejects.toThrow();
     });
 
     it("should reject a supply with zero unit quantity", async () => {
-      const supply = new Supply({
-        ...validSupplyMinimum,
-        supplierPricing: [
-          {
-            supplier: validSupplyMinimum.suppliers[0],
-            price: 50.0,
-            priceValidity: new Date("2024-12-31"),
-            unitQuantity: 0, // Invalid unit quantity
-            unitPrice: 50.0,
-          },
-        ],
-      });
+      const supply = new Supply(invalidSupplyZeroQuantity);
       await expect(supply.save()).rejects.toThrow();
     });
 
     it("should reject a supply with empty specifications", async () => {
-      const supply = new Supply({
-        ...validSupplyMinimum,
-        specifications: [], // Empty specifications
-      });
+      const supply = new Supply(invalidSupplyEmptySpecifications);
       await expect(supply.save()).rejects.toThrow();
     });
 
     it("should reject a supply with empty supplier pricing", async () => {
-      const supply = new Supply({
-        ...validSupplyMinimum,
-        supplierPricing: [], // Empty supplier pricing
-      });
+      const supply = new Supply(invalidSupplyEmptyPricing);
       await expect(supply.save()).rejects.toThrow();
     });
   });

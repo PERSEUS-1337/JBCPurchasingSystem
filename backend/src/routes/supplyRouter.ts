@@ -21,19 +21,17 @@ import { checkSupplyExists } from "../middlewares/supplyMiddleware";
 
 const router = express.Router();
 
+// Public route
 router.get("/hello", (req, res) => {
   res.status(200).json({ message: "This is the public supply route" });
 });
 
-// Get Supply Info
+// List and Search Routes (No supplyID needed)
 router.get("/", authorizeJWT, getAllSupplies);
 router.get("/search", authorizeJWT, searchSupplies);
+
+// Supply-specific Routes (Require supplyID)
 router.get("/:supplyID", authorizeJWT, checkSupplyExists, getSupplyByID);
-
-// Create Supply
-router.post("/", authorizeJWT, validateRequest(supplySchema), createSupply);
-
-// General Update
 router.patch(
   "/:supplyID",
   authorizeJWT,
@@ -41,11 +39,7 @@ router.patch(
   validateRequest(supplyUpdateSchema),
   updateSupply
 );
-
-// Delete Supply
 router.delete("/:supplyID", authorizeJWT, checkSupplyExists, deleteSupply);
-
-// Update Supply Status
 router.patch(
   "/:supplyID/status",
   authorizeJWT,
@@ -53,7 +47,7 @@ router.patch(
   updateSupplyStatus
 );
 
-// Manage Suppliers for a Supply
+// Supplier Management Routes
 router.get(
   "/:supplyID/suppliers",
   authorizeJWT,
@@ -72,5 +66,8 @@ router.delete(
   checkSupplyExists,
   removeSupplierFromSupply
 );
+
+// Create Supply (No supplyID needed)
+router.post("/", authorizeJWT, validateRequest(supplySchema), createSupply);
 
 export default router;

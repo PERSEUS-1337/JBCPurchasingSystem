@@ -37,4 +37,9 @@ export const apiSupplyMain = "/api/supply";
 export const apiSupplyHello = "/api/supply/hello";
 export const apiSupplySearch = "/api/supply/search";
 export const apiSupplyID = (supplyID: string) => `/api/supply/${supplyID}`;
-export const apiSupplyIDStatus = (supplyID: string) => `/api/supply/${supplyID}/status`;
+export const apiSupplyIDStatus = (supplyID: string) =>
+  `/api/supply/${supplyID}/status`;
+export const apiSupplyIDSuppliers = (supplyID: string) =>
+  `/api/supply/${supplyID}/suppliers`;
+export const apiSupplyIDSupplierID = (supplyID: string, supplierID: string) =>
+  `/api/supply/${supplyID}/suppliers/${supplierID}`;

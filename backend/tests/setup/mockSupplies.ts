@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import { SUPPLIER_IDS } from "./mockSuppliers";
 
 // ========= VALID SUPPLIES =========
@@ -10,7 +9,6 @@ export const validSupplyMinimum = {
   description: "Steel Bolt M10 standard size",
   categories: ["Fasteners"],
   unitMeasure: "pc",
-  suppliers: [SUPPLIER_IDS.SUPPLIER_1],
   supplierPricing: [
     {
       supplier: SUPPLIER_IDS.SUPPLIER_1,
@@ -31,7 +29,6 @@ export const validSupplyComplete = {
   name: 'G.I. U-Bolt 8" x 3/8dia',
   description: 'G.I. U-Bolt 8" x 3/8dia with double washer and nut',
   categories: ["Hardware", "Fasteners"],
-  suppliers: [SUPPLIER_IDS.SUPPLIER_1, SUPPLIER_IDS.SUPPLIER_2],
   supplierPricing: [
     {
       supplier: SUPPLIER_IDS.SUPPLIER_1,
@@ -65,7 +62,6 @@ export const validSuppliesList = [
     description: 'Stainless Steel Hex Bolt 1/2" x 2" with nut',
     categories: ["Hardware", "Fasteners"],
     unitMeasure: "pc",
-    suppliers: [SUPPLIER_IDS.SUPPLIER_3, SUPPLIER_IDS.SUPPLIER_4],
     supplierPricing: [
       {
         supplier: SUPPLIER_IDS.SUPPLIER_3,
@@ -96,7 +92,6 @@ export const validSuppliesList = [
     description: 'PVC Pipe 4" diameter, 10 feet long',
     categories: ["Plumbing", "Pipes"],
     unitMeasure: "pc",
-    suppliers: [SUPPLIER_IDS.SUPPLIER_5, SUPPLIER_IDS.SUPPLIER_6],
     supplierPricing: [
       {
         supplier: SUPPLIER_IDS.SUPPLIER_5,
@@ -128,7 +123,6 @@ export const validSuppliesList = [
     description: 'Wood Screw #8 x 1-1/2", Phillips head',
     categories: ["Hardware", "Fasteners"],
     unitMeasure: "pc",
-    suppliers: [SUPPLIER_IDS.SUPPLIER_7, SUPPLIER_IDS.SUPPLIER_8],
     supplierPricing: [
       {
         supplier: SUPPLIER_IDS.SUPPLIER_7,
@@ -163,7 +157,6 @@ export const {
   description,
   categories,
   unitMeasure,
-  suppliers,
   supplierPricing,
   ...missingRequiredFieldsSupply
 } = validSupplyComplete;
@@ -174,7 +167,6 @@ export const invalidSupplyComplete = {
   description: "",
   categories: [],
   unitMeasure: "",
-  suppliers: [],
   supplierPricing: [
     {
       supplier: SUPPLIER_IDS.SUPPLIER_1,
@@ -226,6 +218,83 @@ export const invalidSupplyStatus = {
 export const invalidSupplySupplierPricing = {
   ...validSupplyMinimum,
   supplierPricing: "not-an-array",
+};
+
+// ========= NEW INVALID SUPPLIES FOR TEST CASES =========
+
+// invalidSupplyNonExistentSupplier: A supply with a non-existent supplier ID
+export const invalidSupplyNonExistentSupplier = {
+  ...validSupplyMinimum,
+  supplierPricing: [
+    {
+      supplier: "507f1f77bcf86cd799439011", // A non-existent ObjectId
+      price: 50.0,
+      priceValidity: new Date("2024-12-31"),
+      unitQuantity: 1,
+      unitPrice: 50.0,
+    },
+  ],
+};
+
+// invalidSupplyDuplicateSuppliers: A supply with duplicate suppliers in pricing
+export const invalidSupplyDuplicateSuppliers = {
+  ...validSupplyMinimum,
+  supplierPricing: [
+    {
+      supplier: SUPPLIER_IDS.SUPPLIER_1,
+      price: 50.0,
+      priceValidity: new Date("2024-12-31"),
+      unitQuantity: 1,
+      unitPrice: 50.0,
+    },
+    {
+      supplier: SUPPLIER_IDS.SUPPLIER_1, // Same supplier as above
+      price: 60.0,
+      priceValidity: new Date("2024-12-31"),
+      unitQuantity: 1,
+      unitPrice: 60.0,
+    },
+  ],
+};
+
+// invalidSupplyLargePrice: A supply with an extremely large price
+export const invalidSupplyLargePrice = {
+  ...validSupplyMinimum,
+  supplierPricing: [
+    {
+      supplier: SUPPLIER_IDS.SUPPLIER_1,
+      price: Number.MAX_VALUE, // Extremely large price
+      priceValidity: new Date("2024-12-31"),
+      unitQuantity: 1,
+      unitPrice: Number.MAX_VALUE,
+    },
+  ],
+};
+
+// invalidSupplyZeroQuantity: A supply with zero unit quantity
+export const invalidSupplyZeroQuantity = {
+  ...validSupplyMinimum,
+  supplierPricing: [
+    {
+      supplier: SUPPLIER_IDS.SUPPLIER_1,
+      price: 50.0,
+      priceValidity: new Date("2024-12-31"),
+      unitQuantity: 0, // Invalid unit quantity
+      unitPrice: 50.0,
+    },
+  ],
+};
+
+// invalidSupplyEmptySpecifications: A supply with empty specifications
+export const invalidSupplyEmptySpecifications = {
+  ...validSupplyMinimum,
+  specifications: [], // Empty specifications
+};
+
+// invalidSupplyEmptyPricing: A supply with empty supplier pricing
+export const invalidSupplyEmptyPricing = {
+  ...validSupplyMinimum,
+  supplierPricing: [], // Empty supplier pricing
 };
 
 // ========= UPDATE MOCK DATA =========

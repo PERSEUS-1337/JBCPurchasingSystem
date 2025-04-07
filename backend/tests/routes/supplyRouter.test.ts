@@ -17,6 +17,8 @@ import {
   preSaveSupply,
   preSaveUserAndGenJWT,
   preSaveMultipleSuppliers,
+  saveSupplyAndReturn,
+  saveSupplierAndReturn,
 } from "../setup/globalSetupHelper";
 import Supply from "../../src/models/supplyModel";
 import Supplier from "../../src/models/supplierModel";
@@ -26,12 +28,16 @@ import {
   validSupplyMinimum,
   validUpdateSupply,
 } from "../setup/mockSupplies";
+import { validSupplierComplete, validSupplierMinimum, validSuppliersList } from "../setup/mockSuppliers";
 import {
   apiSupplyID,
   apiSupplyIDStatus,
   apiSupplyMain,
   apiSupplySearch,
+  apiSupplyIDSuppliers,
+  apiSupplyIDSupplierID,
 } from "../setup/refRoutes";
+import { Types } from "mongoose";
 
 describe("Supply Routes", () => {
   let validToken: string;
@@ -456,4 +462,152 @@ describe("Supply Routes", () => {
       });
     });
   });
+
+  describe(`GET ${apiSupplyIDSuppliers(":supplyID")}`, () => {
+    describe("Success Cases: Get Suppliers of Supply", () => {
+      it("Returns all suppliers for a valid supply", async () => {
+        await preSaveSupply();
+        const response = await request(app)
+          .get(apiSupplyIDSuppliers(validSupplyID))
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("Suppliers retrieved successfully");
+        expect(Array.isArray(response.body.data)).toBe(true);
+        expect(response.body.data.length).toBeGreaterThan(0);
+      });
+    });
+
+    describe("Failure Cases: Get Suppliers of Supply", () => {
+      it("Returns 404 when supply does not exist", async () => {
+        const response = await request(app)
+          .get(apiSupplyIDSuppliers("nonexistent123"))
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("Supply not found");
+      });
+
+      it("Returns 401 when no token is provided", async () => {
+        const response = await request(app).get(
+          apiSupplyIDSuppliers(validSupplyID)
+        );
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
+    });
+  });
+
+  describe(`POST ${apiSupplyIDSuppliers(":supplyID")}`, () => {
+    describe("Success Cases: Add Supplier to Supply", () => {
+      it("Adds a new supplier to an existing supply", async () => {
+        const supply = await saveSupplyAndReturn(validSupplyMinimum);
+        const supplierId = (validSuppliersList[1]._id as Types.ObjectId).toString();
+
+        const response = await request(app)
+          .post(apiSupplyIDSuppliers(supply.supplyID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ supplierID: supplierId });
+        console.log(response.body);
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("Supplier added successfully");
+        expect(response.body.data.suppliers).toContainEqual(supplierId);
+      });
+    });
+
+    describe("Failure Cases: Add Supplier to Supply", () => {
+      it("Returns 404 when supply does not exist", async () => {
+        const response = await request(app)
+          .post(apiSupplyIDSuppliers("nonexistent123"))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ supplierID: "validSupplierID" });
+
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("Supply not found");
+      });
+
+      it("Returns 400 when supplier is already added", async () => {
+        const supply = await saveSupplyAndReturn(validSupplyComplete);
+        const supplierId = (validSupplyComplete.suppliers[0] as Types.ObjectId).toString();
+        // Try to add the same supplier again
+        const response = await request(app)
+          .post(apiSupplyIDSuppliers(supply.supplyID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ supplierID: supplierId });
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe("Supplier already exists in this supply");
+      });
+
+      it("Returns 401 when no token is provided", async () => {
+        const supply = await saveSupplyAndReturn(validSupplyComplete);
+        const response = await request(app)
+          .post(apiSupplyIDSuppliers(supply.supplyID))
+          .send({ supplierID: "validSupplierID" });
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
+    });
+  });
+
+  // describe(`DELETE ${apiSupplyIDSupplierID(
+  //   ":supplyID",
+  //   ":supplierID"
+  // )}`, () => {
+  //   describe("Success Cases: Remove Supplier from Supply", () => {
+  //     it("Removes a supplier from an existing supply", async () => {
+  //       const supply = await saveSupplyAndReturn(validSupplyComplete);
+  //       const supplier = await saveSupplierAndReturn(validSupplierComplete);
+  //       const supplierId = (supplier._id as Types.ObjectId).toString();
+
+  //       // First add the supplier
+  //       await request(app)
+  //         .post(apiSupplyIDSuppliers(supply.supplyID))
+  //         .set("Authorization", `Bearer ${validToken}`)
+  //         .send({ supplierID: supplierId });
+
+  //       // Then remove it
+  //       const response = await request(app)
+  //         .delete(apiSupplyIDSupplierID(supply.supplyID, supplierId))
+  //         .set("Authorization", `Bearer ${validToken}`);
+
+  //       expect(response.status).toBe(200);
+  //       expect(response.body.message).toBe("Supplier removed successfully");
+  //       expect(response.body.data.suppliers).not.toContainEqual(supplierId);
+  //     });
+  //   });
+
+  //   describe("Failure Cases: Remove Supplier from Supply", () => {
+  //     it("Returns 404 when supply does not exist", async () => {
+  //       const response = await request(app)
+  //         .delete(apiSupplyIDSupplierID("nonexistent123", "validSupplierID"))
+  //         .set("Authorization", `Bearer ${validToken}`);
+
+  //       expect(response.status).toBe(404);
+  //       expect(response.body.message).toBe("Supply not found");
+  //     });
+
+  //     it("Returns 400 when supplier is not in supply", async () => {
+  //       const supply = await saveSupplyAndReturn(validSupplyComplete);
+  //       const response = await request(app)
+  //         .delete(apiSupplyIDSupplierID(supply.supplyID, "nonexistentSupplier"))
+  //         .set("Authorization", `Bearer ${validToken}`);
+
+  //       expect(response.status).toBe(400);
+  //       expect(response.body.message).toBe("Supplier not found in supply");
+  //     });
+
+  //     it("Returns 401 when no token is provided", async () => {
+  //       const supply = await saveSupplyAndReturn(validSupplyComplete);
+  //       const response = await request(app).delete(
+  //         apiSupplyIDSupplierID(supply.supplyID, "validSupplierID")
+  //       );
+
+  //       expect(response.status).toBe(401);
+  //       expect(response.body.message).toBe("Access denied: No token provided");
+  //     });
+  //   });
+  // });
 });
