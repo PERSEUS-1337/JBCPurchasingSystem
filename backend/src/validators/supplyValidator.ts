@@ -32,9 +32,28 @@ const specificationSchema = z
 
 const MAX_PRICE = 1e6; // Define a maximum price limit
 
-const supplierPricingSchema = z
+export const supplierPricingSchema = z
   .object({
     supplier: objectIdSchema,
+    price: z
+      .number()
+      .min(0, "Price must be non-negative")
+      .max(MAX_PRICE, "Price exceeds maximum limit"),
+    priceValidity: z
+      .union([z.string(), z.date()])
+      .transform((val) => (typeof val === "string" ? new Date(val) : val)),
+    unitQuantity: z.number().min(1, "Unit quantity must be at least 1"),
+    unitPrice: z
+      .number()
+      .min(0, "Unit price must be non-negative")
+      .max(MAX_PRICE, "Unit price exceeds maximum limit"),
+  })
+  .refine((data) => data.price === data.unitPrice * data.unitQuantity, {
+    message: "Price must equal unitPrice * unitQuantity",
+  });
+
+export const supplierPricingUpdateSchema = z
+  .object({
     price: z
       .number()
       .min(0, "Price must be non-negative")

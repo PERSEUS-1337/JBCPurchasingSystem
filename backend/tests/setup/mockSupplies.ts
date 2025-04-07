@@ -315,3 +315,35 @@ export const invalidUpdateSupply = {
   name: "", // Invalid: name should not be empty
   categories: 123, // Invalid: categories should be an array of strings
 };
+
+// ========= SUPPLIER PRICING MOCK DATA =========
+
+export const validSupplierPricingUpdate = {
+  price: 150.0,
+  priceValidity: new Date("2024-12-31"),
+  unitQuantity: 10,
+  unitPrice: 15.0,
+};
+
+export const invalidSupplierPricingUpdate = {
+  price: -150.0,
+  priceValidity: "invalid-date",
+  unitQuantity: 0,
+  unitPrice: -15.0,
+};
+
+export const validNewSupplierPricing = {
+  supplier: SUPPLIER_IDS.SUPPLIER_3,
+  price: 100.0,
+  priceValidity: new Date("2024-12-31"),
+  unitQuantity: 5,
+  unitPrice: 20.0,
+};
+
+export const invalidNewSupplierPricing = {
+  supplier: "invalid-supplier-id",
+  price: -100.0,
+  priceValidity: "invalid-date",
+  unitQuantity: 0,
+  unitPrice: -20.0,
+};

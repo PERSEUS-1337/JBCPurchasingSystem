@@ -43,3 +43,9 @@ export const apiSupplyIDSuppliers = (supplyID: string) =>
   `/api/supply/${supplyID}/suppliers`;
 export const apiSupplyIDSupplierID = (supplyID: string, supplierID: string) =>
   `/api/supply/${supplyID}/suppliers/${supplierID}`;
+export const apiSupplyIDSupplierPricing = (supplyID: string) =>
+  `/api/supply/${supplyID}/supplier-pricing`;
+export const apiSupplyIDSupplierPricingSupplier = (
+  supplyID: string,
+  supplier: string
+) => `/api/supply/${supplyID}/supplier-pricing/${supplier}`;

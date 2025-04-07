@@ -14,6 +14,12 @@ import {
   invalidSupplyInvalidSupplierPricing,
   validSupplyMinimum,
   invalidSupplyStatus,
+  invalidSupplyNonExistentSupplier,
+  invalidSupplyDuplicateSuppliers,
+  invalidSupplyLargePrice,
+  invalidSupplyZeroQuantity,
+  invalidSupplyEmptySpecifications,
+  invalidSupplyEmptyPricing,
 } from "../setup/mockSupplies";
 import { fromZodError } from "zod-validation-error";
 import { defaultSupplyStatus } from "../../src/constants";
@@ -51,7 +57,6 @@ describe("Supply Validator", () => {
         expect(resultData.description).toBe(validSupplyComplete.description);
         expect(resultData.categories).toEqual(validSupplyComplete.categories);
         expect(resultData.unitMeasure).toBe(validSupplyComplete.unitMeasure);
-        expect(resultData.suppliers).toEqual(validSupplyComplete.suppliers);
         expect(resultData.supplierPricing).toHaveLength(2);
         resultData.supplierPricing.forEach((pricing, index) => {
           expect(pricing.supplier).toBe(
@@ -87,7 +92,6 @@ describe("Supply Validator", () => {
         expect(resultData.description).toBe(validSupplyMinimum.description);
         expect(resultData.categories).toEqual(validSupplyMinimum.categories);
         expect(resultData.unitMeasure).toBe(validSupplyMinimum.unitMeasure);
-        expect(resultData.suppliers).toEqual(validSupplyMinimum.suppliers);
         expect(resultData.supplierPricing).toHaveLength(1);
         const pricing = resultData.supplierPricing[0];
         expect(pricing.supplier).toBe(
@@ -101,7 +105,9 @@ describe("Supply Validator", () => {
         expect(pricing.unitPrice).toBe(
           validSupplyMinimum.supplierPricing[0].unitPrice
         );
-        expect(resultData.specifications).toEqual(validSupplyMinimum.specifications); // Default value
+        expect(resultData.specifications).toEqual(
+          validSupplyMinimum.specifications
+        );
         expect(resultData.status).toBe(defaultSupplyStatus); // Default value
         expect(resultData.attachments).toEqual([]); // Default value
       }
@@ -116,7 +122,7 @@ describe("Supply Validator", () => {
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
         expect(errorMessage).toContain(
-          `Validation error: Required at \"supplyID\"; Required at \"name\"; Required at \"description\"; Required at \"categories\"; Required at \"unitMeasure\"; Required at \"suppliers\"`
+          `Validation error: Required at \"supplyID\"; Required at \"name\"; Required at \"description\"; Required at \"categories\"; Required at \"unitMeasure\"; Required at \"supplierPricing\"`
         );
       }
     });
@@ -160,11 +166,7 @@ describe("Supply Validator", () => {
     });
 
     it("Should fail if specifications are empty", () => {
-      const supplyWithEmptySpecs = {
-        ...validSupplyMinimum,
-        specifications: [], // Empty specifications
-      };
-      const result = supplySchema.safeParse(supplyWithEmptySpecs);
+      const result = supplySchema.safeParse(invalidSupplyEmptySpecifications);
       expect(result.success).toBe(false);
 
       if (result.error) {
@@ -173,6 +175,65 @@ describe("Supply Validator", () => {
           `Validation error: Specifications cannot be empty at \"specifications\"`
         );
       }
+    });
+
+    it("Should fail if supplier pricing is empty", () => {
+      const result = supplySchema.safeParse(invalidSupplyEmptyPricing);
+      expect(result.success).toBe(false);
+
+      if (result.error) {
+        const errorMessage = fromZodError(result.error).message;
+        expect(errorMessage).toContain(
+          `Validation error: Supply must have at least one supplier with pricing at \"supplierPricing\"`
+        );
+      }
+    });
+
+    it("Should fail if price is extremely large", () => {
+      const result = supplySchema.safeParse(invalidSupplyLargePrice);
+      expect(result.success).toBe(false);
+
+      if (result.error) {
+        const errorMessage = fromZodError(result.error).message;
+        expect(errorMessage).toContain(
+          `Validation error: Price exceeds maximum limit at \"supplierPricing[0].price\"`
+        );
+      }
+    });
+
+    it("Should fail if unit quantity is zero", () => {
+      const result = supplySchema.safeParse(invalidSupplyZeroQuantity);
+      expect(result.success).toBe(false);
+
+      if (result.error) {
+        const errorMessage = fromZodError(result.error).message;
+        expect(errorMessage).toContain(
+          `Validation error: Unit quantity must be at least 1 at \"supplierPricing[0].unitQuantity\"`
+        );
+      }
+    });
+  });
+
+  describe("Model Validation Tests", () => {
+    it("Should reject a supply with non-existent supplier", async () => {
+      // Create a supply with a non-existent supplier
+      const supply = new Supply(invalidSupplyNonExistentSupplier);
+
+      // Attempt to save the supply and expect it to fail
+      await expect(supply.save()).rejects.toThrow();
+      await expect(supply.save()).rejects.toThrow(/Supplier with ID/);
+      await expect(supply.save()).rejects.toThrow(/does not exist/);
+    });
+
+    it("Should reject a supply with duplicate suppliers in pricing", async () => {
+      // Create a supply with duplicate suppliers
+      const supply = new Supply(invalidSupplyDuplicateSuppliers);
+
+      // Attempt to save the supply and expect it to fail
+      await expect(supply.save()).rejects.toThrow();
+      await expect(supply.save()).rejects.toThrow(
+        /Duplicate suppliers found in supplier pricing/
+      );
     });
   });
 });

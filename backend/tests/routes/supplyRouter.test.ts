@@ -1,4 +1,4 @@
-import request, { Response } from "supertest";
+import request from "supertest";
 import {
   describe,
   it,
@@ -18,7 +18,6 @@ import {
   preSaveUserAndGenJWT,
   preSaveMultipleSuppliers,
   saveSupplyAndReturn,
-  saveSupplierAndReturn,
 } from "../setup/globalSetupHelper";
 import Supply from "../../src/models/supplyModel";
 import Supplier from "../../src/models/supplierModel";
@@ -27,17 +26,21 @@ import {
   validSupplyComplete,
   validSupplyMinimum,
   validUpdateSupply,
+  validSupplierPricingUpdate,
+  invalidSupplierPricingUpdate,
+  validNewSupplierPricing,
+  invalidNewSupplierPricing,
 } from "../setup/mockSupplies";
-import { validSupplierComplete, validSupplierMinimum, validSuppliersList } from "../setup/mockSuppliers";
 import {
   apiSupplyID,
   apiSupplyIDStatus,
   apiSupplyMain,
   apiSupplySearch,
   apiSupplyIDSuppliers,
-  apiSupplyIDSupplierID,
+  apiSupplyIDSupplierPricing,
+  apiSupplyIDSupplierPricingSupplier,
 } from "../setup/refRoutes";
-import { Types } from "mongoose";
+import mongoose from "mongoose";
 
 describe("Supply Routes", () => {
   let validToken: string;
@@ -51,7 +54,6 @@ describe("Supply Routes", () => {
   beforeEach(async () => {
     await clearCollection(Supply);
     await clearCollection(Supplier);
-    // Save suppliers first since supplies depend on them
     await preSaveMultipleSuppliers();
   });
 
@@ -499,115 +501,258 @@ describe("Supply Routes", () => {
     });
   });
 
-  describe(`POST ${apiSupplyIDSuppliers(":supplyID")}`, () => {
-    describe("Success Cases: Add Supplier to Supply", () => {
-      it("Adds a new supplier to an existing supply", async () => {
+  describe(`POST ${apiSupplyIDSupplierPricing(":supplyID")}`, () => {
+    describe("Success Cases: Add Supplier Pricing", () => {
+      it("Adds new supplier pricing to an existing supply", async () => {
         const supply = await saveSupplyAndReturn(validSupplyMinimum);
-        const supplierId = (validSuppliersList[1]._id as Types.ObjectId).toString();
-
         const response = await request(app)
-          .post(apiSupplyIDSuppliers(supply.supplyID))
+          .post(apiSupplyIDSupplierPricing(supply.supplyID))
           .set("Authorization", `Bearer ${validToken}`)
-          .send({ supplierID: supplierId });
-        console.log(response.body);
+          .send(validNewSupplierPricing);
+
         expect(response.status).toBe(200);
-        expect(response.body.message).toBe("Supplier added successfully");
-        expect(response.body.data.suppliers).toContainEqual(supplierId);
+        expect(response.body.message).toBe(
+          "Supplier pricing added successfully"
+        );
+        expect(response.body.data.supplierPricing).toContainEqual(
+          expect.objectContaining({
+            supplier: expect.any(String),
+            price: validNewSupplierPricing.price,
+            unitQuantity: validNewSupplierPricing.unitQuantity,
+            unitPrice: validNewSupplierPricing.unitPrice,
+          })
+        );
       });
     });
 
-    describe("Failure Cases: Add Supplier to Supply", () => {
+    describe("Failure Cases: Add Supplier Pricing", () => {
+      it("Returns 401 when no token is provided", async () => {
+        const response = await request(app)
+          .post(apiSupplyIDSupplierPricing("anyid"))
+          .send({});
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
+
       it("Returns 404 when supply does not exist", async () => {
         const response = await request(app)
-          .post(apiSupplyIDSuppliers("nonexistent123"))
+          .post(apiSupplyIDSupplierPricing("nonexistent123"))
           .set("Authorization", `Bearer ${validToken}`)
-          .send({ supplierID: "validSupplierID" });
+          .send(validNewSupplierPricing);
 
         expect(response.status).toBe(404);
         expect(response.body.message).toBe("Supply not found");
       });
 
-      it("Returns 400 when supplier is already added", async () => {
+      it("Returns 400 when supplier pricing already exists", async () => {
         const supply = await saveSupplyAndReturn(validSupplyComplete);
-        const supplierId = (validSupplyComplete.suppliers[0] as Types.ObjectId).toString();
-        // Try to add the same supplier again
+        const supplierId = supply.supplierPricing[0].supplier.toString();
+        const pricingData = {
+          ...validNewSupplierPricing,
+          supplier: supplierId,
+        };
+
         const response = await request(app)
-          .post(apiSupplyIDSuppliers(supply.supplyID))
+          .post(apiSupplyIDSupplierPricing(supply.supplyID))
           .set("Authorization", `Bearer ${validToken}`)
-          .send({ supplierID: supplierId });
+          .send(pricingData);
 
         expect(response.status).toBe(400);
-        expect(response.body.message).toBe("Supplier already exists in this supply");
+        expect(response.body.message).toBe(
+          "Supplier pricing already exists for this supplier"
+        );
       });
 
-      it("Returns 401 when no token is provided", async () => {
-        const supply = await saveSupplyAndReturn(validSupplyComplete);
+      it("Returns 400 when invalid pricing data is provided", async () => {
+        const supply = await saveSupplyAndReturn(validSupplyMinimum);
         const response = await request(app)
-          .post(apiSupplyIDSuppliers(supply.supplyID))
-          .send({ supplierID: "validSupplierID" });
+          .post(apiSupplyIDSupplierPricing(supply.supplyID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(invalidNewSupplierPricing);
 
-        expect(response.status).toBe(401);
-        expect(response.body.message).toBe("Access denied: No token provided");
+        expect(response.status).toBe(400);
+        expect(response.body.message).toMatch(/validation failed/i);
+      });
+
+      it("Returns 500 when there's a server error", async () => {
+        jest.spyOn(Supply, "findOneAndUpdate").mockImplementationOnce(() => {
+          throw new Error("Database error");
+        });
+
+        const supply = await saveSupplyAndReturn(validSupplyMinimum);
+        const response = await request(app)
+          .post(apiSupplyIDSupplierPricing(supply.supplyID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validNewSupplierPricing);
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
       });
     });
   });
 
-  // describe(`DELETE ${apiSupplyIDSupplierID(
-  //   ":supplyID",
-  //   ":supplierID"
-  // )}`, () => {
-  //   describe("Success Cases: Remove Supplier from Supply", () => {
-  //     it("Removes a supplier from an existing supply", async () => {
-  //       const supply = await saveSupplyAndReturn(validSupplyComplete);
-  //       const supplier = await saveSupplierAndReturn(validSupplierComplete);
-  //       const supplierId = (supplier._id as Types.ObjectId).toString();
+  describe(`PATCH ${apiSupplyIDSupplierPricingSupplier(
+    ":supplyID",
+    ":supplier"
+  )}`, () => {
+    describe("Success Cases: Update Supplier Pricing", () => {
+      it("Updates existing supplier pricing", async () => {
+        const supply = await saveSupplyAndReturn(validSupplyComplete);
+        const supplierId = supply.supplierPricing[0].supplier.toString();
 
-  //       // First add the supplier
-  //       await request(app)
-  //         .post(apiSupplyIDSuppliers(supply.supplyID))
-  //         .set("Authorization", `Bearer ${validToken}`)
-  //         .send({ supplierID: supplierId });
+        const response = await request(app)
+          .patch(
+            apiSupplyIDSupplierPricingSupplier(supply.supplyID, supplierId)
+          )
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validSupplierPricingUpdate);
 
-  //       // Then remove it
-  //       const response = await request(app)
-  //         .delete(apiSupplyIDSupplierID(supply.supplyID, supplierId))
-  //         .set("Authorization", `Bearer ${validToken}`);
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe(
+          "Supplier pricing updated successfully"
+        );
+        expect(response.body.data.supplierPricing).toContainEqual(
+          expect.objectContaining({
+            supplier: supplierId,
+            price: validSupplierPricingUpdate.price,
+            unitQuantity: validSupplierPricingUpdate.unitQuantity,
+            unitPrice: validSupplierPricingUpdate.unitPrice,
+          })
+        );
+      });
+    });
 
-  //       expect(response.status).toBe(200);
-  //       expect(response.body.message).toBe("Supplier removed successfully");
-  //       expect(response.body.data.suppliers).not.toContainEqual(supplierId);
-  //     });
-  //   });
+    describe("Failure Cases: Update Supplier Pricing", () => {
+      it("Returns 401 when no token is provided", async () => {
+        const response = await request(app)
+          .patch(apiSupplyIDSupplierPricingSupplier("anyid", "anysupplier"))
+          .send({});
 
-  //   describe("Failure Cases: Remove Supplier from Supply", () => {
-  //     it("Returns 404 when supply does not exist", async () => {
-  //       const response = await request(app)
-  //         .delete(apiSupplyIDSupplierID("nonexistent123", "validSupplierID"))
-  //         .set("Authorization", `Bearer ${validToken}`);
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
 
-  //       expect(response.status).toBe(404);
-  //       expect(response.body.message).toBe("Supply not found");
-  //     });
+      it("Returns 404 when supplier pricing not found", async () => {
+        const supply = await saveSupplyAndReturn(validSupplyMinimum);
+        const response = await request(app)
+          .patch(
+            apiSupplyIDSupplierPricingSupplier(
+              supply.supplyID,
+              new mongoose.Types.ObjectId().toString()
+            )
+          )
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validSupplierPricingUpdate);
 
-  //     it("Returns 400 when supplier is not in supply", async () => {
-  //       const supply = await saveSupplyAndReturn(validSupplyComplete);
-  //       const response = await request(app)
-  //         .delete(apiSupplyIDSupplierID(supply.supplyID, "nonexistentSupplier"))
-  //         .set("Authorization", `Bearer ${validToken}`);
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("Supplier pricing not found");
+      });
 
-  //       expect(response.status).toBe(400);
-  //       expect(response.body.message).toBe("Supplier not found in supply");
-  //     });
+      it("Returns 400 when invalid pricing data is provided", async () => {
+        const supply = await saveSupplyAndReturn(validSupplyComplete);
+        const supplierId = supply.supplierPricing[0].supplier.toString();
+        const response = await request(app)
+          .patch(
+            apiSupplyIDSupplierPricingSupplier(supply.supplyID, supplierId)
+          )
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(invalidSupplierPricingUpdate);
 
-  //     it("Returns 401 when no token is provided", async () => {
-  //       const supply = await saveSupplyAndReturn(validSupplyComplete);
-  //       const response = await request(app).delete(
-  //         apiSupplyIDSupplierID(supply.supplyID, "validSupplierID")
-  //       );
+        expect(response.status).toBe(400);
+        expect(response.body.message).toMatch(/validation failed/i);
+      });
 
-  //       expect(response.status).toBe(401);
-  //       expect(response.body.message).toBe("Access denied: No token provided");
-  //     });
-  //   });
-  // });
+      it("Returns 500 when there's a server error", async () => {
+        jest.spyOn(Supply, "findOneAndUpdate").mockImplementationOnce(() => {
+          throw new Error("Database error");
+        });
+
+        const supply = await saveSupplyAndReturn(validSupplyComplete);
+        const supplierId = supply.supplierPricing[0].supplier.toString();
+
+        const response = await request(app)
+          .patch(
+            apiSupplyIDSupplierPricingSupplier(supply.supplyID, supplierId)
+          )
+          .set("Authorization", `Bearer ${validToken}`)
+          .send(validSupplierPricingUpdate);
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
+      });
+    });
+  });
+
+  describe(`DELETE ${apiSupplyIDSupplierPricingSupplier(
+    ":supplyID",
+    ":supplier"
+  )}`, () => {
+    describe("Success Cases: Remove Supplier Pricing", () => {
+      it("Removes supplier pricing from an existing supply", async () => {
+        const supply = await saveSupplyAndReturn(validSupplyComplete);
+        const supplierId = supply.supplierPricing[0].supplier.toString();
+
+        const response = await request(app)
+          .delete(
+            apiSupplyIDSupplierPricingSupplier(supply.supplyID, supplierId)
+          )
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe(
+          "Supplier pricing removed successfully"
+        );
+        expect(response.body.data.supplierPricing).not.toContainEqual(
+          expect.objectContaining({
+            supplier: supplierId,
+          })
+        );
+      });
+    });
+
+    describe("Failure Cases: Remove Supplier Pricing", () => {
+      it("Returns 401 when no token is provided", async () => {
+        const response = await request(app).delete(
+          apiSupplyIDSupplierPricingSupplier("anyid", "anysupplier")
+        );
+
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe("Access denied: No token provided");
+      });
+
+      it("Returns 404 when supplier pricing not found", async () => {
+        const supply = await saveSupplyAndReturn(validSupplyMinimum);
+        const response = await request(app)
+          .delete(
+            apiSupplyIDSupplierPricingSupplier(
+              supply.supplyID,
+              new mongoose.Types.ObjectId().toString()
+            )
+          )
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(404);
+        expect(response.body.message).toBe("Supplier pricing not found");
+      });
+
+      it("Returns 500 when there's a server error", async () => {
+        jest.spyOn(Supply, "findOneAndUpdate").mockImplementationOnce(() => {
+          throw new Error("Database error");
+        });
+
+        const supply = await saveSupplyAndReturn(validSupplyComplete);
+        const supplierId = supply.supplierPricing[0].supplier.toString();
+
+        const response = await request(app)
+          .delete(
+            apiSupplyIDSupplierPricingSupplier(supply.supplyID, supplierId)
+          )
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
+      });
+    });
+  });
 });
