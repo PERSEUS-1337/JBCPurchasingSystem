@@ -1,5 +1,9 @@
 import { z, ZodIssueCode } from "zod";
-import { defaultSupplierStatus, supplierRestrictedFields, supplierStatusEnums } from "../constants";
+import {
+  defaultSupplierStatus,
+  supplierRestrictedFields,
+  supplierStatusEnums,
+} from "../constants";
 import { Types } from "mongoose";
 import { contactNumberRegex, supplierIDRegex } from "../constants/regex";
 
@@ -50,7 +54,6 @@ export const supplierSchema = z.object({
     .string()
     .min(1, "Address is required")
     .max(255, "Address must not exceed 255 characters"),
-  supplies: z.array(objectIdSchema).default([]),
   primaryTag: z.string().min(1, "Primary category tag is required"),
   tags: z.array(z.string()).min(1, "At least one tag is required"),
   documentation: z.array(z.string()).default([]),
@@ -60,8 +63,6 @@ export const supplierSchema = z.object({
 export const supplierUpdateSchema = supplierSchema
   .partial()
   .superRefine((data: any, ctx) => {
-    // const restrictedFields = ["supplierID", "supplies"];
-
     for (const field of supplierRestrictedFields) {
       if (data[field] !== undefined) {
         ctx.addIssue({

@@ -3,6 +3,14 @@ import User, { IUser } from "../models/userModel";
 import { generateJWT } from "../utils/authUtils";
 import { LoginInput, RegisterInput } from "../validators";
 
+/**
+ * Registers a new user in the system
+ * @param req Express Request object containing registration data in req.body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 409 if email already exists
+ * @throws 500 if server error occurs
+ */
 export const registerUser = async (
   req: Request,
   res: Response
@@ -33,6 +41,15 @@ export const registerUser = async (
   }
 };
 
+/**
+ * Authenticates a user and generates a JWT token
+ * @param req Express Request object containing login credentials in req.body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if user does not exist
+ * @throws 401 if credentials are invalid
+ * @throws 500 if server error occurs
+ */
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password }: LoginInput = req.body;
@@ -65,11 +82,23 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 };
 
 // TODO: logoutUser Controller Function
+/**
+ * Logs out a user (currently just returns success message)
+ * @param req Express Request object
+ * @param res Express Response object
+ * @returns void
+ */
 export const logoutUser = (req: Request, res: Response): void => {
   res.status(200).json({ message: "Logout successful", data: null });
 };
 
 // TODO: refreshToken Controller Function
+/**
+ * Refreshes user's JWT token (currently returns mock token)
+ * @param req Express Request object
+ * @param res Express Response object
+ * @returns void
+ */
 export const refreshUserToken = (req: Request, res: Response): void => {
   res.status(200).json({
     message: "Token refreshed",
@@ -77,6 +106,15 @@ export const refreshUserToken = (req: Request, res: Response): void => {
   });
 };
 
+/**
+ * Changes user's password after verifying current password
+ * @param req Express Request object containing passwords in req.body and userID in req.user
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 404 if user not found
+ * @throws 400 if current password is incorrect
+ * @throws 500 if server error occurs
+ */
 export const changePassword = async (
   req: Request,
   res: Response

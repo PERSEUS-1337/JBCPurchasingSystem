@@ -9,7 +9,7 @@ import {
 } from "../constants";
 
 interface IUserMethods {
-  // Instance Methods (Available on user instances
+  // Instance Methods (Available on user instances)
   comparePassword(candidatePassword: string): Promise<boolean>;
   getUser(): Promise<Partial<IUser>>;
   getUserAdminView(): Promise<Partial<IUser>>;

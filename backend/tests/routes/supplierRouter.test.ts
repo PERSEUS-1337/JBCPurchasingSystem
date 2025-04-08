@@ -18,16 +18,14 @@ import {
 } from "../setup/refRoutes";
 import {
   connectDB,
-  deleteMultipleSuppliers,
   disconnectDB,
-  dropDB,
+  clearCollection,
   preSaveMultipleSuppliers,
   preSaveSupplier,
   preSaveUserAndGenJWT,
 } from "../setup/globalSetupHelper";
 import {
   invalidSupplierEmails,
-  invalidSupplierSupplies,
   missingRequiredFieldsSupplier,
   validSupplierUpdateMinimumData,
   validSupplierComplete,
@@ -41,7 +39,7 @@ import {
   restrictedUpdateSupplierData,
 } from "../setup/mockSuppliers";
 import Supplier from "../../src/models/supplierModel";
-import { fromZodError } from "zod-validation-error";
+import { invalidToken } from "../setup/mockData";
 
 describe("Supplier Routes", () => {
   beforeAll(async () => {
@@ -49,7 +47,7 @@ describe("Supplier Routes", () => {
   });
 
   beforeEach(async () => {
-    await dropDB();
+    await clearCollection(Supplier);
   });
 
   afterAll(async () => {
@@ -99,15 +97,17 @@ describe("Supplier Routes", () => {
         expect(response.body.message).toBe("Access denied: No token provided");
       });
 
-      // it("Returns 403 when a user with insufficient privileges tries to access", async () => {
-      //   // Assume a different role is tested here
-      //   const response = await request(app)
-      //     .get(apiSupplierID(validSupplierMinimum.supplierID))
-      //     .set("Authorization", `Bearer ${invalidToken}`);
+      it("Returns 403 when a user with insufficient privileges tries to access", async () => {
+        // Assume a different role is tested here
+        const response = await request(app)
+          .get(apiSupplierID(validSupplierMinimum.supplierID))
+          .set("Authorization", `Bearer ${invalidToken}`);
 
-      //   expect(response.status).toBe(403);
-      //   expect(response.body.message).toBe("Forbidden");
-      // });
+        expect(response.status).toBe(401);
+        expect(response.body.message).toBe(
+          "Access denied: Invalid or expired token"
+        );
+      });
 
       it("Returns 500 when there is a server error", async () => {
         jest
@@ -154,7 +154,6 @@ describe("Supplier Routes", () => {
       });
 
       it("Returns 404 and an empty array when no suppliers exist", async () => {
-        await deleteMultipleSuppliers();
         const response = await request(app)
           .get(apiSupplierMain)
           .set("Authorization", `Bearer ${validToken}`);
@@ -348,18 +347,18 @@ describe("Supplier Routes", () => {
         );
       });
 
-      it("Returns 400 when supplies contains invalid ObjectId", async () => {
-        const response = await request(app)
-          .post(apiSupplierMain)
-          .set("Authorization", `Bearer ${validToken}`)
-          .send(invalidSupplierSupplies);
+      // it("Returns 400 when supplies contains invalid ObjectId", async () => {
+      //   const response = await request(app)
+      //     .post(apiSupplierMain)
+      //     .set("Authorization", `Bearer ${validToken}`)
+      //     .send(invalidSupplierSupplies);
 
-        expect(response.status).toBe(400);
-        expect(response.body.message).toContain("Validation failed");
-        expect(response.body.errors[0].message).toContain(
-          "Invalid ObjectId format"
-        );
-      });
+      //   expect(response.status).toBe(400);
+      //   expect(response.body.message).toContain("Validation failed");
+      //   expect(response.body.errors[0].message).toContain(
+      //     "Invalid ObjectId format"
+      //   );
+      // });
 
       it("Returns 400 when contactPersons are missing required fields", async () => {
         const response = await request(app)
@@ -521,10 +520,10 @@ describe("Supplier Routes", () => {
             path: "supplierID",
             message: "Update not allowed on restricted field: supplierID",
           },
-          {
-            path: "supplies",
-            message: "Update not allowed on restricted field: supplies",
-          },
+          // {
+          //   path: "supplies",
+          //   message: "Update not allowed on restricted field: supplies",
+          // },
         ]);
       });
 

@@ -38,7 +38,7 @@ import {
   connectDB,
   disconnectDB,
   preSaveUserAndGenJWT,
-  preSaveValidUser,
+  clearCollection,
 } from "../setup/globalSetupHelper";
 
 describe("Authentication Routes", () => {
@@ -53,7 +53,7 @@ describe("Authentication Routes", () => {
   describe(`POST ${apiRegister}`, () => {
     beforeEach(async () => {
       // Reset db before each test
-      await User.deleteMany({});
+      await clearCollection(User);
     });
 
     describe("Success Cases", () => {
@@ -77,7 +77,7 @@ describe("Authentication Routes", () => {
 
     describe("Fail Cases", () => {
       it("Rejects registration when a user is a duplicate.", async () => {
-        await preSaveValidUser();
+        await preSaveUserAndGenJWT(); // This will create a valid user
 
         const response: Response = await request(app)
           .post(apiRegister)
@@ -164,7 +164,7 @@ describe("Authentication Routes", () => {
 
   describe(`POST ${apiLogin}`, () => {
     beforeAll(async () => {
-      await preSaveValidUser();
+      await preSaveUserAndGenJWT(); // This will create a valid user
     });
 
     describe("Success Cases", () => {
@@ -291,7 +291,9 @@ describe("Authentication Routes", () => {
           .set("Authorization", `Bearer ${invalidToken}`);
 
         expect(response.status).toBe(401); // Unauthorized
-        expect(response.body.message).toBe("Invalid or expired token");
+        expect(response.body.message).toBe(
+          "Access denied: Invalid or expired token"
+        );
       });
 
       it("Denies access to a protected route when the token is expired.", async () => {
@@ -300,7 +302,9 @@ describe("Authentication Routes", () => {
           .set("Authorization", `Bearer ${expiredToken}`);
 
         expect(response.status).toBe(401); // Unauthorized
-        expect(response.body.message).toBe("Invalid or expired token");
+        expect(response.body.message).toBe(
+          "Access denied: Invalid or expired token"
+        );
       });
     });
   });
@@ -360,7 +364,9 @@ describe("Authentication Routes", () => {
           .send(validChangePasswordData);
 
         expect(response.status).toBe(401);
-        expect(response.body.message).toBe("Invalid or expired token");
+        expect(response.body.message).toBe(
+          "Access denied: Invalid or expired token"
+        );
       });
 
       it("Rejects password change when the user is not found.", async () => {

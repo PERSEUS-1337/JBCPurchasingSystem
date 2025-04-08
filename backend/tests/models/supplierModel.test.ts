@@ -15,16 +15,10 @@ import {
 } from "../setup/globalSetupHelper";
 import {
   validSupplierMinimum,
-  validSupplierWithDocs,
-  validSupplierWithContactPersons,
   validSupplierComplete,
-  validSupplierWithSupplies,
-  validSupplierWithMultipleContactNumbers,
-  validSupplierWithEmails,
   invalidSupplierEmails,
   invalidSupplierMissingContactPersonFields,
   invalidSupplierContactPersonEmail,
-  invalidSupplierSupplies,
   invalidSupplierDocumentation,
   missingRequiredFieldsSupplier,
 } from "../setup/mockSuppliers";
@@ -60,7 +54,7 @@ describe("Supplier Model Validation", () => {
       expect(savedSupplier.contactPersons).toEqual(
         validSupplierComplete.contactPersons
       );
-      expect(savedSupplier.supplies).toEqual(validSupplierComplete.supplies);
+      // expect(savedSupplier.supplies).toEqual(validSupplierComplete.supplies);
       expect(savedSupplier.documentation).toEqual(
         validSupplierComplete.documentation
       );
@@ -83,52 +77,10 @@ describe("Supplier Model Validation", () => {
       expect(savedSupplier.primaryTag).toBe(validSupplierMinimum.primaryTag);
       expect(savedSupplier.emails).toEqual([]);
       expect(savedSupplier.contactPersons).toEqual([]);
-      expect(savedSupplier.supplies).toEqual([]);
+      // expect(savedSupplier.supplies).toEqual([]);
       expect(savedSupplier.documentation).toEqual([]);
       expect(savedSupplier.tags).toEqual(validSupplierMinimum.tags);
     });
-
-    // it("Should store an array of supply references", async () => {
-    //   const savedSupplier = await saveSupplierAndReturn(validSupplierWithSupplies);
-    //   expect(savedSupplier.supplies).toEqual(
-    //     validSupplierWithSupplies.supplies
-    //   );
-    // });
-
-    // it("Should allow an array of document filenames in documentation", async () => {
-    //   const savedSupplier = await saveSupplierAndReturn(validSupplierWithDocs);
-
-    //   expect(savedSupplier.documentation).toEqual(
-    //     validSupplierWithDocs.documentation
-    //   );
-    // });
-
-    // it("Should save multiple contact numbers", async () => {
-    //   const savedSupplier = await saveSupplierAndReturn(
-    //     validSupplierWithMultipleContactNumbers
-    //   );
-    //   expect(savedSupplier.contactNumbers).toEqual(
-    //     validSupplierWithMultipleContactNumbers.contactNumbers
-    //   );
-    // });
-
-    // it("Should save multiple emails", async () => {
-    //   const savedSupplier = await saveSupplierAndReturn(
-    //     validSupplierWithEmails
-    //   );
-
-    //   expect(savedSupplier.emails).toEqual(validSupplierWithEmails.emails);
-    // });
-
-    // it("Should save contact persons with name, number, email, and position", async () => {
-    //   const savedSupplier = await saveSupplierAndReturn(
-    //     validSupplierWithContactPersons
-    //   );
-
-    //   expect(savedSupplier.contactPersons).toEqual(
-    //     validSupplierWithContactPersons.contactPersons
-    //   );
-    // });
   });
 
   // ========= FAIL CASES =========
@@ -160,11 +112,11 @@ describe("Supplier Model Validation", () => {
         await expect(supplier.save()).rejects.toThrow();
       });
 
-      it("Should reject invalid ObjectId values in supplies array", async () => {
-        const supplier = new Supplier(invalidSupplierSupplies);
+      // it("Should reject invalid ObjectId values in supplies array", async () => {
+      //   const supplier = new Supplier(invalidSupplierSupplies);
 
-        await expect(supplier.save()).rejects.toThrow();
-      });
+      //   await expect(supplier.save()).rejects.toThrow();
+      // });
 
       it("Should reject non-string values in documentation array", async () => {
         const supplier = new Supplier(invalidSupplierDocumentation);

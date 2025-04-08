@@ -25,7 +25,9 @@ export const authorizeJWT = async (
     next();
     return;
   } catch (err: any) {
-    res.status(401).json({ message: "Invalid or expired token", error: err });
+    res
+      .status(401)
+      .json({ message: "Access denied: Invalid or expired token", error: err });
     return;
   }
 };

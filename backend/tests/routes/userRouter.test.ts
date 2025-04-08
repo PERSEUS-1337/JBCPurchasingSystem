@@ -16,6 +16,7 @@ import {
   connectDB,
   disconnectDB,
   preSaveUsersAndGenTokens,
+  clearCollection,
 } from "../setup/globalSetupHelper";
 import { invalidToken, validEditUserData } from "../setup/mockData";
 import { userAdminViewSchema, userViewSchema } from "../../src/validators";
@@ -27,6 +28,10 @@ describe("User Routes", () => {
 
   afterAll(async () => {
     await disconnectDB();
+  });
+
+  beforeEach(async () => {
+    await clearCollection(User);
   });
 
   describe(`GET ${apiUserID(":userID")}`, () => {
@@ -70,7 +75,9 @@ describe("User Routes", () => {
           .set("Authorization", `Bearer ${invalidToken}`);
 
         expect(response.status).toBe(401);
-        expect(response.body.message).toBe("Invalid or expired token");
+        expect(response.body.message).toBe(
+          "Access denied: Invalid or expired token"
+        );
       });
 
       it("Returns 403 if a regular user tries to access another user's profile.", async () => {
@@ -152,7 +159,9 @@ describe("User Routes", () => {
           .send(validEditUserData);
 
         expect(response.status).toBe(401);
-        expect(response.body.message).toBe("Invalid or expired token");
+        expect(response.body.message).toBe(
+          "Access denied: Invalid or expired token"
+        );
       });
 
       it("Returns 1 if no token is provided.", async () => {
