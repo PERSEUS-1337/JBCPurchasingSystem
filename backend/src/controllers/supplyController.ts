@@ -5,7 +5,6 @@ import {
   SupplierPricingInput,
 } from "../validators/supplyValidator";
 import { sendResponse, sendError } from "../utils/responseUtils";
-import { Types } from "mongoose";
 import mongoose from "mongoose";
 
 /**

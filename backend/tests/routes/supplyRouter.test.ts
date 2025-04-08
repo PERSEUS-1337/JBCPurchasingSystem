@@ -498,6 +498,21 @@ describe("Supply Routes", () => {
         expect(response.status).toBe(401);
         expect(response.body.message).toBe("Access denied: No token provided");
       });
+
+      it("Returns 500 when there is a server error", async () => {
+        // Mock the middleware to throw an error
+        jest
+          .spyOn(Supply, "findOne")
+          .mockRejectedValueOnce(new Error("Database error"));
+
+        const response = await request(app)
+          .get(apiSupplyIDSuppliers(validSupplyID))
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe("Internal server error");
+        expect(response.body.error).toBe("Database error");
+      });
     });
   });
 
