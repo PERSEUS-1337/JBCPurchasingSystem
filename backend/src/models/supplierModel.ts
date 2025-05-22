@@ -26,6 +26,7 @@ export interface ISupplier extends Document {
   createdAt: Date;
   updatedAt: Date;
   status: string;
+  supplies: string[];
 }
 
 // Static Methods (Available, regardless of instance)
@@ -68,7 +69,7 @@ const SupplierSchema = new Schema<ISupplier>(
       unique: true,
       match: supplierIDRegex,
     },
-    name: { type: String, required: true },
+    name: { type: String, required: true, unique: true },
     contactNumbers: {
       type: [String],
       required: true,
@@ -112,6 +113,7 @@ const SupplierSchema = new Schema<ISupplier>(
       enum: supplierStatusEnums,
       default: defaultSupplierStatus,
     },
+    supplies: [{ type: String }],
   },
   { timestamps: true }
 );

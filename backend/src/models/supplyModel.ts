@@ -75,7 +75,7 @@ const SupplySchema = new Schema<ISupply>(
       unique: true,
       match: supplyIDRegex,
     },
-    name: { type: String, required: true },
+    name: { type: String, required: true, unique: true },
     description: { type: String, required: true },
     categories: { type: [String], required: true },
     unitMeasure: { type: String, required: true },
@@ -96,6 +96,11 @@ const SupplySchema = new Schema<ISupply>(
   },
   { timestamps: true }
 );
+
+// ### Indexing for searchability
+SupplySchema.index({ name: 1 }); // Index for name
+SupplySchema.index({ categories: 1 }); // Index for categories
+SupplySchema.index({ specifications: 1 }); // Index for specifications
 
 // Pre-save hook for various validation
 SupplySchema.pre("save", async function (next) {

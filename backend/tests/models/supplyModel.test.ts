@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Supply from "../../src/models/supplyModel";
-import Supplier from "../../src/models/supplierModel";
+import Supplier from "../../src/models/supplierModel";    
 import {
   validSupplyComplete,
   validSupplyMinimum,
