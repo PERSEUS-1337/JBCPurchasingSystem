@@ -45,16 +45,6 @@ const invalidPRItemMissingFields = {
   // Missing required fields
 };
 
-const invalidPRItemWrongType = {
-  ...validPRItem,
-  quantity: "not a number", // Should be a number
-};
-
-const duplicatePRItem = {
-  ...validPRItem,
-  prItemID: "PRI-001", // Same as validPRItem
-};
-
 describe("PRItem Model", () => {
   beforeAll(async () => {
     await connectDB();
@@ -111,12 +101,20 @@ describe("PRItem Model", () => {
     });
 
     it("should reject a PRItem with wrong data type for quantity", async () => {
+      const invalidPRItemWrongType = {
+        ...validPRItem,
+        quantity: "not a number", // Should be a number
+      };
       const item = new PRItem(invalidPRItemWrongType);
       await expect(item.save()).rejects.toThrow();
     });
 
     it("should reject a PRItem with duplicate prItemID", async () => {
       await saveAndReturn(PRItem, validPRItem);
+      const duplicatePRItem = {
+        ...validPRItem,
+        prItemID: "PRI-001", // Same as validPRItem
+      };
       const item = new PRItem(duplicatePRItem);
       await expect(item.save()).rejects.toThrow();
     });

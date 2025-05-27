@@ -103,6 +103,48 @@ describe("Purchase Request Model", () => {
         validUpdatePurchaseRequest.justification
       );
     });
+
+    it("should save a purchase request with complete data and approved status", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestComplete,
+        prStatus: "Approved",
+        itemsRequested: [mockObjectId(), mockObjectId()],
+        recommendedBy: "Manager1",
+      });
+      const savedPR = await saveAndReturn(PurchaseRequest, pr);
+      expect(savedPR._id).toBeDefined();
+      expect(savedPR.prID).toBe(validPurchaseRequestComplete.prID);
+      expect(savedPR.itemsRequested.length).toBe(2);
+      expect(savedPR.totalCost).toBe(validPurchaseRequestComplete.totalCost);
+    });
+
+    it("should save a purchase request with recommended status and items requested", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestComplete,
+        prStatus: "Recommended",
+        itemsRequested: [mockObjectId()],
+        recommendedBy: "Manager1",
+      });
+      const savedPR = await saveAndReturn(PurchaseRequest, pr);
+      expect(savedPR._id).toBeDefined();
+      expect(savedPR.prID).toBe(validPurchaseRequestComplete.prID);
+      expect(savedPR.itemsRequested.length).toBe(1);
+      expect(savedPR.totalCost).toBe(validPurchaseRequestComplete.totalCost);
+    });
+
+    it("should save a purchase request in draft stage with empty recommended and approved fields", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestMinimum,
+        prStatus: "Draft",
+        recommendedBy: undefined,
+        approvedBy: undefined,
+      });
+      const savedPR = await saveAndReturn(PurchaseRequest, pr);
+      expect(savedPR._id).toBeDefined();
+      expect(savedPR.prID).toBe(validPurchaseRequestMinimum.prID);
+      expect(savedPR.itemsRequested).toEqual([]);
+      expect(savedPR.totalCost).toBe(validPurchaseRequestMinimum.totalCost);
+    });
   });
 
   describe("Fail Cases", () => {
@@ -198,6 +240,16 @@ describe("Purchase Request Model", () => {
       const pr = new PurchaseRequest({
         ...validPurchaseRequestMinimum,
         prStatus: "Recommended",
+      });
+      await expect(pr.save()).rejects.toThrow();
+    });
+
+    it("should reject a purchase request that is recommended and has empty itemsRequested", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestComplete,
+        prStatus: "Recommended",
+        itemsRequested: [],
+        recommendedBy: "Manager1",
       });
       await expect(pr.save()).rejects.toThrow();
     });
