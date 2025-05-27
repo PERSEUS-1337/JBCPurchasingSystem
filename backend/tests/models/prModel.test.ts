@@ -42,8 +42,6 @@ const validPurchaseRequestMinimum = {
   dateRequested: new Date(),
   dateRequired: new Date(Date.now() + 86400000),
   requestedBy: "User2",
-  recommendedBy: "Manager2",
-  approvedBy: undefined,
   prStatus: "Draft",
   totalCost: 0,
 };
@@ -78,7 +76,7 @@ describe("Purchase Request Model", () => {
       expect(savedPR.totalCost).toBe(validPurchaseRequestComplete.totalCost);
     });
 
-    it("should save a purchase request with minimal required fields (no itemsRequested)", async () => {
+    it("should save a purchase request with minimal required fields (no itemsRequested) and is a draft", async () => {
       const savedPR = await saveAndReturn(
         PurchaseRequest,
         validPurchaseRequestMinimum
@@ -87,6 +85,7 @@ describe("Purchase Request Model", () => {
       expect(savedPR.prID).toBe(validPurchaseRequestMinimum.prID);
       expect(savedPR.itemsRequested).toEqual([]);
       expect(savedPR.totalCost).toBe(validPurchaseRequestMinimum.totalCost);
+      expect(savedPR.prStatus).toBe(validPurchaseRequestMinimum.prStatus);
     });
 
     it("should update a purchase request with valid data", async () => {
