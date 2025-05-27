@@ -26,8 +26,9 @@ const validPurchaseRequestComplete = {
   dateRequested: new Date(),
   dateRequired: new Date(Date.now() + 86400000),
   requestedBy: "User1",
-  approvedBy: "Manager1",
-  prStatus: "Submitted",
+  recommendedBy: "Manager1",
+  approvedBy: "Manager2",
+  prStatus: "Approved",
   itemsRequested: [mockObjectId(), mockObjectId()],
   totalCost: 1000,
   justification: "Need items for project.",
@@ -41,30 +42,15 @@ const validPurchaseRequestMinimum = {
   dateRequested: new Date(),
   dateRequired: new Date(Date.now() + 86400000),
   requestedBy: "User2",
-  approvedBy: "Manager2",
+  recommendedBy: "Manager2",
+  approvedBy: undefined,
   prStatus: "Draft",
-  // itemsRequested omitted to test optional
   totalCost: 0,
 };
 
 const validUpdatePurchaseRequest = {
   projName: "Project Alpha Updated",
   justification: "Updated justification.",
-};
-
-const invalidPurchaseRequestMissingFields = {
-  // Missing required fields
-  prID: "PR-003",
-};
-
-const invalidPurchaseRequestWrongType = {
-  ...validPurchaseRequestComplete,
-  totalCost: "not a number", // Should be a number
-};
-
-const invalidPurchaseRequestInvalidStatus = {
-  ...validPurchaseRequestComplete,
-  prStatus: "NotAStatus", // Not in enum
 };
 
 describe("Purchase Request Model", () => {
@@ -122,17 +108,98 @@ describe("Purchase Request Model", () => {
 
   describe("Fail Cases", () => {
     it("should reject a purchase request with missing required fields", async () => {
-      const pr = new PurchaseRequest(invalidPurchaseRequestMissingFields);
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestComplete,
+        projCode: undefined,
+      });
       await expect(pr.save()).rejects.toThrow();
     });
 
     it("should reject a purchase request with wrong data type for totalCost", async () => {
-      const pr = new PurchaseRequest(invalidPurchaseRequestWrongType);
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestComplete,
+        totalCost: "not-a-number",
+      });
       await expect(pr.save()).rejects.toThrow();
     });
 
     it("should reject a purchase request with invalid prStatus", async () => {
-      const pr = new PurchaseRequest(invalidPurchaseRequestInvalidStatus);
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestComplete,
+        prStatus: "InvalidStatus",
+      });
+      await expect(pr.save()).rejects.toThrow();
+    });
+
+    it("should reject a purchase request with missing projCode", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestComplete,
+        projCode: undefined,
+      });
+      await expect(pr.save()).rejects.toThrow();
+    });
+
+    it("should reject a purchase request with missing projName", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestComplete,
+        projName: undefined,
+      });
+      await expect(pr.save()).rejects.toThrow();
+    });
+
+    it("should reject a purchase request with missing projClient", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestComplete,
+        projClient: undefined,
+      });
+      await expect(pr.save()).rejects.toThrow();
+    });
+
+    it("should reject a purchase request with missing requestedBy", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestComplete,
+        requestedBy: undefined,
+      });
+      await expect(pr.save()).rejects.toThrow();
+    });
+
+    it("should reject a purchase request with invalid dateRequested", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestComplete,
+        dateRequested: "not-a-date",
+      });
+      await expect(pr.save()).rejects.toThrow();
+    });
+
+    it("should reject a purchase request with invalid dateRequired", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestComplete,
+        dateRequired: "not-a-date",
+      });
+      await expect(pr.save()).rejects.toThrow();
+    });
+
+    it("should reject a purchase request that is not a draft that has no itemsRequested", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestMinimum,
+        prStatus: "Submitted",
+      });
+      await expect(pr.save()).rejects.toThrow();
+    });
+
+    it("should reject a purchase request that is approved that has no recommendedBy", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestMinimum,
+        prStatus: "Approved",
+      });
+      await expect(pr.save()).rejects.toThrow();
+    });
+
+    it("should reject a purchase request that is recommended that has no itemsRequested", async () => {
+      const pr = new PurchaseRequest({
+        ...validPurchaseRequestMinimum,
+        prStatus: "Recommended",
+      });
       await expect(pr.save()).rejects.toThrow();
     });
   });
