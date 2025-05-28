@@ -1,12 +1,5 @@
 import { prSchema, prUpdateSchema } from "../../src/validators/prValidator";
-import {
-  describe,
-  expect,
-  it,
-  beforeAll,
-  afterAll,
-  beforeEach,
-} from "@jest/globals";
+import { describe, expect, it } from "@jest/globals";
 import {
   validPRComplete,
   validPRMinimum,
@@ -23,26 +16,8 @@ import {
   restrictedPRUpdate,
 } from "../setup/mockPRs";
 import { fromZodError } from "zod-validation-error";
-import {
-  connectDB,
-  disconnectDB,
-  clearCollection,
-} from "../setup/globalSetupHelper";
-import PurchaseRequest from "../../src/models/prModel";
 
 describe("PR Validator", () => {
-  beforeAll(async () => {
-    await connectDB();
-  });
-
-  beforeEach(async () => {
-    await clearCollection(PurchaseRequest);
-  });
-
-  afterAll(async () => {
-    await disconnectDB();
-  });
-
   describe("Success Cases: PR Validation", () => {
     it("Should pass with a complete valid PR", () => {
       const result = prSchema.safeParse(validPRComplete);

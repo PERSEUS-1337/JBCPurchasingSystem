@@ -2,14 +2,7 @@ import {
   prItemSchema,
   prItemUpdateSchema,
 } from "../../src/validators/prItemValidator";
-import {
-  describe,
-  expect,
-  it,
-  beforeAll,
-  afterAll,
-  beforeEach,
-} from "@jest/globals";
+import { describe, expect, it } from "@jest/globals";
 import {
   validPRItemComplete,
   validPRItemMinimum,
@@ -28,26 +21,8 @@ import {
   validPRItemPartialUpdate,
 } from "../setup/mockPRItems";
 import { fromZodError } from "zod-validation-error";
-import {
-  connectDB,
-  disconnectDB,
-  clearCollection,
-} from "../setup/globalSetupHelper";
-import PRItem from "../../src/models/prItemModel";
 
 describe("PR Item Validator", () => {
-  beforeAll(async () => {
-    await connectDB();
-  });
-
-  beforeEach(async () => {
-    await clearCollection(PRItem);
-  });
-
-  afterAll(async () => {
-    await disconnectDB();
-  });
-
   describe("Success Cases: PR Item Validation", () => {
     it("Should pass with a complete valid PR Item", () => {
       const result = prItemSchema.safeParse(validPRItemComplete);

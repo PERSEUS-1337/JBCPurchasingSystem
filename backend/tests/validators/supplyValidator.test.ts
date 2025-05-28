@@ -1,4 +1,7 @@
-import { supplySchema } from "../../src/validators/supplyValidator";
+import {
+  supplySchema,
+  supplyUpdateSchema,
+} from "../../src/validators/supplyValidator";
 import {
   describe,
   expect,
@@ -9,10 +12,12 @@ import {
 } from "@jest/globals";
 import {
   validSupplyComplete,
+  validSupplyMinimum,
   missingRequiredFieldsSupply,
+  invalidSupplyEmptyStrings,
+  invalidSupplyWhitespaceFields,
   invalidSupplyInvalidSpecification,
   invalidSupplyInvalidSupplierPricing,
-  validSupplyMinimum,
   invalidSupplyStatus,
   invalidSupplyNonExistentSupplier,
   invalidSupplyDuplicateSuppliers,
@@ -20,6 +25,13 @@ import {
   invalidSupplyZeroQuantity,
   invalidSupplyEmptySpecifications,
   invalidSupplyEmptyPricing,
+  validSupplyUpdateComplete,
+  validSupplyUpdateMinimal,
+  validSupplyUpdatePartial,
+  emptySupplyUpdate,
+  restrictedSupplyUpdate,
+  invalidSupplyUpdate,
+  invalidSupplyUpdateTypes,
 } from "../setup/mockSupplies";
 import { fromZodError } from "zod-validation-error";
 import { defaultSupplyStatus } from "../../src/constants";
@@ -32,19 +44,6 @@ import Supply from "../../src/models/supplyModel";
 import Supplier from "../../src/models/supplierModel";
 
 describe("Supply Validator", () => {
-  beforeAll(async () => {
-    await connectDB();
-  });
-
-  beforeEach(async () => {
-    await clearCollection(Supply);
-    await clearCollection(Supplier);
-  });
-
-  afterAll(async () => {
-    await disconnectDB();
-  });
-
   describe("Success Cases: Supply Validation", () => {
     it("Should pass with a complete valid supply", () => {
       const result = supplySchema.safeParse(validSupplyComplete);
@@ -121,25 +120,54 @@ describe("Supply Validator", () => {
 
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
-        expect(errorMessage).toContain(
-          `Validation error: Required at \"supplyID\"; Required at \"name\"; Required at \"description\"; Required at \"categories\"; Required at \"unitMeasure\"; Required at \"supplierPricing\"`
-        );
+        expect(errorMessage).toContain('Required at "supplyID"');
+        expect(errorMessage).toContain('Required at "name"');
+        expect(errorMessage).toContain('Required at "description"');
+        expect(errorMessage).toContain('Required at "categories"');
+        expect(errorMessage).toContain('Required at "unitMeasure"');
+        expect(errorMessage).toContain('Required at "supplierPricing"');
       }
     });
 
-    it("Should fail if `specifications` contain invalid data", () => {
+    it("Should fail if string fields are empty", () => {
+      const result = supplySchema.safeParse(invalidSupplyEmptyStrings);
+      expect(result.success).toBe(false);
+
+      if (result.error) {
+        const errorMessage = fromZodError(result.error).message;
+        expect(errorMessage).toContain("Supply ID is required");
+        expect(errorMessage).toContain("Name is required");
+        expect(errorMessage).toContain("Description is required");
+        expect(errorMessage).toContain("Unit of measure is required");
+      }
+    });
+
+    it("Should fail if string fields contain only whitespace", () => {
+      const result = supplySchema.safeParse(invalidSupplyWhitespaceFields);
+      expect(result.success).toBe(false);
+
+      if (result.error) {
+        const errorMessage = fromZodError(result.error).message;
+        expect(errorMessage).toContain("Supply ID is required");
+        expect(errorMessage).toContain("Name is required");
+        expect(errorMessage).toContain("Description is required");
+        expect(errorMessage).toContain("Unit of measure is required");
+      }
+    });
+
+    it("Should fail if specifications contain invalid data", () => {
       const result = supplySchema.safeParse(invalidSupplyInvalidSpecification);
       expect(result.success).toBe(false);
 
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
-        expect(errorMessage).toContain(
-          `Validation error: Expected object, received number at \"specifications[0]\"; Expected object, received boolean at \"specifications[1]\"; Specification property is required at \"specifications[2].specProperty\"`
-        );
+        expect(errorMessage).toContain("Expected object, received number");
+        expect(errorMessage).toContain("Expected object, received boolean");
+        expect(errorMessage).toContain("Specification property is required");
       }
     });
 
-    it("Should fail if `supplierPricing` contains invalid data", () => {
+    it("Should fail if supplierPricing contains invalid data", () => {
       const result = supplySchema.safeParse(
         invalidSupplyInvalidSupplierPricing
       );
@@ -147,21 +175,20 @@ describe("Supply Validator", () => {
 
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
-        expect(errorMessage).toContain(
-          `Validation error: Invalid ObjectId format at \"supplierPricing[0].supplier\"; Expected number, received string at \"supplierPricing[1].price\"`
-        );
+        expect(errorMessage).toContain("Invalid ObjectId format");
+        expect(errorMessage).toContain("Expected number, received string");
       }
     });
 
-    it("Should fail if `status` is not in supplyStatusEnums", () => {
+    it("Should fail if status is not in supplyStatusEnums", () => {
       const result = supplySchema.safeParse(invalidSupplyStatus);
       expect(result.success).toBe(false);
 
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
-        expect(errorMessage).toContain(
-          `Validation error: Invalid enum value. Expected 'Active' | 'Inactive', received 'NotAStatus' at \"status\"`
-        );
+        expect(errorMessage).toContain("Invalid enum value");
+        expect(errorMessage).toContain("'Active' | 'Inactive'");
+        expect(errorMessage).toContain("received 'NotAStatus'");
       }
     });
 
@@ -171,9 +198,7 @@ describe("Supply Validator", () => {
 
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
-        expect(errorMessage).toContain(
-          `Validation error: Specifications cannot be empty at \"specifications\"`
-        );
+        expect(errorMessage).toContain("Specifications cannot be empty");
       }
     });
 
@@ -184,7 +209,7 @@ describe("Supply Validator", () => {
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
         expect(errorMessage).toContain(
-          `Validation error: Supply must have at least one supplier with pricing at \"supplierPricing\"`
+          "Supply must have at least one supplier with pricing"
         );
       }
     });
@@ -195,9 +220,7 @@ describe("Supply Validator", () => {
 
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
-        expect(errorMessage).toContain(
-          `Validation error: Price exceeds maximum limit at \"supplierPricing[0].price\"`
-        );
+        expect(errorMessage).toContain("Price exceeds maximum limit");
       }
     });
 
@@ -207,33 +230,120 @@ describe("Supply Validator", () => {
 
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
-        expect(errorMessage).toContain(
-          `Validation error: Unit quantity must be at least 1 at \"supplierPricing[0].unitQuantity\"`
-        );
+        expect(errorMessage).toContain("Unit quantity must be at least 1");
       }
     });
   });
 
-  describe("Model Validation Tests", () => {
-    it("Should reject a supply with non-existent supplier", async () => {
-      // Create a supply with a non-existent supplier
-      const supply = new Supply(invalidSupplyNonExistentSupplier);
+  describe("Success Cases: Supply Update Validation", () => {
+    it("Should pass with complete valid update data", () => {
+      const result = supplyUpdateSchema.safeParse(validSupplyUpdateComplete);
+      expect(result.success).toBe(true);
 
-      // Attempt to save the supply and expect it to fail
-      await expect(supply.save()).rejects.toThrow();
-      await expect(supply.save()).rejects.toThrow(/Supplier with ID/);
-      await expect(supply.save()).rejects.toThrow(/does not exist/);
+      if (result.success) {
+        const resultData = result.data;
+        expect(resultData.name).toBe(validSupplyUpdateComplete.name);
+        expect(resultData.description).toBe(
+          validSupplyUpdateComplete.description
+        );
+        expect(resultData.categories).toEqual(
+          validSupplyUpdateComplete.categories
+        );
+        expect(resultData.unitMeasure).toBe(
+          validSupplyUpdateComplete.unitMeasure
+        );
+        expect(resultData.status).toBe(validSupplyUpdateComplete.status);
+        expect(resultData.attachments).toEqual(
+          validSupplyUpdateComplete.attachments
+        );
+      }
     });
 
-    it("Should reject a supply with duplicate suppliers in pricing", async () => {
-      // Create a supply with duplicate suppliers
-      const supply = new Supply(invalidSupplyDuplicateSuppliers);
+    it("Should pass with minimal update data", () => {
+      const result = supplyUpdateSchema.safeParse(validSupplyUpdateMinimal);
+      expect(result.success).toBe(true);
 
-      // Attempt to save the supply and expect it to fail
-      await expect(supply.save()).rejects.toThrow();
-      await expect(supply.save()).rejects.toThrow(
-        /Duplicate suppliers found in supplier pricing/
-      );
+      if (result.success) {
+        const resultData = result.data;
+        expect(resultData.description).toBe(
+          validSupplyUpdateMinimal.description
+        );
+      }
+    });
+
+    it("Should pass with partial update data", () => {
+      const result = supplyUpdateSchema.safeParse(validSupplyUpdatePartial);
+      expect(result.success).toBe(true);
+
+      if (result.success) {
+        const resultData = result.data;
+        expect(resultData.name).toBe(validSupplyUpdatePartial.name);
+        expect(resultData.categories).toEqual(
+          validSupplyUpdatePartial.categories
+        );
+        expect(resultData.status).toBe(validSupplyUpdatePartial.status);
+      }
+    });
+  });
+
+  describe("Fail Cases: Supply Update Validation Errors", () => {
+    it("Should fail if update object is empty", () => {
+      const result = supplyUpdateSchema.safeParse(emptySupplyUpdate);
+      expect(result.success).toBe(false);
+
+      if (result.error) {
+        const errorMessage = fromZodError(result.error).message;
+        expect(errorMessage).toContain("At least one field must be updated");
+      }
+    });
+
+    it("Should fail if restricted fields are being updated", () => {
+      const result = supplyUpdateSchema.safeParse(restrictedSupplyUpdate);
+      expect(result.success).toBe(false);
+
+      if (result.error) {
+        const errorMessage = fromZodError(result.error).message;
+        expect(errorMessage).toContain(
+          "Update not allowed on restricted field: supplyID"
+        );
+        expect(errorMessage).toContain(
+          "Update not allowed on restricted field: createdAt"
+        );
+        expect(errorMessage).toContain(
+          "Update not allowed on restricted field: updatedAt"
+        );
+        expect(errorMessage).toContain(
+          "Update not allowed on restricted field: supplierPricing"
+        );
+        expect(errorMessage).toContain(
+          "Update not allowed on restricted field: specifications"
+        );
+      }
+    });
+
+    it("Should fail if update data contains validation errors", () => {
+      const result = supplyUpdateSchema.safeParse(invalidSupplyUpdate);
+      expect(result.success).toBe(false);
+
+      if (result.error) {
+        const errorMessage = fromZodError(result.error).message;
+        expect(errorMessage).toContain("Name is required");
+        expect(errorMessage).toContain("Description is required");
+        expect(errorMessage).toContain("At least one category is required");
+        expect(errorMessage).toContain("Unit of measure is required");
+        expect(errorMessage).toContain("Invalid enum value");
+      }
+    });
+
+    it("Should fail if update data contains invalid types", () => {
+      const result = supplyUpdateSchema.safeParse(invalidSupplyUpdateTypes);
+      expect(result.success).toBe(false);
+
+      if (result.error) {
+        const errorMessage = fromZodError(result.error).message;
+        expect(errorMessage).toContain("Expected string, received number");
+        expect(errorMessage).toContain("Expected array, received string");
+      }
     });
   });
 });

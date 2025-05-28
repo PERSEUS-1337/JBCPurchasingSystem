@@ -97,7 +97,7 @@ const SupplySchema = new Schema<ISupply>(
 );
 
 // ### Indexing for searchability
-SupplySchema.index({ name: 1 }); // Index for name
+SupplySchema.index({ name: "text" }); // Index for name
 SupplySchema.index({ categories: 1 }); // Index for categories
 SupplySchema.index({ specifications: 1 }); // Index for specifications
 

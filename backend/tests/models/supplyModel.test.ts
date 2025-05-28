@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Supply from "../../src/models/supplyModel";
-import Supplier from "../../src/models/supplierModel";    
+import Supplier from "../../src/models/supplierModel";
 import {
   validSupplyComplete,
   validSupplyMinimum,
@@ -9,9 +9,9 @@ import {
   invalidSupplyInvalidSupplierPricing,
   invalidSupplyStatus,
   invalidSupplySupplierPricing,
-  validUpdateSupply,
-  validPartialUpdateSupply,
-  invalidUpdateSupply,
+  validSupplyUpdateComplete,
+  validSupplyUpdatePartial,
+  invalidSupplyUpdate,
   invalidSupplyNonExistentSupplier,
   invalidSupplyDuplicateSuppliers,
   invalidSupplyLargePrice,
@@ -130,29 +130,34 @@ describe("Supply Model Validation", () => {
     it("should update a supply with valid data", async () => {
       const updatedSupply = await Supply.findByIdAndUpdate(
         savedSupply._id,
-        validUpdateSupply,
+        validSupplyUpdateComplete,
         { new: true }
       );
-      expect(updatedSupply?.name).toBe(validUpdateSupply.name);
-      expect(updatedSupply?.description).toBe(validUpdateSupply.description);
-      expect(updatedSupply?.categories).toEqual(validUpdateSupply.categories);
+      expect(updatedSupply?.name).toBe(validSupplyUpdateComplete.name);
+      expect(updatedSupply?.description).toBe(
+        validSupplyUpdateComplete.description
+      );
+      expect(updatedSupply?.categories).toEqual(
+        validSupplyUpdateComplete.categories
+      );
     });
 
     it("should update a supply with partial data", async () => {
       const updatedSupply = await Supply.findByIdAndUpdate(
         savedSupply._id,
-        validPartialUpdateSupply,
+        validSupplyUpdatePartial,
         { new: true }
       );
-      expect(updatedSupply?.description).toBe(
-        validPartialUpdateSupply.description
+      expect(updatedSupply?.name).toBe(validSupplyUpdatePartial.name);
+      expect(updatedSupply?.categories).toEqual(
+        validSupplyUpdatePartial.categories
       );
-      expect(updatedSupply?.name).toBe(savedSupply.name);
+      expect(updatedSupply?.status).toBe(validSupplyUpdatePartial.status);
     });
 
     it("should reject invalid updates", async () => {
       await expect(
-        Supply.findByIdAndUpdate(savedSupply._id, invalidUpdateSupply, {
+        Supply.findByIdAndUpdate(savedSupply._id, invalidSupplyUpdate, {
           new: true,
           runValidators: true, // Add this option to enforce validation on update
         })

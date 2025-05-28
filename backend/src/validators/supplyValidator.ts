@@ -100,8 +100,8 @@ const baseSupplySchema = z.object({
 export const supplySchema = baseSupplySchema;
 
 // Update schema with partial fields and additional validations
-export const supplyUpdateSchema = baseSupplySchema
-  .partial()
+export const supplyUpdateSchema = z
+  .record(z.any()) // Accept any object first
   .superRefine((data, ctx: RefinementCtx) => {
     // Check if the object is empty
     const isEmpty = Object.keys(data).length === 0;
@@ -111,9 +111,10 @@ export const supplyUpdateSchema = baseSupplySchema
         path: [],
         message: "At least one field must be updated.",
       });
+      return;
     }
 
-    // Check for restricted fields being updated
+    // Check for restricted fields being updated first
     for (const field of supplyRestrictedFields) {
       if (field in data) {
         ctx.addIssue({
@@ -122,6 +123,22 @@ export const supplyUpdateSchema = baseSupplySchema
           message: `Update not allowed on restricted field: ${field}`,
         });
       }
+    }
+
+    // Now validate allowed fields using the partial schema
+    const allowedData: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (!supplyRestrictedFields.includes(key as any)) {
+        allowedData[key] = value;
+      }
+    }
+
+    // Validate the allowed fields against the partial schema
+    const partialValidation = baseSupplySchema.partial().safeParse(allowedData);
+    if (!partialValidation.success) {
+      partialValidation.error.issues.forEach((issue) => {
+        ctx.addIssue(issue);
+      });
     }
   });
 

@@ -25,7 +25,7 @@ import {
   missingRequiredFieldsSupply,
   validSupplyComplete,
   validSupplyMinimum,
-  validUpdateSupply,
+  validSupplyUpdateComplete,
   validSupplierPricingUpdate,
   invalidSupplierPricingUpdate,
   validNewSupplierPricing,
@@ -299,12 +299,12 @@ describe("Supply Routes", () => {
         const response = await request(app)
           .patch(apiSupplyID(validSupplyID))
           .set("Authorization", `Bearer ${validToken}`)
-          .send(validUpdateSupply);
+          .send(validSupplyUpdateComplete);
 
         expect(response.status).toBe(200);
         expect(response.body.message).toBe("Supply updated successfully");
         expect(response.body.data.categories).toEqual(
-          validUpdateSupply.categories
+          validSupplyUpdateComplete.categories
         );
       });
     });
@@ -325,7 +325,7 @@ describe("Supply Routes", () => {
         const response = await request(app)
           .patch(`${apiSupplyMain}/nonExistingSupplyID`)
           .set("Authorization", `Bearer ${validToken}`)
-          .send(validUpdateSupply);
+          .send(validSupplyUpdateComplete);
 
         expect(response.status).toBe(404);
         expect(response.body.message).toBe("Supply not found");
@@ -343,7 +343,7 @@ describe("Supply Routes", () => {
         const response = await request(app)
           .patch(apiSupplyID(validSupplyID))
           .set("Authorization", `Bearer ${validToken}`)
-          .send(validUpdateSupply);
+          .send(validSupplyUpdateComplete);
 
         expect(response.status).toBe(500);
         expect(response.body.message).toBe("Internal server error");

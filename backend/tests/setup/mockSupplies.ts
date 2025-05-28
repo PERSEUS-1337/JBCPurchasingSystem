@@ -181,6 +181,44 @@ export const invalidSupplyComplete = {
   attachments: "invalidAttachment",
 };
 
+// Empty string fields
+export const invalidSupplyEmptyStrings = {
+  supplyID: "",
+  name: "",
+  description: "",
+  categories: ["Fasteners"],
+  unitMeasure: "",
+  supplierPricing: [
+    {
+      supplier: SUPPLIER_IDS.SUPPLIER_1,
+      price: 50.0,
+      priceValidity: new Date("2024-12-31"),
+      unitQuantity: 1,
+      unitPrice: 50.0,
+    },
+  ],
+  specifications: [{ specProperty: "Size", specValue: "M10" }],
+};
+
+// Whitespace only fields
+export const invalidSupplyWhitespaceFields = {
+  supplyID: "   ",
+  name: "   ",
+  description: "   ",
+  categories: ["Fasteners"],
+  unitMeasure: "   ",
+  supplierPricing: [
+    {
+      supplier: SUPPLIER_IDS.SUPPLIER_1,
+      price: 50.0,
+      priceValidity: new Date("2024-12-31"),
+      unitQuantity: 1,
+      unitPrice: 50.0,
+    },
+  ],
+  specifications: [{ specProperty: "Size", specValue: "M10" }],
+};
+
 // invalidSupplyInvalidSpecification: An object with a specifications field that is invalid.
 export const invalidSupplyInvalidSpecification = {
   ...validSupplyMinimum,
@@ -297,23 +335,65 @@ export const invalidSupplyEmptyPricing = {
   supplierPricing: [], // Empty supplier pricing
 };
 
-// ========= UPDATE MOCK DATA =========
+// ========= UPDATE TEST DATA =========
 
-export const validUpdateSupply = {
+// Valid complete update data
+export const validSupplyUpdateComplete = {
   name: 'Updated G.I. U-Bolt 8" x 3/8dia',
   description: "Updated description for the supply with enhanced features",
   categories: ["Hardware", "Fasteners", "Premium"],
   unitMeasure: "pc",
-  status: "Active",
+  status: "Active" as const,
+  attachments: ["updated_brochure.pdf", "new_specs.pdf"],
 };
 
-export const validPartialUpdateSupply = {
+// Valid minimal update data
+export const validSupplyUpdateMinimal = {
   description: "Updated only the description field",
 };
 
-export const invalidUpdateSupply = {
+// Valid partial update with multiple fields
+export const validSupplyUpdatePartial = {
+  name: "Updated Steel Bolt M10",
+  categories: ["Fasteners", "Updated"],
+  status: "Inactive" as const,
+};
+
+// Empty update data (should fail)
+export const emptySupplyUpdate = {};
+
+// Update with restricted fields (should fail)
+export const restrictedSupplyUpdate = {
+  supplyID: "SPL-NEW",
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  supplierPricing: [
+    {
+      supplier: SUPPLIER_IDS.SUPPLIER_1,
+      price: 100.0,
+      priceValidity: new Date("2024-12-31"),
+      unitQuantity: 1,
+      unitPrice: 100.0,
+    },
+  ],
+  specifications: [{ specProperty: "Updated", specValue: "Test" }],
+  name: "Updated Supply",
+};
+
+// Invalid update data with validation errors
+export const invalidSupplyUpdate = {
   name: "", // Invalid: name should not be empty
-  categories: 123, // Invalid: categories should be an array of strings
+  description: "   ", // Invalid: only whitespace
+  categories: [], // Invalid: categories should not be empty
+  unitMeasure: "", // Invalid: unit measure should not be empty
+  status: "InvalidStatus", // Invalid: not in enum
+};
+
+// Update with invalid data types
+export const invalidSupplyUpdateTypes = {
+  name: 123, // Should be string
+  categories: "not-an-array", // Should be array
+  attachments: "not-an-array", // Should be array
 };
 
 // ========= SUPPLIER PRICING MOCK DATA =========
