@@ -27,8 +27,8 @@ export const prItemSchema = z.object({
 });
 
 // Update schema with partial fields and additional validations
-export const prItemUpdateSchema = prItemSchema
-  .partial()
+export const prItemUpdateSchema = z
+  .record(z.any()) // Accept any object first
   .superRefine((data, ctx: RefinementCtx) => {
     // Check if the object is empty
     const isEmpty = Object.keys(data).length === 0;
@@ -38,8 +38,10 @@ export const prItemUpdateSchema = prItemSchema
         path: [],
         message: "At least one field must be updated.",
       });
+      return;
     }
-    // Check for restricted fields being updated
+
+    // Check for restricted fields being updated first
     for (const field of prItemRestrictedFields) {
       if (field in data) {
         ctx.addIssue({
@@ -48,6 +50,22 @@ export const prItemUpdateSchema = prItemSchema
           message: `Update not allowed on restricted field: ${field}`,
         });
       }
+    }
+
+    // Now validate allowed fields using the partial schema
+    const allowedData: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (!prItemRestrictedFields.includes(key as any)) {
+        allowedData[key] = value;
+      }
+    }
+
+    // Validate the allowed fields against the partial schema
+    const partialValidation = prItemSchema.partial().safeParse(allowedData);
+    if (!partialValidation.success) {
+      partialValidation.error.issues.forEach((issue) => {
+        ctx.addIssue(issue);
+      });
     }
   });
 

@@ -1,8 +1,4 @@
-import {
-  prSchema,
-  prUpdateSchema,
-  prItemSchema,
-} from "../../src/validators/prValidator";
+import { prSchema, prUpdateSchema } from "../../src/validators/prValidator";
 import {
   describe,
   expect,
@@ -25,11 +21,6 @@ import {
   validPRUpdate,
   emptyPRUpdate,
   restrictedPRUpdate,
-  validPRItem,
-  invalidPRItemMissingFields,
-  invalidPRItemNegativeValues,
-  invalidPRItemZeroQuantity,
-  invalidPRItemEmptyStrings,
 } from "../setup/mockPRs";
 import { fromZodError } from "zod-validation-error";
 import {
@@ -263,95 +254,6 @@ describe("PR Validator", () => {
         expect(errorMessage).toContain(
           "Update not allowed on restricted field: itemsRequested"
         );
-      }
-    });
-  });
-
-  describe("Success Cases: PR Item Validation", () => {
-    it("Should pass with valid PR item data", () => {
-      const result = prItemSchema.safeParse(validPRItem);
-      expect(result.success).toBe(true);
-
-      if (result.success) {
-        const resultData = result.data;
-        expect(resultData.prItemID).toBe(validPRItem.prItemID);
-        expect(resultData.prID).toBe(validPRItem.prID);
-        expect(resultData.supplyID).toBe(validPRItem.supplyID);
-        expect(resultData.supplierID).toBe(validPRItem.supplierID);
-        expect(resultData.itemDescription).toBe(validPRItem.itemDescription);
-        expect(resultData.quantity).toBe(validPRItem.quantity);
-        expect(resultData.unitOfMeasurement).toBe(
-          validPRItem.unitOfMeasurement
-        );
-        expect(resultData.unitPrice).toBe(validPRItem.unitPrice);
-        expect(resultData.deliveryAddress).toBe(validPRItem.deliveryAddress);
-      }
-    });
-
-    it("Should calculate total price if not provided", () => {
-      const result = prItemSchema.safeParse(validPRItem);
-      expect(result.success).toBe(true);
-
-      if (result.success) {
-        const resultData = result.data;
-        // totalPrice should be calculated or optional
-        expect(resultData.totalPrice).toBeUndefined();
-      }
-    });
-  });
-
-  describe("Fail Cases: PR Item Validation Errors", () => {
-    it("Should fail if required fields are missing", () => {
-      const result = prItemSchema.safeParse(invalidPRItemMissingFields);
-      expect(result.success).toBe(false);
-
-      if (result.error) {
-        const errorMessage = fromZodError(result.error).message;
-        expect(errorMessage).toContain('Required at "prID"');
-        expect(errorMessage).toContain('Required at "supplyID"');
-        expect(errorMessage).toContain('Required at "supplierID"');
-        expect(errorMessage).toContain('Required at "itemDescription"');
-        expect(errorMessage).toContain('Required at "quantity"');
-        expect(errorMessage).toContain('Required at "unitOfMeasurement"');
-        expect(errorMessage).toContain('Required at "unitPrice"');
-        expect(errorMessage).toContain('Required at "deliveryAddress"');
-      }
-    });
-
-    it("Should fail if quantity or unitPrice are negative", () => {
-      const result = prItemSchema.safeParse(invalidPRItemNegativeValues);
-      expect(result.success).toBe(false);
-
-      if (result.error) {
-        const errorMessage = fromZodError(result.error).message;
-        expect(errorMessage).toContain("Quantity must be at least 1");
-        expect(errorMessage).toContain("Unit price must be non-negative");
-      }
-    });
-
-    it("Should fail if quantity is zero", () => {
-      const result = prItemSchema.safeParse(invalidPRItemZeroQuantity);
-      expect(result.success).toBe(false);
-
-      if (result.error) {
-        const errorMessage = fromZodError(result.error).message;
-        expect(errorMessage).toContain("Quantity must be at least 1");
-      }
-    });
-
-    it("Should fail if string fields are empty", () => {
-      const result = prItemSchema.safeParse(invalidPRItemEmptyStrings);
-      expect(result.success).toBe(false);
-
-      if (result.error) {
-        const errorMessage = fromZodError(result.error).message;
-        expect(errorMessage).toContain("PR Item ID is required");
-        expect(errorMessage).toContain("PR ID is required");
-        expect(errorMessage).toContain("Supply ID is required");
-        expect(errorMessage).toContain("Supplier ID is required");
-        expect(errorMessage).toContain("Item description is required");
-        expect(errorMessage).toContain("Unit of measurement is required");
-        expect(errorMessage).toContain("Delivery address is required");
       }
     });
   });
