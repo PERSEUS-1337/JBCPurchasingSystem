@@ -111,11 +111,7 @@ describe("PRItem Model", () => {
 
     it("should reject a PRItem with duplicate prItemID", async () => {
       await saveAndReturn(PRItem, validPRItem);
-      const duplicatePRItem = {
-        ...validPRItem,
-        prItemID: "PRI-001", // Same as validPRItem
-      };
-      const item = new PRItem(duplicatePRItem);
+      const item = new PRItem(validPRItem);
       await expect(item.save()).rejects.toThrow();
     });
   });

@@ -1,5 +1,9 @@
 - Table of Contents
 
+## Module-Specific Documentation
+
+- Supplier & Supplies Module: [DOCS_SUPPLIER_SUPPLIES.md](DOCS_SUPPLIER_SUPPLIES.md)
+
 # 🗂️ 1. High Level Overview
 
 ## :project: 1.1 **Project Introduction**
@@ -22,16 +26,14 @@ The JBC Purchasing System addresses these challenges by automating the end-to-en
 sequenceDiagram
     autonumber
     participant 🙋 Requestor
-    participant 🏢 Warehouse
     participant ✅ Approver
     participant 🛒 Purchasing
+    participant 🏢 Warehouse
     participant 🧾 Supplier
 
     %% 📌 PR CREATION
     🙋 Requestor->>🙋 Requestor: 📋 Select Project & Items
     🙋 Requestor->>🙋 Requestor: 🏷️ Choose Preferred Supplier(s)
-    🙋 Requestor->>🏢 Warehouse: 🔍 Check Available Stock
-    🏢 Warehouse-->>🙋 Requestor: 📦 Relay Stock Info
 
     🙋 Requestor->>✅ Approver: 📤 Submit PR
     ✅ Approver->>✅ Approver: 👀 Review PR
@@ -46,6 +48,8 @@ sequenceDiagram
     end
 
     %% 📝 PO CREATION
+    🙋 Requestor->>🏢 Warehouse: 🔍 Check Available Stock
+    🏢 Warehouse-->>🙋 Requestor: 📦 Relay Stock Info to inform PO decisions
     🙋 Requestor->>🛒 Purchasing: 📢 Notify Purchasing of Approved PR
     🛒 Purchasing->>🛒 Purchasing: 🧾 Generate PO from PR
     🛒 Purchasing->>🛒 Purchasing: 🛠️ Finalize PO Details (Items, Terms, Pricing)
@@ -1618,5 +1622,3 @@ erDiagram
 - Maintain alphabetical order **within modules** for easier scanning
 
 ---
-
-Would you like me to generate a Notion-compatible database version next, with proper properties (Status, Module, URL, etc.)?

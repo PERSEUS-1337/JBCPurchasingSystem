@@ -10,7 +10,6 @@ import mongoose from "mongoose";
 const envFile = `.env.${process.env.NODE_ENV || "development"}`;
 dotenv.config({ path: envFile });
 
-
 let isConnected: boolean = false;
 
 const port: number = parseInt(process.env.PORT as string, 10) || 0;

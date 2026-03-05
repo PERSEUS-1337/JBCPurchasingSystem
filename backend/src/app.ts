@@ -9,9 +9,9 @@ const app: Application = express();
 app.use(express.json());
 
 // Use Morgan for logging requests
-// app.use(morgan(":method :url :status :response-time ms - :remote-addr"));
+app.use(morgan(":method :url :status :response-time ms - :remote-addr"));
 
-// // Custom logging middleware for additional details
+// Custom logging middleware for additional details
 // app.use((req: Request, res: Response, next: NextFunction) => {
 //   console.log(
 //     `[${new Date().toISOString()}] ${req.method} request to ${req.url} from ${
@@ -33,10 +33,13 @@ import authRouter from "./routes/authRouter";
 import userRouter from "./routes/userRouter";
 import supplierRouter from "./routes/supplierRouter";
 import supplyRouter from "./routes/supplyRouter";
+import prRouter from "./routes/prRouter";
+
 // Mount the routes here
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/supplier", supplierRouter);
 app.use("/api/supply", supplyRouter);
+app.use("/api/pr", prRouter);
 
 export default app;
