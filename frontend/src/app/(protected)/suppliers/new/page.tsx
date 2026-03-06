@@ -3,16 +3,14 @@
 import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/Button";
-import { createSupplier } from "@/lib/api/suppliers";
+import { createSupplier, getAllSuppliers } from "@/lib/api/suppliers";
 import { HttpError } from "@/lib/api/client";
 import { ContactPerson } from "@/lib/types/supplier";
-
-const SUPPLIER_ID_PATTERN = /^SUP-\d+$/;
 
 function splitValues(value: string) {
   return value
@@ -34,7 +32,22 @@ export default function NewSupplierPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [supplierID, setSupplierID] = useState("");
+  const suppliersQuery = useQuery({
+    queryKey: ["suppliers", "for-new-supplier-id"],
+    queryFn: async () => {
+      try {
+        const response = await getAllSuppliers();
+        return response.data ?? [];
+      } catch (error) {
+        if (error instanceof HttpError && error.status === 404) {
+          return [];
+        }
+
+        throw error;
+      }
+    },
+  });
+
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [primaryTag, setPrimaryTag] = useState("");
@@ -44,10 +57,17 @@ export default function NewSupplierPage() {
   const [documentation, setDocumentation] = useState("");
   const [contactPersons, setContactPersons] = useState<ContactPerson[]>([defaultContactPerson()]);
 
-  const isSupplierIdInvalid = useMemo(
-    () => supplierID.length > 0 && !SUPPLIER_ID_PATTERN.test(supplierID),
-    [supplierID],
-  );
+  const supplierID = useMemo(() => {
+    const ids = suppliersQuery.data
+      ?.map((supplier) => {
+        const match = supplier.supplierID.match(/^SUP-(\d+)$/);
+        return match ? Number(match[1]) : 0;
+      })
+      .filter((value) => Number.isFinite(value)) ?? [];
+
+    const nextId = (ids.length ? Math.max(...ids) : 1000) + 1;
+    return `SUP-${nextId}`;
+  }, [suppliersQuery.data]);
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -83,11 +103,6 @@ export default function NewSupplierPage() {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!SUPPLIER_ID_PATTERN.test(supplierID)) {
-      toast.error("Supplier ID must follow SUP-<digits>");
-      return;
-    }
-
     if (splitValues(contactNumbers).length === 0 || splitValues(tags).length === 0) {
       toast.error("Contact numbers and tags require at least one value");
       return;
@@ -112,14 +127,11 @@ export default function NewSupplierPage() {
             <label className="mb-1 block text-sm font-medium text-neutral-700">Supplier ID</label>
             <input
               value={supplierID}
-              onChange={(event) => setSupplierID(event.target.value)}
-              required
-              placeholder="SUP-1001"
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              disabled
+              readOnly
+              className="w-full rounded-md border border-neutral-200 bg-neutral-100 px-3 py-2 text-sm"
             />
-            {isSupplierIdInvalid ? (
-              <p className="mt-1 text-xs text-red-600">Use the format SUP-1234.</p>
-            ) : null}
+            <p className="mt-1 text-xs text-neutral-500">Automatically generated and cannot be edited.</p>
           </div>
 
           <div>

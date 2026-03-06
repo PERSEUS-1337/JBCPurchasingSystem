@@ -96,6 +96,13 @@ export default function SupplierDetailPage() {
     return allSupplies.filter((supply) => !linked.has(supply.supplyID));
   }, [suppliesQuery.data, supplier?.supplies]);
 
+  const linkedSupplies = useMemo(() => {
+    const allSupplies = suppliesQuery.data?.data ?? [];
+    const linked = new Set(supplier?.supplies ?? []);
+
+    return allSupplies.filter((supply) => linked.has(supply.supplyID));
+  }, [suppliesQuery.data, supplier?.supplies]);
+
   useEffect(() => {
     if (!selectedSupplyID && availableSupplies.length > 0) {
       setSelectedSupplyID(availableSupplies[0].supplyID);
@@ -394,20 +401,27 @@ export default function SupplierDetailPage() {
             />
           ) : (
             <ul className="space-y-2">
-              {supplier.supplies.map((linkedSupplyID) => (
-                <li key={linkedSupplyID} className="flex items-center justify-between rounded-md border border-neutral-200 px-3 py-2">
-                  <Link href={`/supplies/${linkedSupplyID}`} className="text-sm text-neutral-900 underline underline-offset-2">
-                    {linkedSupplyID}
-                  </Link>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    isLoading={unlinkMutation.isPending}
-                    onClick={() => unlinkMutation.mutate(linkedSupplyID)}
-                  >
-                    Unlink
-                  </Button>
+              {linkedSupplies.map((linkedSupply) => (
+                <li key={linkedSupply.supplyID} className="rounded-md border border-neutral-200 px-3 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <Link href={`/supplies/${linkedSupply.supplyID}`} className="text-sm font-medium text-neutral-900 underline underline-offset-2">
+                        {linkedSupply.name}
+                      </Link>
+                      <p className="text-xs text-neutral-600">
+                        Supply ID: {linkedSupply.supplyID} · Unit: {linkedSupply.unitMeasure} · Status: {linkedSupply.status ?? "Active"}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      isLoading={unlinkMutation.isPending}
+                      onClick={() => unlinkMutation.mutate(linkedSupply.supplyID)}
+                    >
+                      Unlink
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>

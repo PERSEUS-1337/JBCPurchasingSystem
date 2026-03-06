@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -24,6 +24,14 @@ export default function SuppliesPage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setSearchTerm(searchInput.trim());
+    }, 350);
+
+    return () => window.clearTimeout(handler);
+  }, [searchInput]);
+
   const suppliesQuery = useQuery({
     queryKey: ["supplies", searchTerm],
     queryFn: () => (searchTerm ? searchSupplies(searchTerm) : getAllSupplies()),
@@ -44,11 +52,6 @@ export default function SuppliesPage() {
       }
     },
   });
-
-  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSearchTerm(searchInput.trim());
-  };
 
   const supplies = useMemo(() => {
     if (!suppliesQuery.data?.data) {
@@ -84,16 +87,13 @@ export default function SuppliesPage() {
         </Link>
       }
     >
-      <form onSubmit={handleSearch} className="mb-4 flex flex-wrap gap-3">
+      <div className="mb-4 flex flex-wrap gap-3">
         <input
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
           placeholder="Search supplies by name"
           className="w-full max-w-xl rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
         />
-        <Button type="submit" variant="secondary">
-          Search
-        </Button>
         {searchTerm ? (
           <Button
             type="button"
@@ -106,7 +106,7 @@ export default function SuppliesPage() {
             Clear
           </Button>
         ) : null}
-      </form>
+      </div>
 
       <Table
         columns={[

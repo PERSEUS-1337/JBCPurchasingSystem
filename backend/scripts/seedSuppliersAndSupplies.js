@@ -1,10 +1,17 @@
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:8000";
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "superadmin@test.local";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "password123";
+const path = require("path");
+const dotenv = require("dotenv");
+const { MongoClient } = require("mongodb");
 
-const LOGIN_ENDPOINT = `${API_BASE_URL}/api/auth/login`;
-const SUPPLIER_ENDPOINT = `${API_BASE_URL}/api/supplier`;
-const SUPPLY_ENDPOINT = `${API_BASE_URL}/api/supply`;
+const envFile = `.env.${process.env.NODE_ENV || "development"}`;
+dotenv.config({ path: path.resolve(__dirname, "..", envFile) });
+
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+  throw new Error(
+    "Missing MONGO_URI. Set it in your backend env file (e.g. .env.development).",
+  );
+}
 
 const suppliers = [
   {
@@ -188,77 +195,6 @@ const supplyTemplates = [
   },
 ];
 
-async function requestJson(url, options = {}) {
-  const response = await fetch(url, options);
-  let body = null;
-  try {
-    body = await response.json();
-  } catch {
-    body = null;
-  }
-  return { status: response.status, body };
-}
-
-async function login() {
-  const { status, body } = await requestJson(LOGIN_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
-  });
-
-  if (status !== 200 || !body?.data?.bearer) {
-    throw new Error(
-      `Login failed (status=${status}). Ensure ${ADMIN_EMAIL} exists and password is correct.`,
-    );
-  }
-
-  return body.data.bearer;
-}
-
-function authHeaders(token) {
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
-}
-
-async function createOrSkipSupplier(token, supplier) {
-  const { status, body } = await requestJson(SUPPLIER_ENDPOINT, {
-    method: "POST",
-    headers: authHeaders(token),
-    body: JSON.stringify(supplier),
-  });
-
-  if (status === 201) {
-    return { result: "created", supplier: body?.data || null };
-  }
-  if (status === 400 && body?.message === "Supplier ID already exists") {
-    return { result: "skipped", supplier: null };
-  }
-  return {
-    result: "failed",
-    error: `${body?.message || "Unknown error"} (status=${status})`,
-  };
-}
-
-async function fetchSupplierById(token, supplierID) {
-  const { status, body } = await requestJson(
-    `${SUPPLIER_ENDPOINT}/${encodeURIComponent(supplierID)}`,
-    {
-      method: "GET",
-      headers: authHeaders(token),
-    },
-  );
-
-  if (status !== 200 || !body?.data?._id) {
-    throw new Error(
-      `Unable to fetch supplier ${supplierID} (_id missing or request failed)`,
-    );
-  }
-
-  return body.data;
-}
-
 function buildSupplyPayload(template, supplierObjectId) {
   const { unitQuantity, unitPrice } = template.pricing;
   const price = unitQuantity * unitPrice;
@@ -280,110 +216,170 @@ function buildSupplyPayload(template, supplierObjectId) {
     ],
     specifications: template.specs,
     attachments: [],
-  };
-}
-
-async function createOrSkipSupply(token, supplyPayload) {
-  const { status, body } = await requestJson(SUPPLY_ENDPOINT, {
-    method: "POST",
-    headers: authHeaders(token),
-    body: JSON.stringify(supplyPayload),
-  });
-
-  if (status === 201) {
-    return { result: "created" };
-  }
-  if (status === 400 && body?.message === "Supply ID already exists") {
-    return { result: "skipped" };
-  }
-  return {
-    result: "failed",
-    error: `${body?.message || "Unknown error"} (status=${status})`,
+    status: "Active",
   };
 }
 
 async function main() {
-  console.log(`Seeding suppliers + supplies via ${API_BASE_URL}`);
+  console.log(`Seeding suppliers + supplies directly via MongoDB`);
 
-  const token = await login();
+  const client = new MongoClient(MONGO_URI);
+  await client.connect();
+
+  const db = client.db();
+  const supplierCollection = db.collection("suppliers");
+  const supplyCollection = db.collection("supplies");
 
   let createdSuppliers = 0;
   let skippedSuppliers = 0;
   let failedSuppliers = 0;
 
-  for (const supplier of suppliers) {
-    try {
-      const result = await createOrSkipSupplier(token, supplier);
-      if (result.result === "created") {
-        createdSuppliers += 1;
-        console.log(`✅ Supplier created: ${supplier.supplierID}`);
-      } else if (result.result === "skipped") {
-        skippedSuppliers += 1;
-        console.log(`ℹ️  Supplier exists: ${supplier.supplierID}`);
-      } else {
+  try {
+    for (const supplier of suppliers) {
+      try {
+        const existing = await supplierCollection.findOne(
+          { supplierID: supplier.supplierID },
+          { projection: { _id: 1 } },
+        );
+
+        const updateResult = await supplierCollection.updateOne(
+          { supplierID: supplier.supplierID },
+          {
+            $set: {
+              name: supplier.name,
+              contactNumbers: supplier.contactNumbers,
+              emails: supplier.emails,
+              contactPersons: supplier.contactPersons,
+              address: supplier.address,
+              primaryTag: supplier.primaryTag,
+              tags: supplier.tags,
+              documentation: supplier.documentation,
+              status: "Active",
+              updatedAt: new Date(),
+            },
+            $setOnInsert: {
+              createdAt: new Date(),
+              supplies: [],
+            },
+          },
+          { upsert: true },
+        );
+
+        if (updateResult.upsertedCount > 0 || !existing) {
+          createdSuppliers += 1;
+          console.log(`✅ Supplier created: ${supplier.supplierID}`);
+        } else {
+          skippedSuppliers += 1;
+          console.log(`ℹ️  Supplier exists/updated: ${supplier.supplierID}`);
+        }
+      } catch (error) {
         failedSuppliers += 1;
-        console.log(
-          `❌ Supplier failed: ${supplier.supplierID} | ${result.error}`,
-        );
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        console.log(`❌ Supplier failed: ${supplier.supplierID} | ${message}`);
       }
-    } catch (error) {
-      failedSuppliers += 1;
-      const message = error instanceof Error ? error.message : "Unknown error";
-      console.log(`❌ Supplier failed: ${supplier.supplierID} | ${message}`);
     }
-  }
 
-  const supplierIdMap = new Map();
-  for (const supplier of suppliers) {
-    const supplierDoc = await fetchSupplierById(token, supplier.supplierID);
-    supplierIdMap.set(supplier.supplierID, supplierDoc._id);
-  }
+    const supplierDocs = await supplierCollection
+      .find(
+        {
+          supplierID: { $in: suppliers.map((supplier) => supplier.supplierID) },
+        },
+        { projection: { _id: 1, supplierID: 1 } },
+      )
+      .toArray();
 
-  let createdSupplies = 0;
-  let skippedSupplies = 0;
-  let failedSupplies = 0;
+    const supplierIdMap = new Map(
+      supplierDocs.map((doc) => [doc.supplierID, doc._id]),
+    );
 
-  for (const template of supplyTemplates) {
-    try {
-      const supplierObjectId = supplierIdMap.get(template.supplierID);
-      if (!supplierObjectId) {
-        failedSupplies += 1;
-        console.log(
-          `❌ Supply failed: ${template.supplyID} | missing supplier ${template.supplierID}`,
+    let createdSupplies = 0;
+    let skippedSupplies = 0;
+    let failedSupplies = 0;
+
+    for (const template of supplyTemplates) {
+      try {
+        const supplierObjectId = supplierIdMap.get(template.supplierID);
+        if (!supplierObjectId) {
+          failedSupplies += 1;
+          console.log(
+            `❌ Supply failed: ${template.supplyID} | missing supplier ${template.supplierID}`,
+          );
+          continue;
+        }
+
+        const existing = await supplyCollection.findOne(
+          { supplyID: template.supplyID },
+          { projection: { _id: 1 } },
         );
-        continue;
-      }
 
-      const payload = buildSupplyPayload(template, supplierObjectId);
-      const result = await createOrSkipSupply(token, payload);
+        const payload = buildSupplyPayload(template, supplierObjectId);
 
-      if (result.result === "created") {
-        createdSupplies += 1;
-        console.log(`✅ Supply created: ${template.supplyID}`);
-      } else if (result.result === "skipped") {
-        skippedSupplies += 1;
-        console.log(`ℹ️  Supply exists: ${template.supplyID}`);
-      } else {
+        const updateResult = await supplyCollection.updateOne(
+          { supplyID: template.supplyID },
+          {
+            $set: {
+              name: payload.name,
+              description: payload.description,
+              categories: payload.categories,
+              unitMeasure: payload.unitMeasure,
+              supplierPricing: payload.supplierPricing,
+              specifications: payload.specifications,
+              attachments: payload.attachments,
+              status: "Active",
+              updatedAt: new Date(),
+            },
+            $setOnInsert: {
+              createdAt: new Date(),
+            },
+          },
+          { upsert: true },
+        );
+
+        await supplierCollection.updateOne(
+          { supplierID: template.supplierID },
+          {
+            $addToSet: {
+              supplies: template.supplyID,
+            },
+            $set: {
+              updatedAt: new Date(),
+            },
+          },
+        );
+
+        if (updateResult.upsertedCount > 0 || !existing) {
+          createdSupplies += 1;
+          console.log(
+            `✅ Supply created and linked: ${template.supplyID} -> ${template.supplierID}`,
+          );
+        } else {
+          skippedSupplies += 1;
+          console.log(
+            `ℹ️  Supply exists/updated and linked: ${template.supplyID} -> ${template.supplierID}`,
+          );
+        }
+      } catch (error) {
         failedSupplies += 1;
-        console.log(`❌ Supply failed: ${template.supplyID} | ${result.error}`);
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        console.log(`❌ Supply failed: ${template.supplyID} | ${message}`);
       }
-    } catch (error) {
-      failedSupplies += 1;
-      const message = error instanceof Error ? error.message : "Unknown error";
-      console.log(`❌ Supply failed: ${template.supplyID} | ${message}`);
     }
-  }
 
-  console.log("\nSeed summary");
-  console.log(
-    `Suppliers => created: ${createdSuppliers}, skipped: ${skippedSuppliers}, failed: ${failedSuppliers}`,
-  );
-  console.log(
-    `Supplies  => created: ${createdSupplies}, skipped: ${skippedSupplies}, failed: ${failedSupplies}`,
-  );
+    console.log("\nSeed summary");
+    console.log(
+      `Suppliers => created: ${createdSuppliers}, skipped: ${skippedSuppliers}, failed: ${failedSuppliers}`,
+    );
+    console.log(
+      `Supplies  => created: ${createdSupplies}, skipped: ${skippedSupplies}, failed: ${failedSupplies}`,
+    );
 
-  if (failedSuppliers > 0 || failedSupplies > 0) {
-    process.exitCode = 1;
+    if (failedSuppliers > 0 || failedSupplies > 0) {
+      process.exitCode = 1;
+    }
+  } finally {
+    await client.close();
   }
 }
 

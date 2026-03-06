@@ -9,12 +9,10 @@ import toast from "react-hot-toast";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { createSupply } from "@/lib/api/supplies";
+import { createSupply, getAllSupplies } from "@/lib/api/supplies";
 import { getAllSuppliers } from "@/lib/api/suppliers";
 import { HttpError } from "@/lib/api/client";
 import { Specification, SupplierPricing } from "@/lib/types/supply";
-
-const SUPPLY_ID_PATTERN = /^SPL-\d+$/;
 
 function splitValues(value: string) {
   return value
@@ -44,12 +42,27 @@ export default function NewSupplyPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  const suppliesQuery = useQuery({
+    queryKey: ["supplies", "for-new-supply-id"],
+    queryFn: async () => {
+      try {
+        const response = await getAllSupplies();
+        return response.data ?? [];
+      } catch (error) {
+        if (error instanceof HttpError && error.status === 404) {
+          return [];
+        }
+
+        throw error;
+      }
+    },
+  });
+
   const suppliersQuery = useQuery({
     queryKey: ["suppliers", "for-pricing"],
     queryFn: getAllSuppliers,
   });
 
-  const [supplyID, setSupplyID] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [categories, setCategories] = useState("");
@@ -69,10 +82,17 @@ export default function NewSupplyPage() {
     );
   }, [suppliersQuery.data]);
 
-  const isSupplyIdInvalid = useMemo(
-    () => supplyID.length > 0 && !SUPPLY_ID_PATTERN.test(supplyID),
-    [supplyID],
-  );
+  const supplyID = useMemo(() => {
+    const ids = suppliesQuery.data
+      ?.map((supply) => {
+        const match = supply.supplyID.match(/^SPL-(\d+)$/);
+        return match ? Number(match[1]) : 0;
+      })
+      .filter((value) => Number.isFinite(value)) ?? [];
+
+    const nextId = (ids.length ? Math.max(...ids) : 2000) + 1;
+    return `SPL-${nextId}`;
+  }, [suppliesQuery.data]);
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -110,11 +130,6 @@ export default function NewSupplyPage() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (!SUPPLY_ID_PATTERN.test(supplyID)) {
-      toast.error("Supply ID must follow SPL-<digits>");
-      return;
-    }
 
     if (splitValues(categories).length === 0) {
       toast.error("Provide at least one category");
@@ -157,14 +172,11 @@ export default function NewSupplyPage() {
             <label className="mb-1 block text-sm font-medium text-neutral-700">Supply ID</label>
             <input
               value={supplyID}
-              onChange={(event) => setSupplyID(event.target.value)}
-              required
-              placeholder="SPL-2001"
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              disabled
+              readOnly
+              className="w-full rounded-md border border-neutral-200 bg-neutral-100 px-3 py-2 text-sm"
             />
-            {isSupplyIdInvalid ? (
-              <p className="mt-1 text-xs text-red-600">Use the format SPL-1234.</p>
-            ) : null}
+            <p className="mt-1 text-xs text-neutral-500">Automatically generated and cannot be edited.</p>
           </div>
 
           <div>

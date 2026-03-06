@@ -152,10 +152,10 @@ Create `frontend/src/context/AuthContext.tsx`:
 
 ### Checklist
 
-- [ ] Implement supplier APIs + screens
-- [ ] Implement supply APIs + screens
-- [ ] Implement linking between suppliers and supplies
-- [ ] Add master-data validation and error handling
+- [x] Implement supplier APIs + screens
+- [x] Implement supply APIs + screens
+- [x] Implement linking between suppliers and supplies
+- [x] Add master-data validation and error handling
 
 ### 2.1 Supplier module
 
@@ -172,6 +172,12 @@ Screens under `frontend/src/app/(protected)/suppliers/`:
 - `new/page.tsx` — create (contacts, emails, tags, contact persons)
 - `[supplierID]/page.tsx` — detail/edit + linked supplies
 
+Implementation notes:
+
+- Supplier IDs are now auto-generated on create and rendered read-only (not user-editable)
+- Supplier search is debounced for live querying while typing
+- Linked supplies in supplier detail show meaningful context (name + supply ID + unit + status)
+
 ### 2.2 Supply module
 
 Service: `frontend/src/lib/api/supplies.ts`
@@ -187,11 +193,24 @@ Screens under `frontend/src/app/(protected)/supplies/`:
 - `new/page.tsx` — create with specifications + supplier pricing
 - `[supplyID]/page.tsx` — detail/edit + supplier pricing management
 
+Implementation notes:
+
+- Supply IDs are now auto-generated on create and rendered read-only (not user-editable)
+- Supply search is debounced for live querying while typing
+- Supplier-pricing entries include explicit field labels (supplier, unit quantity, unit price, total price, validity date)
+- Linked supplier context in pricing views prioritizes supplier business identifiers (supplierID/name) over raw MongoDB `_id`
+
 ### 2.3 Master-data UX quality
 
 - form validation for ID formats (`SUP-*`, `SPL-*`)
 - clear empty states and actionable errors
 - optimistic UI only for safe toggles (status), otherwise server-confirmed updates
+
+Additional UX refinements completed:
+
+- create forms now prevent manual ID edits via auto-filled read-only IDs
+- list search behavior now uses debounce for responsive, lower-noise API usage
+- linked relationship displays now include richer contextual fields for readability
 
 ### Deliverables
 
@@ -329,6 +348,7 @@ Sidebar order should follow business flow:
 | ---------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | 2026-03-07 | 0     | Installed deps, wired providers, added API client/types/UI primitives, and passed build                                                                    | React 19 RC peer resolution required `--legacy-peer-deps`                     | Implement Phase 1 auth services/context/routes                        |
 | 2026-03-07 | 1     | Implemented auth/user API services, `AuthContext`, login page, protected layout, sidebar/header shell, profile page, users list/detail pages; build passed | None after validation                                                         | Start Phase 2 supplier and supply implementation                      |
+| 2026-03-07 | 2     | Implemented supplier/supply API services and screens for list/create/detail, including status updates, supplier-supply linking fallback, supplier pricing management, auto-filled read-only IDs, debounced live search, and richer linked-entry labels; build passed | Supplier nested link endpoints are placeholder on backend, handled via fallback patch update path | Validate live workflows and finalize Phase 2 phase-gate evidence      |
 
 ---
 

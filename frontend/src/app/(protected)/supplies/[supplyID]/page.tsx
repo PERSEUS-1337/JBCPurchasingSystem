@@ -379,41 +379,56 @@ export default function SupplyDetailPage() {
               {editablePricing.map((pricing, index) => (
                 <li key={`${pricing.supplier}-${index}`} className="space-y-2 rounded-md border border-neutral-200 p-3">
                   <p className="text-sm font-medium text-neutral-900">
-                    {supplierNameMap.get(pricing.supplier) ?? pricing.supplier}
+                    Supplier: {supplierNameMap.get(pricing.supplier) ?? "Unknown supplier"}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    Supplier record linked by internal ID in pricing backend mapping.
                   </p>
                   <div className="grid gap-2 md:grid-cols-4">
-                    <input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={pricing.unitQuantity}
-                      onChange={(event) =>
-                        updateEditablePricing(index, { unitQuantity: Number(event.target.value) })
-                      }
-                      className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-                    />
-                    <input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={pricing.unitPrice}
-                      onChange={(event) => updateEditablePricing(index, { unitPrice: Number(event.target.value) })}
-                      className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-                    />
-                    <input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={pricing.price}
-                      onChange={(event) => updateEditablePricing(index, { price: Number(event.target.value) })}
-                      className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-                    />
-                    <input
-                      type="date"
-                      value={pricing.priceValidity.slice(0, 10)}
-                      onChange={(event) => updateEditablePricing(index, { priceValidity: event.target.value })}
-                      className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-                    />
+                    <label className="space-y-1 text-xs text-neutral-600">
+                      <span className="block">Unit Quantity</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={pricing.unitQuantity}
+                        onChange={(event) =>
+                          updateEditablePricing(index, { unitQuantity: Number(event.target.value) })
+                        }
+                        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+                      />
+                    </label>
+                    <label className="space-y-1 text-xs text-neutral-600">
+                      <span className="block">Unit Price</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={pricing.unitPrice}
+                        onChange={(event) => updateEditablePricing(index, { unitPrice: Number(event.target.value) })}
+                        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+                      />
+                    </label>
+                    <label className="space-y-1 text-xs text-neutral-600">
+                      <span className="block">Total Price</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={pricing.price}
+                        onChange={(event) => updateEditablePricing(index, { price: Number(event.target.value) })}
+                        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+                      />
+                    </label>
+                    <label className="space-y-1 text-xs text-neutral-600">
+                      <span className="block">Price Validity Date</span>
+                      <input
+                        type="date"
+                        value={pricing.priceValidity.slice(0, 10)}
+                        onChange={(event) => updateEditablePricing(index, { priceValidity: event.target.value })}
+                        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+                      />
+                    </label>
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -454,50 +469,65 @@ export default function SupplyDetailPage() {
           )}
 
           <div className="grid gap-2 md:grid-cols-5">
-            <select
-              value={newPricing.supplier}
-              onChange={(event) => setNewPricing((prev) => ({ ...prev, supplier: event.target.value }))}
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-            >
-              {(suppliersQuery.data?.data ?? []).map((supplier) => (
-                <option key={supplier._id} value={supplier._id}>
-                  {supplier.supplierID} — {supplier.name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={newPricing.unitQuantity}
-              onChange={(event) => setNewPricing((prev) => ({ ...prev, unitQuantity: Number(event.target.value) }))}
-              placeholder="Quantity"
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-            />
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={newPricing.unitPrice}
-              onChange={(event) => setNewPricing((prev) => ({ ...prev, unitPrice: Number(event.target.value) }))}
-              placeholder="Unit Price"
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-            />
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={newPricing.price}
-              onChange={(event) => setNewPricing((prev) => ({ ...prev, price: Number(event.target.value) }))}
-              placeholder="Total Price"
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-            />
-            <input
-              type="date"
-              value={newPricing.priceValidity.slice(0, 10)}
-              onChange={(event) => setNewPricing((prev) => ({ ...prev, priceValidity: event.target.value }))}
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-            />
+            <label className="space-y-1 text-xs text-neutral-600">
+              <span className="block">Supplier</span>
+              <select
+                value={newPricing.supplier}
+                onChange={(event) => setNewPricing((prev) => ({ ...prev, supplier: event.target.value }))}
+                className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              >
+                {(suppliersQuery.data?.data ?? []).map((supplier) => (
+                  <option key={supplier._id} value={supplier._id}>
+                    {supplier.supplierID} — {supplier.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1 text-xs text-neutral-600">
+              <span className="block">Unit Quantity</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={newPricing.unitQuantity}
+                onChange={(event) => setNewPricing((prev) => ({ ...prev, unitQuantity: Number(event.target.value) }))}
+                placeholder="Quantity"
+                className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              />
+            </label>
+            <label className="space-y-1 text-xs text-neutral-600">
+              <span className="block">Unit Price</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={newPricing.unitPrice}
+                onChange={(event) => setNewPricing((prev) => ({ ...prev, unitPrice: Number(event.target.value) }))}
+                placeholder="Unit Price"
+                className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              />
+            </label>
+            <label className="space-y-1 text-xs text-neutral-600">
+              <span className="block">Total Price</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={newPricing.price}
+                onChange={(event) => setNewPricing((prev) => ({ ...prev, price: Number(event.target.value) }))}
+                placeholder="Total Price"
+                className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              />
+            </label>
+            <label className="space-y-1 text-xs text-neutral-600">
+              <span className="block">Price Validity Date</span>
+              <input
+                type="date"
+                value={newPricing.priceValidity.slice(0, 10)}
+                onChange={(event) => setNewPricing((prev) => ({ ...prev, priceValidity: event.target.value }))}
+                className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              />
+            </label>
           </div>
 
           <Button
