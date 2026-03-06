@@ -12,6 +12,7 @@ A full-stack web application designed to manage purchasing workflows for JBC.
 - [Running the Application](#running-the-application)
 - [Running Tests](#running-tests)
 - [Environment Variables](#environment-variables)
+- [API Documentation](#api-documentation)
 
 ## Technology Stack
 
@@ -122,6 +123,18 @@ docker-compose down
     npm test
     ```
     This will execute the Jest test suite defined in the `backend/tests` directory.
+
+## API Documentation
+
+After starting the backend, you can access interactive API docs at:
+
+- Swagger UI: `http://localhost:5001/api/docs`
+- OpenAPI JSON: `http://localhost:5001/api/docs.json`
+
+If you run through the Nginx proxy, use:
+
+- Swagger UI: `http://localhost/api/docs`
+- OpenAPI JSON: `http://localhost/api/docs.json`
 
 ## Environment Variables
 
