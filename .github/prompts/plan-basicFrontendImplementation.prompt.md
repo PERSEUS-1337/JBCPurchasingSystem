@@ -10,8 +10,8 @@ Use this section as your running tracker. Only mark a phase complete after its e
 
 | Phase | Scope                         | Status         | Owner | Start | End | Notes |
 | ----- | ----------------------------- | -------------- | ----- | ----- | --- | ----- |
-| 0     | Platform Foundation           | ⬜ Not Started |       |       |     |       |
-| 1     | User + Auth                   | ⬜ Not Started |       |       |     |       |
+| 0     | Platform Foundation           | ✅ Done        | Dev   | 2026-03-06 | 2026-03-07 | Providers, API client, types, UI primitives implemented and build-verified |
+| 1     | User + Auth                   | 🟨 In Progress | Dev   | 2026-03-07 |     | Next phase after Phase 0 gate passed |
 | 2     | Suppliers + Supplies          | ⬜ Not Started |       |       |     |       |
 | 3     | Purchase Requests             | ⬜ Not Started |       |       |     |       |
 | 4     | Dashboard + Integration       | ⬜ Not Started |       |       |     |       |
@@ -40,10 +40,10 @@ Use this section as your running tracker. Only mark a phase complete after its e
 
 ### Checklist
 
-- [ ] Install minimal dependencies
-- [ ] Configure environment + root providers
-- [ ] Set up shared types + API client
-- [ ] Set up reusable UI primitives
+- [x] Install minimal dependencies
+- [x] Configure environment + root providers
+- [x] Set up shared types + API client
+- [x] Set up reusable UI primitives
 
 ### 0.1 Install minimal dependencies
 
@@ -55,7 +55,7 @@ From `frontend/`, add:
 
 ### 0.2 Environment and app wiring
 
-- Add `NEXT_PUBLIC_API_URL=http://localhost/api` in `frontend/.env.local`
+- Add `NEXT_PUBLIC_API_URL=http://localhost:8000/api` in `frontend/.env.local`
 - Configure React Query provider in root layout
 - Configure toast provider in root layout
 
@@ -89,9 +89,9 @@ Create shared UI used by all modules first:
 
 **Phase Gate (must pass before Phase 1):**
 
-- App boots successfully
-- API client can call a health/protected endpoint
-- Global loading and error visuals exist
+- ✅ App boots successfully (`npm run dev`, `npm run build`)
+- ✅ API client can call a health/protected endpoint (`http://localhost:8000/health` reachable)
+- ✅ Global loading and error visuals exist (shared primitives scaffolded)
 
 ---
 
@@ -327,7 +327,7 @@ Sidebar order should follow business flow:
 
 | Date | Phase | What was completed | Risks/Blockers | Next step |
 | ---- | ----- | ------------------ | -------------- | --------- |
-|      |       |                    |                |           |
+| 2026-03-07 | 0 | Installed deps, wired providers, added API client/types/UI primitives, and passed build | React 19 RC peer resolution required `--legacy-peer-deps` | Implement Phase 1 auth services/context/routes |
 
 ---
 
