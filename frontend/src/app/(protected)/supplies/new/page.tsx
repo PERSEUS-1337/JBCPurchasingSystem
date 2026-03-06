@@ -1,0 +1,357 @@
+"use client";
+
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+
+import { PageLayout } from "@/components/layout/PageLayout";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { createSupply } from "@/lib/api/supplies";
+import { getAllSuppliers } from "@/lib/api/suppliers";
+import { HttpError } from "@/lib/api/client";
+import { Specification, SupplierPricing } from "@/lib/types/supply";
+
+const SUPPLY_ID_PATTERN = /^SPL-\d+$/;
+
+function splitValues(value: string) {
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function defaultSpecification(): Specification {
+  return {
+    specProperty: "",
+    specValue: "",
+  };
+}
+
+function defaultSupplierPricing(supplier = ""): SupplierPricing {
+  return {
+    supplier,
+    price: 0,
+    priceValidity: new Date().toISOString().slice(0, 10),
+    unitQuantity: 1,
+    unitPrice: 0,
+  };
+}
+
+export default function NewSupplyPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const suppliersQuery = useQuery({
+    queryKey: ["suppliers", "for-pricing"],
+    queryFn: getAllSuppliers,
+  });
+
+  const [supplyID, setSupplyID] = useState("");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [categories, setCategories] = useState("");
+  const [unitMeasure, setUnitMeasure] = useState("");
+  const [attachments, setAttachments] = useState("");
+  const [specifications, setSpecifications] = useState<Specification[]>([defaultSpecification()]);
+  const [supplierPricing, setSupplierPricing] = useState<SupplierPricing[]>([defaultSupplierPricing()]);
+
+  useEffect(() => {
+    const firstSupplierId = suppliersQuery.data?.data?.[0]?._id;
+    if (!firstSupplierId) {
+      return;
+    }
+
+    setSupplierPricing((prev) =>
+      prev.map((pricing, index) => (index === 0 && !pricing.supplier ? { ...pricing, supplier: firstSupplierId } : pricing)),
+    );
+  }, [suppliersQuery.data]);
+
+  const isSupplyIdInvalid = useMemo(
+    () => supplyID.length > 0 && !SUPPLY_ID_PATTERN.test(supplyID),
+    [supplyID],
+  );
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      createSupply({
+        supplyID,
+        name,
+        description,
+        categories: splitValues(categories),
+        unitMeasure,
+        attachments: splitValues(attachments),
+        specifications: specifications.filter((spec) => spec.specProperty.trim() && `${spec.specValue}`.trim()),
+        supplierPricing,
+      }),
+    onSuccess: (response) => {
+      toast.success("Supply created successfully");
+      queryClient.invalidateQueries({ queryKey: ["supplies"] });
+      router.push(`/supplies/${response.data.supplyID}`);
+    },
+    onError: (error) => {
+      if (error instanceof HttpError) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to create supply");
+      }
+    },
+  });
+
+  const updateSpecification = (index: number, value: Partial<Specification>) => {
+    setSpecifications((prev) => prev.map((item, idx) => (idx === index ? { ...item, ...value } : item)));
+  };
+
+  const updateSupplierPricingRow = (index: number, value: Partial<SupplierPricing>) => {
+    setSupplierPricing((prev) => prev.map((item, idx) => (idx === index ? { ...item, ...value } : item)));
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!SUPPLY_ID_PATTERN.test(supplyID)) {
+      toast.error("Supply ID must follow SPL-<digits>");
+      return;
+    }
+
+    if (splitValues(categories).length === 0) {
+      toast.error("Provide at least one category");
+      return;
+    }
+
+    if (supplierPricing.some((item) => !item.supplier)) {
+      toast.error("All supplier pricing rows require a supplier");
+      return;
+    }
+
+    if (supplierPricing.some((item) => item.price !== item.unitPrice * item.unitQuantity)) {
+      toast.error("Pricing must satisfy price = unitPrice × unitQuantity");
+      return;
+    }
+
+    if (specifications.filter((item) => item.specProperty.trim()).length === 0) {
+      toast.error("Provide at least one specification");
+      return;
+    }
+
+    createMutation.mutate();
+  };
+
+  const supplierOptions = suppliersQuery.data?.data ?? [];
+
+  return (
+    <PageLayout
+      title="Create Supply"
+      description="Add a new supply item with specifications and supplier pricing details."
+      action={
+        <Link href="/supplies" className="text-sm text-neutral-700 underline underline-offset-2">
+          Back to supplies
+        </Link>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border border-neutral-200 bg-white p-6">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-neutral-700">Supply ID</label>
+            <input
+              value={supplyID}
+              onChange={(event) => setSupplyID(event.target.value)}
+              required
+              placeholder="SPL-2001"
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+            />
+            {isSupplyIdInvalid ? (
+              <p className="mt-1 text-xs text-red-600">Use the format SPL-1234.</p>
+            ) : null}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-neutral-700">Name</label>
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-neutral-700">Description</label>
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              required
+              rows={3}
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-neutral-700">Categories (comma-separated)</label>
+            <input
+              value={categories}
+              onChange={(event) => setCategories(event.target.value)}
+              required
+              placeholder="Electrical, Wiring"
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-neutral-700">Unit Measure</label>
+            <input
+              value={unitMeasure}
+              onChange={(event) => setUnitMeasure(event.target.value)}
+              required
+              placeholder="roll"
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-neutral-700">Attachment Links (comma-separated)</label>
+            <input
+              value={attachments}
+              onChange={(event) => setAttachments(event.target.value)}
+              placeholder="https://example.com/spec-sheet.pdf"
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-neutral-900">Specifications</h2>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setSpecifications((prev) => [...prev, defaultSpecification()])}
+            >
+              Add Specification
+            </Button>
+          </div>
+
+          {specifications.map((specification, index) => (
+            <div key={`spec-${index}`} className="grid gap-2 rounded-md border border-neutral-200 p-3 md:grid-cols-2">
+              <input
+                value={specification.specProperty}
+                onChange={(event) => updateSpecification(index, { specProperty: event.target.value })}
+                placeholder="Property"
+                className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              />
+              <div className="flex gap-2">
+                <input
+                  value={`${specification.specValue ?? ""}`}
+                  onChange={(event) => updateSpecification(index, { specValue: event.target.value })}
+                  placeholder="Value"
+                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+                />
+                {specifications.length > 1 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setSpecifications((prev) => prev.filter((_, rowIndex) => rowIndex !== index))}
+                  >
+                    Remove
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-neutral-900">Supplier Pricing</h2>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                setSupplierPricing((prev) => [...prev, defaultSupplierPricing(supplierOptions[0]?._id ?? "")])
+              }
+              disabled={supplierOptions.length === 0}
+            >
+              Add Supplier Pricing
+            </Button>
+          </div>
+
+          {supplierOptions.length === 0 ? (
+            <EmptyState
+              title="No suppliers available"
+              description="Create at least one supplier first before adding supply pricing."
+            />
+          ) : (
+            supplierPricing.map((pricing, index) => (
+              <div key={`pricing-${index}`} className="grid gap-2 rounded-md border border-neutral-200 p-3 md:grid-cols-5">
+                <select
+                  value={pricing.supplier}
+                  onChange={(event) => updateSupplierPricingRow(index, { supplier: event.target.value })}
+                  className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+                >
+                  {supplierOptions.map((supplier) => (
+                    <option key={supplier._id} value={supplier._id}>
+                      {supplier.supplierID} — {supplier.name}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={pricing.unitQuantity}
+                  onChange={(event) => updateSupplierPricingRow(index, { unitQuantity: Number(event.target.value) })}
+                  placeholder="Quantity"
+                  className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={pricing.unitPrice}
+                  onChange={(event) => updateSupplierPricingRow(index, { unitPrice: Number(event.target.value) })}
+                  placeholder="Unit Price"
+                  className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={pricing.price}
+                  onChange={(event) => updateSupplierPricingRow(index, { price: Number(event.target.value) })}
+                  placeholder="Total Price"
+                  className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={pricing.priceValidity.slice(0, 10)}
+                    onChange={(event) => updateSupplierPricingRow(index, { priceValidity: event.target.value })}
+                    className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+                  />
+                  {supplierPricing.length > 1 ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setSupplierPricing((prev) => prev.filter((_, rowIndex) => rowIndex !== index))}
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            ))
+          )}
+        </section>
+
+        <Button type="submit" isLoading={createMutation.isPending}>
+          Create Supply
+        </Button>
+      </form>
+    </PageLayout>
+  );
+}
