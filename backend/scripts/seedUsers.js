@@ -102,7 +102,7 @@ async function main() {
 
       failed += 1;
       console.log(
-        `❌ Failed: ${user.email} | status=${status} | message=${body?.message || "Unknown error"}`
+        `❌ Failed: ${user.email} | status=${status} | message=${body?.message || "Unknown error"}`,
       );
     } catch (error) {
       failed += 1;
