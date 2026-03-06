@@ -10,6 +10,22 @@ const app: Application = express();
 // Middleware to parse JSON
 app.use(express.json());
 
+const allowedOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:3000";
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.header("Access-Control-Allow-Origin", allowedOrigin);
+  res.header("Vary", "Origin");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+
+  next();
+});
+
 // Use Morgan for logging requests
 app.use(morgan(":method :url :status :response-time ms - :remote-addr"));
 
