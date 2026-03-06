@@ -11,8 +11,8 @@ Use this section as your running tracker. Only mark a phase complete after its e
 | Phase | Scope                         | Status         | Owner | Start      | End        | Notes                                                                                                                             |
 | ----- | ----------------------------- | -------------- | ----- | ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | 0     | Platform Foundation           | ✅ Done        | Dev   | 2026-03-06 | 2026-03-07 | Providers, API client, types, UI primitives implemented and build-verified                                                        |
-| 1     | User + Auth                   | 🟨 In Progress | Dev   | 2026-03-07 |            | Auth/user services, context, login, protected layout, profile and users screens implemented; awaiting live auth-flow verification |
-| 2     | Suppliers + Supplies          | ⬜ Not Started |       |            |            |                                                                                                                                   |
+| 1     | User + Auth                   | ✅ Done        | Dev   | 2026-03-07 | 2026-03-07 | Auth/user services, context, login, protected layout, profile and users screens implemented; phase gate validated end-to-end      |
+| 2     | Suppliers + Supplies          | 🟨 In Progress | Dev   | 2026-03-07 |            | Active phase after Phase 1 completion                                                                                              |
 | 3     | Purchase Requests             | ⬜ Not Started |       |            |            |                                                                                                                                   |
 | 4     | Dashboard + Integration       | ⬜ Not Started |       |            |            |                                                                                                                                   |
 | 5     | Hardening + Release Readiness | ⬜ Not Started |       |            |            |                                                                                                                                   |
@@ -140,9 +140,9 @@ Create `frontend/src/context/AuthContext.tsx`:
 
 **Phase Gate (must pass before Phase 2):**
 
-- 🟨 Login/logout works (implemented; pending live credential validation)
+- ✅ Login/logout works (validated with backend)
 - ✅ Protected routes block unauthenticated users (server-side token gate on protected layout)
-- 🟨 Super-admin gating works for Users screens (implemented via `/api/user/` probe; pending live role verification)
+- ✅ Super-admin gating works for Users screens (validated via live role behavior)
 
 ---
 
@@ -328,7 +328,7 @@ Sidebar order should follow business flow:
 | Date       | Phase | What was completed                                                                                                                                         | Risks/Blockers                                                                | Next step                                                             |
 | ---------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | 2026-03-07 | 0     | Installed deps, wired providers, added API client/types/UI primitives, and passed build                                                                    | React 19 RC peer resolution required `--legacy-peer-deps`                     | Implement Phase 1 auth services/context/routes                        |
-| 2026-03-07 | 1     | Implemented auth/user API services, `AuthContext`, login page, protected layout, sidebar/header shell, profile page, users list/detail pages; build passed | Live credential/role verification still needed in running backend environment | Validate login and super-admin/non-admin behavior, then start Phase 2 |
+| 2026-03-07 | 1     | Implemented auth/user API services, `AuthContext`, login page, protected layout, sidebar/header shell, profile page, users list/detail pages; build passed | None after validation                                                         | Start Phase 2 supplier and supply implementation                      |
 
 ---
 
