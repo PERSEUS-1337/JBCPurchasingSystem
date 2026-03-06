@@ -5,7 +5,6 @@
 This document is a standalone technical reference for the **Supplier** and **Supplies** modules of the JBC Purchasing System backend.
 
 It covers:
-
 - Module scope and boundaries
 - Data models and validation rules
 - API endpoints (current behavior)
@@ -20,7 +19,6 @@ It covers:
 The Supplier Module manages supplier profiles and status.
 
 Core capabilities:
-
 - Create supplier records
 - Retrieve supplier list/details
 - Search suppliers by multiple fields
@@ -33,7 +31,6 @@ Core capabilities:
 The Supplies Module manages supply catalog items and supplier pricing per item.
 
 Core capabilities:
-
 - Create supply items
 - Retrieve supply list/details
 - Search supplies by name
@@ -60,7 +57,6 @@ Core capabilities:
 ## 4.1 Supplier (`suppliers` collection)
 
 Key fields:
-
 - `supplierID` (string, unique, format: `SUP-<digits>`)
 - `name` (string, required, unique)
 - `contactNumbers` (string[], at least 1, regex-validated)
@@ -77,7 +73,6 @@ Key fields:
 ## 4.2 Supply (`supplies` collection)
 
 Key fields:
-
 - `supplyID` (string, unique, format: `SPL-<digits>`)
 - `name` (string, required, unique)
 - `description` (string, required)
@@ -119,21 +114,20 @@ Key fields:
 
 ## 6) Supplier API Endpoints
 
-| Method | Route                             | Auth | Description                                     | Status                       |
-| ------ | --------------------------------- | ---- | ----------------------------------------------- | ---------------------------- |
-| GET    | `/`                               | Yes  | Get all suppliers                               | Implemented                  |
-| GET    | `/search?query=...`               | Yes  | Search suppliers (name, tags, emails, contacts) | Implemented                  |
-| GET    | `/:supplierID`                    | Yes  | Get supplier by supplierID                      | Implemented                  |
-| POST   | `/`                               | Yes  | Create supplier                                 | Implemented                  |
-| PATCH  | `/:supplierID`                    | Yes  | Update supplier profile                         | Implemented                  |
-| PATCH  | `/:supplierID/status`             | Yes  | Update supplier status                          | Implemented                  |
-| DELETE | `/:supplierID`                    | Yes  | Delete supplier                                 | Implemented                  |
-| GET    | `/:supplierID/supplies`           | Yes  | Get supplies of a supplier                      | Declared but not implemented |
-| POST   | `/:supplierID/supplies`           | Yes  | Add supply to supplier                          | Declared but not implemented |
-| DELETE | `/:supplierID/supplies/:supplyID` | Yes  | Remove supply from supplier                     | Declared but not implemented |
+| Method | Route | Auth | Description | Status |
+|---|---|---|---|---|
+| GET | `/` | Yes | Get all suppliers | Implemented |
+| GET | `/search?query=...` | Yes | Search suppliers (name, tags, emails, contacts) | Implemented |
+| GET | `/:supplierID` | Yes | Get supplier by supplierID | Implemented |
+| POST | `/` | Yes | Create supplier | Implemented |
+| PATCH | `/:supplierID` | Yes | Update supplier profile | Implemented |
+| PATCH | `/:supplierID/status` | Yes | Update supplier status | Implemented |
+| DELETE | `/:supplierID` | Yes | Delete supplier | Implemented |
+| GET | `/:supplierID/supplies` | Yes | Get supplies of a supplier | Declared but not implemented |
+| POST | `/:supplierID/supplies` | Yes | Add supply to supplier | Declared but not implemented |
+| DELETE | `/:supplierID/supplies/:supplyID` | Yes | Remove supply from supplier | Declared but not implemented |
 
 Notes:
-
 - Duplicate `supplierID` on create returns `400`.
 - `GET /` returns `404` when no suppliers exist.
 - Search requires `query` string; missing query returns `400`.
@@ -142,22 +136,21 @@ Notes:
 
 ## 7) Supplies API Endpoints
 
-| Method | Route                                   | Auth | Description                     | Status      |
-| ------ | --------------------------------------- | ---- | ------------------------------- | ----------- |
-| GET    | `/`                                     | Yes  | Get all supplies                | Implemented |
-| GET    | `/search?query=...`                     | Yes  | Search supplies by name         | Implemented |
-| GET    | `/:supplyID`                            | Yes  | Get supply by supplyID          | Implemented |
-| POST   | `/`                                     | Yes  | Create supply item              | Implemented |
-| PATCH  | `/:supplyID`                            | Yes  | Update supply fields            | Implemented |
-| PATCH  | `/:supplyID/status`                     | Yes  | Update supply status            | Implemented |
-| DELETE | `/:supplyID`                            | Yes  | Delete supply item              | Implemented |
-| GET    | `/:supplyID/suppliers`                  | Yes  | List suppliers linked to supply | Implemented |
-| POST   | `/:supplyID/supplier-pricing`           | Yes  | Add supplier pricing record     | Implemented |
-| PATCH  | `/:supplyID/supplier-pricing/:supplier` | Yes  | Update supplier pricing record  | Implemented |
-| DELETE | `/:supplyID/supplier-pricing/:supplier` | Yes  | Remove supplier pricing record  | Implemented |
+| Method | Route | Auth | Description | Status |
+|---|---|---|---|---|
+| GET | `/` | Yes | Get all supplies | Implemented |
+| GET | `/search?query=...` | Yes | Search supplies by name | Implemented |
+| GET | `/:supplyID` | Yes | Get supply by supplyID | Implemented |
+| POST | `/` | Yes | Create supply item | Implemented |
+| PATCH | `/:supplyID` | Yes | Update supply fields | Implemented |
+| PATCH | `/:supplyID/status` | Yes | Update supply status | Implemented |
+| DELETE | `/:supplyID` | Yes | Delete supply item | Implemented |
+| GET | `/:supplyID/suppliers` | Yes | List suppliers linked to supply | Implemented |
+| POST | `/:supplyID/supplier-pricing` | Yes | Add supplier pricing record | Implemented |
+| PATCH | `/:supplyID/supplier-pricing/:supplier` | Yes | Update supplier pricing record | Implemented |
+| DELETE | `/:supplyID/supplier-pricing/:supplier` | Yes | Remove supplier pricing record | Implemented |
 
 Notes:
-
 - `checkSupplyExists` middleware validates `:supplyID` and attaches `req.supply`.
 - Generic supply update rejects `supplyID` updates.
 
@@ -257,7 +250,6 @@ Supplier controller responses are also JSON with `message`, usually with `data`.
 ## 11) Source Reference
 
 Main implementation files:
-
 - `backend/src/routes/supplierRouter.ts`
 - `backend/src/routes/supplyRouter.ts`
 - `backend/src/controllers/supplierController.ts`

@@ -34,7 +34,6 @@ export interface ISupply extends Document {
 // Static Methods (Available regardless of instance)
 interface ISupplyModel extends Model<ISupply> {
   checkDuplicateSupply(supplyID: string): Promise<boolean>;
-  getSuppliers(supplyID: string): Promise<Types.ObjectId[]>;
 }
 
 const SupplierPricingSchema = new Schema<ISupplierPricing>({
@@ -75,7 +74,7 @@ const SupplySchema = new Schema<ISupply>(
       unique: true,
       match: supplyIDRegex,
     },
-    name: { type: String, required: true },
+    name: { type: String, required: true, unique: true },
     description: { type: String, required: true },
     categories: { type: [String], required: true },
     unitMeasure: { type: String, required: true },
@@ -96,6 +95,11 @@ const SupplySchema = new Schema<ISupply>(
   },
   { timestamps: true }
 );
+
+// ### Indexing for searchability
+SupplySchema.index({ name: "text" }); // Index for name
+SupplySchema.index({ categories: 1 }); // Index for categories
+SupplySchema.index({ specifications: 1 }); // Index for specifications
 
 // Pre-save hook for various validation
 SupplySchema.pre("save", async function (next) {
@@ -141,19 +145,6 @@ SupplySchema.statics.checkDuplicateSupply = async function (
   // Using exists for performance, as it only returns a boolean result
   const exists = await this.exists({ supplyID });
   return !!exists;
-};
-
-// Helper method to get all suppliers for a supply
-SupplySchema.statics.getSuppliers = async function (
-  supplyID: string
-): Promise<Types.ObjectId[]> {
-  const supply = await this.findOne({ supplyID });
-  if (!supply) return [];
-
-  // Extract just the supplier IDs from supplierPricing
-  return supply.supplierPricing.map(
-    (pricing: ISupplierPricing) => pricing.supplier
-  );
 };
 
 const Supply = mongoose.model<ISupply, ISupplyModel>(

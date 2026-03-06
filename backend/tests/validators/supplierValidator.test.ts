@@ -1,12 +1,5 @@
 import { supplierSchema } from "../../src/validators/supplierValidator";
-import {
-  describe,
-  expect,
-  it,
-  beforeAll,
-  afterAll,
-  beforeEach,
-} from "@jest/globals";
+import { describe, expect, it } from "@jest/globals";
 import {
   validSupplierComplete,
   invalidSupplierEmails,
@@ -17,26 +10,8 @@ import {
   invalidSupplierStatus,
 } from "../setup/mockSuppliers";
 import { fromZodError } from "zod-validation-error";
-import {
-  connectDB,
-  disconnectDB,
-  clearCollection,
-} from "../setup/globalSetupHelper";
-import Supplier from "../../src/models/supplierModel";
 
 describe("Supplier Validator", () => {
-  beforeAll(async () => {
-    await connectDB();
-  });
-
-  beforeEach(async () => {
-    await clearCollection(Supplier);
-  });
-
-  afterAll(async () => {
-    await disconnectDB();
-  });
-
   // ========= SUCCESS CASES =========
   describe("Success Cases: Supplier Validation", () => {
     it("Should pass with a complete valid supplier", () => {
@@ -79,7 +54,6 @@ describe("Supplier Validator", () => {
     it("Should pass with minimal required fields and default others", () => {
       const result = supplierSchema.safeParse(validSupplierMinimum);
       expect(result.success).toBe(true);
-
       if (result.success) {
         const resultData = result.data;
         expect(resultData.supplierID).toBe(validSupplierMinimum.supplierID);
@@ -146,7 +120,6 @@ describe("Supplier Validator", () => {
     it("Should fail if required fields are missing", () => {
       const result = supplierSchema.safeParse(missingRequiredFieldsSupplier);
       expect(result.success).toBe(false);
-
       if (result.error) {
         const errorMessage = fromZodError(result.error).message;
         expect(errorMessage).toContain(`Required at "supplierID"`);
