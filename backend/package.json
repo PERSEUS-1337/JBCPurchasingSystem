@@ -10,6 +10,7 @@
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
     "dev": "cross-env NODE_ENV=development nodemon --files --exec ts-node src/server.ts",
+    "seed:users": "node scripts/seedUsers.js",
     "test": "cross-env NODE_ENV=test jest --coverage",
     "build": "tsc",
     "prod": "cross-env NODE_ENV=production node dist/server.js"
