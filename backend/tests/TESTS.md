@@ -1,0 +1,71 @@
+## Model Tests
+
+- `prModel.test.ts`
+  - should save a purchase request with complete data
+  - should save a purchase request with minimal required fields
+  - should save multiple purchase requests
+  - should reject a purchase request with missing required fields
+  - should reject a purchase request with missing PR items
+  - should reject a purchase request with duplicate PR item IDs
+  - should reject a purchase request with invalid data types (in Fail Cases)
+  - should update a purchase request with valid data
+  - should recalculate totalCost on PR update
+  - should reject invalid updates
+  - should update a purchase request with partial data
+  - should reject a purchase request with invalid data types (in Edge Cases)
+  - should handle concurrent saves without errors
+  - should save multiple purchase requests quickly
+- `userModel.test.ts`
+  - **Implemented Tests:**
+    - should save a user with valid fields
+    - should set the default 'createdAt' field to the current timestamp
+    - should hash the password before saving the user
+    - should correctly compare a plaintext password with the hashed password
+    - should not rehash the password if it is not modified
+    - should reject user creation if required fields are missing
+    - should reject user creation if the status field is invalid
+    - should throw an error if password hashing fails
+  - **Missing Tests:**
+    - Should reject user creation with a duplicate `userID`.
+    - Should reject user creation with a duplicate `email`.
+    - Should reject user creation if `role` is not in the allowed `userRoleEnums`.
+    - Should assign the default `role` if none is provided.
+    - Should assign the default `status` if none is provided.
+    - Should reject user creation if `fullname` is missing.
+    - Should reject user creation if `position` is missing.
+    - Should reject user creation if `department` is missing.
+    - Should save the `email` in lowercase.
+    - Static `checkDuplicateUser` should return `true` for existing email.
+    - Static `checkDuplicateUser` should return `false` for non-existing email.
+    - Static `isSuperAdmin` should return `true` for the super admin role.
+    - Static `isSuperAdmin` should return `false` for other roles.
+    - Instance `getUser` should return user data excluding sensitive fields.
+    - Instance `getUserAdminView` should return user data excluding password and internal fields.
+- `supplyModel.test.ts`
+  - should save a supply with complete data
+  - should save a supply with minimal required fields
+  - should save multiple supplies
+  - should reject a supply with missing required fields
+  - should reject a supply with invalid supplier pricing
+  - should reject a supply with invalid specifications
+  - should reject a supply with invalid status
+  - should reject a supply with non-array supplier pricing
+  - should reject a supply with non-existent supplier
+  - should reject a supply with duplicate suppliers in pricing
+  - should update a supply with valid data
+  - should update a supply with partial data
+  - should reject invalid updates
+  - should reject a supply with extremely large price
+  - should reject a supply with zero unit quantity
+  - should reject a supply with empty specifications
+  - should reject a supply with empty supplier pricing
+  - should handle concurrent saves without errors
+  - should save multiple supplies quickly
+- `supplierModel.test.ts`
+  - Should save a valid complete supplier
+  - Should allow minimal required fields and default others
+  - Should reject if required fields are missing
+  - Should enforce valid email format in `emails` field
+  - Should enforce valid email format in `contactPersons` field
+  - Should reject non-string values in documentation array
+  - Should reject `contactPersons` missing required fields

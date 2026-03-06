@@ -49,3 +49,13 @@ export const apiSupplyIDSupplierPricingSupplier = (
   supplyID: string,
   supplier: string
 ) => `/api/supply/${supplyID}/supplier-pricing/${supplier}`;
+
+export const apiPurchaseRequestMain = "/api/pr";
+export const apiPurchaseRequestHello = "/api/pr/hello";
+export const apiPurchaseRequestID = (prID: string) => `/api/pr/${prID}`;
+export const apiPurchaseRequestStatus = (prID: string) =>
+  `/api/pr/${prID}/status`;
+export const apiPurchaseRequestItemsRequested = (prID: string) =>
+  `/api/pr/${prID}/items-requested`;
+export const apiPurchaseRequestItemsRequestedIdx = (prID: string, idx: string) =>
+  `/api/pr/${prID}/items-requested/${idx}`;
