@@ -2,6 +2,8 @@
 
 import express, { Application, NextFunction, Request, Response } from "express";
 import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
+import { openApiSpec } from "./docs/openapi";
 
 const app: Application = express();
 
@@ -28,6 +30,12 @@ app.get("/health", (req: Request, res: Response) => {
     message: "Server is running!",
   });
 });
+
+app.get("/api/docs.json", (_req: Request, res: Response) => {
+  res.status(200).json(openApiSpec);
+});
+
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
 import authRouter from "./routes/authRouter";
 import userRouter from "./routes/userRouter";
