@@ -14,7 +14,7 @@ import { SheetTable } from "@/components/ui/SheetTable";
 import { Spinner } from "@/components/ui/Spinner";
 import { LinkSupplyModal } from "@/components/LinkSupplyModal";
 import { HttpError } from "@/lib/api/client";
-import { getAllSupplies, updateSupplierPricing } from "@/lib/api/supplies";
+import { getAllSupplies } from "@/lib/api/supplies";
 import {
   deleteSupplier,
   getSupplierById,
@@ -71,6 +71,13 @@ export default function SupplierDetailPage() {
   const [documentation, setDocumentation] = useState("");
   const [contactPersons, setContactPersons] = useState<ContactPerson[]>([defaultContactPerson()]);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [editingLinkedSupply, setEditingLinkedSupply] = useState<{
+    supplyID: string;
+    supplyName: string;
+    unitQuantity: number;
+    unitPrice: number;
+    priceValidity: string;
+  } | null>(null);
 
   useEffect(() => {
     const supplier = supplierQuery.data?.data;
@@ -182,47 +189,6 @@ export default function SupplierDetailPage() {
         toast.error(error.message);
       } else {
         toast.error("Failed to unlink supply");
-      }
-    },
-  });
-
-  const updateLinkedSupplyPricingMutation = useMutation({
-    mutationFn: ({
-      supplyID,
-      unitQuantity,
-      unitPrice,
-      priceValidity,
-    }: {
-      supplyID: string;
-      unitQuantity: number;
-      unitPrice: number;
-      priceValidity: string;
-    }) => {
-      const supplierObjectId = supplier?._id;
-
-      if (!supplierObjectId) {
-        throw new Error("Supplier reference is missing");
-      }
-
-      const totalPrice = Number((unitQuantity * unitPrice).toFixed(2));
-
-      return updateSupplierPricing(supplyID, supplierObjectId, {
-        unitQuantity,
-        unitPrice,
-        priceValidity,
-        price: totalPrice,
-      });
-    },
-    onSuccess: () => {
-      toast.success("Linked supply pricing updated");
-      invalidateSupplierQueries();
-      queryClient.invalidateQueries({ queryKey: ["supplies"] });
-    },
-    onError: (error) => {
-      if (error instanceof HttpError) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to update linked supply pricing");
       }
     },
   });
@@ -488,57 +454,16 @@ export default function SupplierDetailPage() {
                         type="button"
                         size="sm"
                         variant="secondary"
-                        isLoading={updateLinkedSupplyPricingMutation.isPending}
-                        onClick={() => {
-                          const currentUnitQuantity = row.linkedUnitQuantity ?? 1;
-                          const currentUnitPrice = row.linkedUnitPrice ?? 0;
-                          const currentValidity = row.linkedPriceValidity?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
-
-                          const nextUnitQuantityInput = window.prompt(
-                            "Enter unit quantity",
-                            `${currentUnitQuantity}`,
-                          );
-                          if (nextUnitQuantityInput === null) {
-                            return;
-                          }
-
-                          const nextUnitPriceInput = window.prompt(
-                            "Enter unit price",
-                            `${currentUnitPrice}`,
-                          );
-                          if (nextUnitPriceInput === null) {
-                            return;
-                          }
-
-                          const nextValidityInput = window.prompt(
-                            "Enter price validity date (YYYY-MM-DD)",
-                            currentValidity,
-                          );
-                          if (nextValidityInput === null) {
-                            return;
-                          }
-
-                          const nextUnitQuantity = Number.parseFloat(nextUnitQuantityInput);
-                          const nextUnitPrice = Number.parseFloat(nextUnitPriceInput);
-                          const nextValidity = nextValidityInput.trim();
-
-                          if (!Number.isFinite(nextUnitQuantity) || !Number.isFinite(nextUnitPrice)) {
-                            toast.error("Unit quantity and unit price must be valid numbers");
-                            return;
-                          }
-
-                          if (!nextValidity) {
-                            toast.error("Price validity date is required");
-                            return;
-                          }
-
-                          updateLinkedSupplyPricingMutation.mutate({
+                        onClick={() =>
+                          setEditingLinkedSupply({
                             supplyID: row.supplyID,
-                            unitQuantity: nextUnitQuantity,
-                            unitPrice: nextUnitPrice,
-                            priceValidity: nextValidity,
-                          });
-                        }}
+                            supplyName: row.name,
+                            unitQuantity: row.linkedUnitQuantity ?? 1,
+                            unitPrice: row.linkedUnitPrice ?? 0,
+                            priceValidity:
+                              row.linkedPriceValidity?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
+                          })
+                        }
                       >
                         Edit
                       </Button>
@@ -591,6 +516,31 @@ export default function SupplierDetailPage() {
         linkedSupplies={linkedSupplyIds}
         onClose={() => setIsLinkModalOpen(false)}
         onSuccess={() => invalidateSupplierQueries()}
+      />
+
+      <LinkSupplyModal
+        isOpen={Boolean(editingLinkedSupply)}
+        mode="edit"
+        supplierID={supplierID}
+        supplierObjectId={supplier?._id ?? ""}
+        linkedSupplies={linkedSupplyIds}
+        editData={
+          editingLinkedSupply
+            ? {
+                supplyId: editingLinkedSupply.supplyID,
+                supplyLabel: `${editingLinkedSupply.supplyID} — ${editingLinkedSupply.supplyName}`,
+                unitQuantity: editingLinkedSupply.unitQuantity,
+                unitPrice: editingLinkedSupply.unitPrice,
+                priceValidity: editingLinkedSupply.priceValidity,
+              }
+            : undefined
+        }
+        onClose={() => setEditingLinkedSupply(null)}
+        onSuccess={() => {
+          invalidateSupplierQueries();
+          queryClient.invalidateQueries({ queryKey: ["supplies"] });
+          setEditingLinkedSupply(null);
+        }}
       />
     </PageLayout>
   );

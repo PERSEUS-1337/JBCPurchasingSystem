@@ -18,7 +18,6 @@ import {
   deleteSupply,
   getSupplyById,
   removeSupplierPricing,
-  updateSupplierPricing,
   updateSupply,
   updateSupplyStatus,
 } from "@/lib/api/supplies";
@@ -69,6 +68,7 @@ export default function SupplyDetailPage() {
   const [attachments, setAttachments] = useState("");
   const [editablePricing, setEditablePricing] = useState<PricingFormState[]>([]);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [editingPricing, setEditingPricing] = useState<PricingFormState | null>(null);
 
   const supply = supplyQuery.data?.data;
 
@@ -165,22 +165,6 @@ export default function SupplyDetailPage() {
     },
     onError: () => {
       toast.error("Failed to delete supply");
-    },
-  });
-
-  const updatePricingMutation = useMutation({
-    mutationFn: ({ supplier, price, unitPrice, unitQuantity, priceValidity }: PricingFormState) =>
-      updateSupplierPricing(supplyID, supplier, { price, unitPrice, unitQuantity, priceValidity }),
-    onSuccess: () => {
-      toast.success("Supplier pricing updated");
-      invalidateSupplyQueries();
-    },
-    onError: (error) => {
-      if (error instanceof HttpError) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to update supplier pricing");
-      }
     },
   });
 
@@ -398,56 +382,7 @@ export default function SupplyDetailPage() {
                           type="button"
                           size="sm"
                           variant="secondary"
-                          isLoading={updatePricingMutation.isPending}
-                          onClick={() => {
-                            const nextUnitQuantityInput = window.prompt(
-                              "Enter unit quantity",
-                              `${pricing.unitQuantity}`,
-                            );
-                            if (nextUnitQuantityInput === null) {
-                              return;
-                            }
-
-                            const nextUnitPriceInput = window.prompt(
-                              "Enter unit price",
-                              `${pricing.unitPrice}`,
-                            );
-                            if (nextUnitPriceInput === null) {
-                              return;
-                            }
-
-                            const nextPriceValidityInput = window.prompt(
-                              "Enter price validity date (YYYY-MM-DD)",
-                              pricing.priceValidity.slice(0, 10),
-                            );
-                            if (nextPriceValidityInput === null) {
-                              return;
-                            }
-
-                            const nextUnitQuantity = Number.parseFloat(nextUnitQuantityInput);
-                            const nextUnitPrice = Number.parseFloat(nextUnitPriceInput);
-                            const nextPriceValidity = nextPriceValidityInput.trim();
-
-                            if (!Number.isFinite(nextUnitQuantity) || !Number.isFinite(nextUnitPrice)) {
-                              toast.error("Unit quantity and unit price must be valid numbers");
-                              return;
-                            }
-
-                            if (!nextPriceValidity) {
-                              toast.error("Price validity date is required");
-                              return;
-                            }
-
-                            const nextPrice = Number((nextUnitQuantity * nextUnitPrice).toFixed(2));
-
-                            updatePricingMutation.mutate({
-                              supplier: pricing.supplier,
-                              price: nextPrice,
-                              unitPrice: nextUnitPrice,
-                              unitQuantity: nextUnitQuantity,
-                              priceValidity: nextPriceValidity,
-                            });
-                          }}
+                          onClick={() => setEditingPricing(pricing)}
                         >
                           Edit
                         </Button>
@@ -500,6 +435,30 @@ export default function SupplyDetailPage() {
         linkedSuppliers={linkedSupplierIds}
         onClose={() => setIsLinkModalOpen(false)}
         onSuccess={() => invalidateSupplyQueries()}
+      />
+
+      <LinkSupplierModal
+        isOpen={Boolean(editingPricing)}
+        mode="edit"
+        supplyID={supplyID}
+        linkedSuppliers={linkedSupplierIds}
+        editData={
+          editingPricing
+            ? {
+                supplierId: editingPricing.supplier,
+                supplierLabel:
+                  `${supplierDetailsMap.get(editingPricing.supplier)?.supplierID ?? "Unknown"} — ${supplierDetailsMap.get(editingPricing.supplier)?.name ?? "Supplier"}`,
+                unitQuantity: editingPricing.unitQuantity,
+                unitPrice: editingPricing.unitPrice,
+                priceValidity: editingPricing.priceValidity,
+              }
+            : undefined
+        }
+        onClose={() => setEditingPricing(null)}
+        onSuccess={() => {
+          invalidateSupplyQueries();
+          setEditingPricing(null);
+        }}
       />
     </PageLayout>
   );

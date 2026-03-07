@@ -14,6 +14,12 @@ import { getAllSuppliers } from "@/lib/api/suppliers";
 import { HttpError } from "@/lib/api/client";
 import { Specification, SupplierPricing } from "@/lib/types/supply";
 
+type SupplierPricingForm = Omit<SupplierPricing, "price" | "unitQuantity" | "unitPrice"> & {
+  price: string;
+  unitQuantity: string;
+  unitPrice: string;
+};
+
 function splitValues(value: string) {
   return value
     .split(",")
@@ -28,13 +34,13 @@ function defaultSpecification(): Specification {
   };
 }
 
-function defaultSupplierPricing(supplier = ""): SupplierPricing {
+function defaultSupplierPricing(supplier = ""): SupplierPricingForm {
   return {
     supplier,
-    price: 0,
+    price: "",
     priceValidity: new Date().toISOString().slice(0, 10),
-    unitQuantity: 1,
-    unitPrice: 0,
+    unitQuantity: "1",
+    unitPrice: "",
   };
 }
 
@@ -69,7 +75,7 @@ export default function NewSupplyPage() {
   const [unitMeasure, setUnitMeasure] = useState("");
   const [attachments, setAttachments] = useState("");
   const [specifications, setSpecifications] = useState<Specification[]>([defaultSpecification()]);
-  const [supplierPricing, setSupplierPricing] = useState<SupplierPricing[]>([defaultSupplierPricing()]);
+  const [supplierPricing, setSupplierPricing] = useState<SupplierPricingForm[]>([defaultSupplierPricing()]);
 
   useEffect(() => {
     const firstSupplierId = suppliersQuery.data?.data?.[0]?._id;
@@ -95,7 +101,7 @@ export default function NewSupplyPage() {
   }, [suppliesQuery.data]);
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (normalizedSupplierPricing: SupplierPricing[]) =>
       createSupply({
         supplyID,
         name,
@@ -104,7 +110,7 @@ export default function NewSupplyPage() {
         unitMeasure,
         attachments: splitValues(attachments),
         specifications: specifications.filter((spec) => spec.specProperty.trim() && `${spec.specValue}`.trim()),
-        supplierPricing,
+        supplierPricing: normalizedSupplierPricing,
       }),
     onSuccess: (response) => {
       toast.success("Supply created successfully");
@@ -124,7 +130,7 @@ export default function NewSupplyPage() {
     setSpecifications((prev) => prev.map((item, idx) => (idx === index ? { ...item, ...value } : item)));
   };
 
-  const updateSupplierPricingRow = (index: number, value: Partial<SupplierPricing>) => {
+  const updateSupplierPricingRow = (index: number, value: Partial<SupplierPricingForm>) => {
     setSupplierPricing((prev) => prev.map((item, idx) => (idx === index ? { ...item, ...value } : item)));
   };
 
@@ -141,7 +147,26 @@ export default function NewSupplyPage() {
       return;
     }
 
-    if (supplierPricing.some((item) => item.price !== item.unitPrice * item.unitQuantity)) {
+    const normalizedSupplierPricing = supplierPricing.map((item) => {
+      const unitQuantity = Number.parseFloat(item.unitQuantity);
+      const unitPrice = Number.parseFloat(item.unitPrice);
+      const price = Number.parseFloat(item.price);
+
+      return {
+        supplier: item.supplier,
+        priceValidity: item.priceValidity,
+        unitQuantity,
+        unitPrice,
+        price,
+      };
+    });
+
+    if (normalizedSupplierPricing.some((item) => !Number.isFinite(item.unitQuantity) || !Number.isFinite(item.unitPrice) || !Number.isFinite(item.price))) {
+      toast.error("Complete supplier pricing values before submitting");
+      return;
+    }
+
+    if (normalizedSupplierPricing.some((item) => item.price !== item.unitPrice * item.unitQuantity)) {
       toast.error("Pricing must satisfy price = unitPrice × unitQuantity");
       return;
     }
@@ -151,7 +176,7 @@ export default function NewSupplyPage() {
       return;
     }
 
-    createMutation.mutate();
+    createMutation.mutate(normalizedSupplierPricing);
   };
 
   const supplierOptions = suppliersQuery.data?.data ?? [];
@@ -316,7 +341,7 @@ export default function NewSupplyPage() {
                   min={0}
                   step="0.01"
                   value={pricing.unitQuantity}
-                  onChange={(event) => updateSupplierPricingRow(index, { unitQuantity: Number(event.target.value) })}
+                  onChange={(event) => updateSupplierPricingRow(index, { unitQuantity: event.target.value })}
                   placeholder="Quantity"
                   className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
                 />
@@ -325,7 +350,7 @@ export default function NewSupplyPage() {
                   min={0}
                   step="0.01"
                   value={pricing.unitPrice}
-                  onChange={(event) => updateSupplierPricingRow(index, { unitPrice: Number(event.target.value) })}
+                  onChange={(event) => updateSupplierPricingRow(index, { unitPrice: event.target.value })}
                   placeholder="Unit Price"
                   className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
                 />
@@ -334,7 +359,7 @@ export default function NewSupplyPage() {
                   min={0}
                   step="0.01"
                   value={pricing.price}
-                  onChange={(event) => updateSupplierPricingRow(index, { price: Number(event.target.value) })}
+                  onChange={(event) => updateSupplierPricingRow(index, { price: event.target.value })}
                   placeholder="Total Price"
                   className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
                 />
