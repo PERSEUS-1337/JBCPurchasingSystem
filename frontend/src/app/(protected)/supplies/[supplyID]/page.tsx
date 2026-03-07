@@ -11,9 +11,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Spinner } from "@/components/ui/Spinner";
+import { LinkSupplierModal } from "@/components/LinkSupplierModal";
 import { HttpError } from "@/lib/api/client";
 import {
-  addSupplierPricing,
   deleteSupply,
   getSupplyById,
   removeSupplierPricing,
@@ -67,13 +67,7 @@ export default function SupplyDetailPage() {
   const [unitMeasure, setUnitMeasure] = useState("");
   const [attachments, setAttachments] = useState("");
   const [editablePricing, setEditablePricing] = useState<PricingFormState[]>([]);
-  const [newPricing, setNewPricing] = useState<PricingFormState>({
-    supplier: "",
-    price: 0,
-    priceValidity: new Date().toISOString().slice(0, 10),
-    unitQuantity: 1,
-    unitPrice: 0,
-  });
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
 
   const supply = supplyQuery.data?.data;
 
@@ -98,14 +92,6 @@ export default function SupplyDetailPage() {
     );
   }, [supply]);
 
-  useEffect(() => {
-    if (!suppliersQuery.data?.data?.length || newPricing.supplier) {
-      return;
-    }
-
-    setNewPricing((prev) => ({ ...prev, supplier: suppliersQuery.data?.data?.[0]?._id ?? "" }));
-  }, [suppliersQuery.data, newPricing.supplier]);
-
   const supplierNameMap = useMemo(() => {
     const map = new Map<string, string>();
     for (const supplier of suppliersQuery.data?.data ?? []) {
@@ -113,6 +99,11 @@ export default function SupplyDetailPage() {
     }
     return map;
   }, [suppliersQuery.data]);
+
+  const linkedSupplierIds = useMemo(
+    () => new Set(supply?.supplierPricing.map((p) => p.supplier) ?? []),
+    [supply]
+  );
 
   const invalidateSupplyQueries = () => {
     queryClient.invalidateQueries({ queryKey: ["supply", supplyID] });
@@ -164,30 +155,6 @@ export default function SupplyDetailPage() {
     },
   });
 
-  const addPricingMutation = useMutation({
-    mutationFn: () =>
-      addSupplierPricing(supplyID, {
-        ...newPricing,
-      }),
-    onSuccess: () => {
-      toast.success("Supplier pricing added");
-      invalidateSupplyQueries();
-      setNewPricing((prev) => ({
-        ...prev,
-        price: 0,
-        unitPrice: 0,
-        unitQuantity: 1,
-      }));
-    },
-    onError: (error) => {
-      if (error instanceof HttpError) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to add supplier pricing");
-      }
-    },
-  });
-
   const updatePricingMutation = useMutation({
     mutationFn: ({ supplier, price, unitPrice, unitQuantity, priceValidity }: PricingFormState) =>
       updateSupplierPricing(supplyID, supplier, { price, unitPrice, unitQuantity, priceValidity }),
@@ -228,20 +195,6 @@ export default function SupplyDetailPage() {
     }
 
     updateMutation.mutate();
-  };
-
-  const handleAddPricing = () => {
-    if (!newPricing.supplier) {
-      toast.error("Select a supplier first");
-      return;
-    }
-
-    if (newPricing.price !== newPricing.unitPrice * newPricing.unitQuantity) {
-      toast.error("Pricing must satisfy price = unitPrice × unitQuantity");
-      return;
-    }
-
-    addPricingMutation.mutate();
   };
 
   const updateEditablePricing = (index: number, value: Partial<PricingFormState>) => {
@@ -468,75 +421,12 @@ export default function SupplyDetailPage() {
             </ul>
           )}
 
-          <div className="grid gap-2 md:grid-cols-5">
-            <label className="space-y-1 text-xs text-neutral-600">
-              <span className="block">Supplier</span>
-              <select
-                value={newPricing.supplier}
-                onChange={(event) => setNewPricing((prev) => ({ ...prev, supplier: event.target.value }))}
-                className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-              >
-                {(suppliersQuery.data?.data ?? []).map((supplier) => (
-                  <option key={supplier._id} value={supplier._id}>
-                    {supplier.supplierID} — {supplier.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-1 text-xs text-neutral-600">
-              <span className="block">Unit Quantity</span>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={newPricing.unitQuantity}
-                onChange={(event) => setNewPricing((prev) => ({ ...prev, unitQuantity: Number(event.target.value) }))}
-                placeholder="Quantity"
-                className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-              />
-            </label>
-            <label className="space-y-1 text-xs text-neutral-600">
-              <span className="block">Unit Price</span>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={newPricing.unitPrice}
-                onChange={(event) => setNewPricing((prev) => ({ ...prev, unitPrice: Number(event.target.value) }))}
-                placeholder="Unit Price"
-                className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-              />
-            </label>
-            <label className="space-y-1 text-xs text-neutral-600">
-              <span className="block">Total Price</span>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={newPricing.price}
-                onChange={(event) => setNewPricing((prev) => ({ ...prev, price: Number(event.target.value) }))}
-                placeholder="Total Price"
-                className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-              />
-            </label>
-            <label className="space-y-1 text-xs text-neutral-600">
-              <span className="block">Price Validity Date</span>
-              <input
-                type="date"
-                value={newPricing.priceValidity.slice(0, 10)}
-                onChange={(event) => setNewPricing((prev) => ({ ...prev, priceValidity: event.target.value }))}
-                className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-              />
-            </label>
-          </div>
-
           <Button
             type="button"
             variant="secondary"
-            isLoading={addPricingMutation.isPending}
-            onClick={handleAddPricing}
+            onClick={() => setIsLinkModalOpen(true)}
           >
-            Add Supplier Pricing
+            Link Supplier with Pricing
           </Button>
         </section>
 
@@ -554,6 +444,14 @@ export default function SupplyDetailPage() {
           </Button>
         </div>
       </form>
+
+      <LinkSupplierModal
+        isOpen={isLinkModalOpen}
+        supplyID={supplyID}
+        linkedSuppliers={linkedSupplierIds}
+        onClose={() => setIsLinkModalOpen(false)}
+        onSuccess={() => invalidateSupplyQueries()}
+      />
     </PageLayout>
   );
 }

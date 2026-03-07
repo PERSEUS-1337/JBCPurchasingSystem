@@ -14,7 +14,9 @@ type SupplyPayload = {
   attachments?: string[];
 };
 
-type SupplyUpdatePayload = Partial<Omit<SupplyPayload, "supplyID" | "supplierPricing" | "specifications">>;
+type SupplyUpdatePayload = Partial<
+  Omit<SupplyPayload, "supplyID" | "supplierPricing" | "specifications">
+>;
 
 type SupplierPricingPayload = {
   supplier: string;
@@ -29,7 +31,9 @@ export function getAllSupplies() {
 }
 
 export function searchSupplies(query: string) {
-  return get<ApiResponse<Supply[] | null>>(`/supply/search?query=${encodeURIComponent(query)}`);
+  return get<ApiResponse<Supply[] | null>>(
+    `/supply/search?query=${encodeURIComponent(query)}`,
+  );
 }
 
 export function getSupplyById(supplyID: string) {
@@ -56,8 +60,24 @@ export function getSuppliersOfSupply(supplyID: string) {
   return get<ApiResponse<string[]>>(`/supply/${supplyID}/suppliers`);
 }
 
-export function addSupplierPricing(supplyID: string, payload: SupplierPricingPayload) {
-  return post<ApiResponse<Supply>>(`/supply/${supplyID}/supplier-pricing`, payload);
+export function linkSupplierWithPricing(
+  supplyID: string,
+  payload: SupplierPricingPayload,
+) {
+  return post<ApiResponse<Supply>>(
+    `/supply/${supplyID}/link-supplier`,
+    payload,
+  );
+}
+
+export function addSupplierPricing(
+  supplyID: string,
+  payload: SupplierPricingPayload,
+) {
+  return post<ApiResponse<Supply>>(
+    `/supply/${supplyID}/supplier-pricing`,
+    payload,
+  );
 }
 
 export function updateSupplierPricing(
@@ -65,9 +85,14 @@ export function updateSupplierPricing(
   supplier: string,
   payload: Omit<SupplierPricingPayload, "supplier">,
 ) {
-  return patch<ApiResponse<Supply>>(`/supply/${supplyID}/supplier-pricing/${supplier}`, payload);
+  return patch<ApiResponse<Supply>>(
+    `/supply/${supplyID}/supplier-pricing/${supplier}`,
+    payload,
+  );
 }
 
 export function removeSupplierPricing(supplyID: string, supplier: string) {
-  return del<ApiResponse<Supply>>(`/supply/${supplyID}/supplier-pricing/${supplier}`);
+  return del<ApiResponse<Supply>>(
+    `/supply/${supplyID}/supplier-pricing/${supplier}`,
+  );
 }

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Supply, { ISupply, ISupplierPricing } from "../models/supplyModel";
+import Supplier from "../models/supplierModel";
 import {
   SupplyInput,
   SupplierPricingInput,
@@ -17,7 +18,7 @@ import mongoose from "mongoose";
  */
 export const getSupplyByID = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     sendResponse(res, 200, "Supply details retrieved successfully", req.supply);
@@ -35,7 +36,7 @@ export const getSupplyByID = async (
  */
 export const searchSupplies = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { query } = req.query;
@@ -61,7 +62,7 @@ export const searchSupplies = async (
  */
 export const getAllSupplies = async (
   _req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const supplies = await Supply.find({}, { _id: 0, __v: 0 });
@@ -69,7 +70,7 @@ export const getAllSupplies = async (
       res,
       200,
       supplies.length ? "Supplies retrieved successfully" : "No data yet",
-      supplies
+      supplies,
     );
   } catch (err: any) {
     sendError(res, 500, "Internal server error", err.message);
@@ -86,12 +87,12 @@ export const getAllSupplies = async (
  */
 export const createSupply = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const newSupplyData: SupplyInput = req.body;
     const isDuplicate = await Supply.checkDuplicateSupply(
-      newSupplyData.supplyID
+      newSupplyData.supplyID,
     );
     if (isDuplicate) {
       sendError(res, 400, "Supply ID already exists");
@@ -99,6 +100,22 @@ export const createSupply = async (
     }
     const newSupply: ISupply = new Supply(newSupplyData);
     await newSupply.save();
+
+    const supplierObjectIds = Array.from(
+      new Set(
+        (newSupply.supplierPricing ?? []).map((pricing) =>
+          pricing.supplier.toString(),
+        ),
+      ),
+    );
+
+    if (supplierObjectIds.length > 0) {
+      await Supplier.updateMany(
+        { _id: { $in: supplierObjectIds } },
+        { $addToSet: { supplies: newSupply.supplyID } },
+      );
+    }
+
     sendResponse(res, 201, "Supply created successfully", newSupply);
   } catch (err: any) {
     sendError(res, 500, "Internal server error", err.message);
@@ -115,7 +132,7 @@ export const createSupply = async (
  */
 export const updateSupply = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const updates = req.body;
@@ -134,7 +151,7 @@ export const updateSupply = async (
     const updatedSupply = await Supply.findOneAndUpdate(
       { supplyID: supply.supplyID },
       updates,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!updatedSupply) {
@@ -156,7 +173,7 @@ export const updateSupply = async (
  */
 export const deleteSupply = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const supply = req.supply; // Supply is already attached by the middleware
@@ -170,6 +187,21 @@ export const deleteSupply = async (
     });
     if (!deletedSupply) {
       return sendError(res, 500, "Failed to delete supply");
+    }
+
+    const supplierObjectIds = Array.from(
+      new Set(
+        (deletedSupply.supplierPricing ?? []).map((pricing) =>
+          pricing.supplier.toString(),
+        ),
+      ),
+    );
+
+    if (supplierObjectIds.length > 0) {
+      await Supplier.updateMany(
+        { _id: { $in: supplierObjectIds } },
+        { $pull: { supplies: deletedSupply.supplyID } },
+      );
     }
 
     sendResponse(res, 200, "Supply deleted successfully", deletedSupply);
@@ -187,7 +219,7 @@ export const deleteSupply = async (
  */
 export const updateSupplyStatus = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { status } = req.body;
@@ -200,7 +232,7 @@ export const updateSupplyStatus = async (
     const updatedSupply = await Supply.findOneAndUpdate(
       { supplyID: supply.supplyID },
       { status },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedSupply) {
@@ -222,7 +254,7 @@ export const updateSupplyStatus = async (
  */
 export const getSuppliersOfSupply = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const supply = req.supply; // Supply is already attached by the middleware
@@ -233,7 +265,7 @@ export const getSuppliersOfSupply = async (
 
     // Extract unique suppliers from supplierPricing
     const suppliers = supply.supplierPricing.map(
-      (pricing: ISupplierPricing) => pricing.supplier
+      (pricing: ISupplierPricing) => pricing.supplier,
     );
     sendResponse(res, 200, "Suppliers retrieved successfully", suppliers);
   } catch (err: any) {
@@ -251,7 +283,7 @@ export const getSuppliersOfSupply = async (
  */
 export const addSupplierPricing = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const supply = req.supply; // Supply is already attached by the middleware
@@ -267,14 +299,14 @@ export const addSupplierPricing = async (
     // Check if supplier pricing already exists
     const existingPricing = supply.supplierPricing.find(
       (pricing) =>
-        pricing.supplier.toString() === pricingData.supplier.toString()
+        pricing.supplier.toString() === pricingData.supplier.toString(),
     );
 
     if (existingPricing) {
       return sendError(
         res,
         400,
-        "Supplier pricing already exists for this supplier"
+        "Supplier pricing already exists for this supplier",
       );
     }
 
@@ -282,18 +314,22 @@ export const addSupplierPricing = async (
     const updatedSupply = await Supply.findOneAndUpdate(
       { supplyID: supply.supplyID },
       { $push: { supplierPricing: pricingData } },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedSupply) {
       return sendError(res, 500, "Failed to add supplier pricing");
     }
 
+    await Supplier.findByIdAndUpdate(pricingData.supplier, {
+      $addToSet: { supplies: updatedSupply.supplyID },
+    });
+
     sendResponse(
       res,
       200,
       "Supplier pricing added successfully",
-      updatedSupply
+      updatedSupply,
     );
   } catch (err: any) {
     sendError(res, 500, "Internal server error", err.message);
@@ -310,7 +346,7 @@ export const addSupplierPricing = async (
  */
 export const updateSupplierPricing = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const supply = req.supply; // Supply is already attached by the middleware
@@ -336,7 +372,7 @@ export const updateSupplierPricing = async (
           "supplierPricing.$": pricingData,
         },
       },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedSupply) {
@@ -347,7 +383,78 @@ export const updateSupplierPricing = async (
       res,
       200,
       "Supplier pricing updated successfully",
-      updatedSupply
+      updatedSupply,
+    );
+  } catch (err: any) {
+    sendError(res, 500, "Internal server error", err.message);
+  }
+};
+
+/**
+ * Links a supplier to a supply with pricing information (unified endpoint)
+ * Can be called from either supplies or suppliers context
+ * @param req Express Request object containing supplyID in params and pricing details in body
+ * @param res Express Response object
+ * @returns Promise<void>
+ * @throws 400 if supplier pricing already exists
+ * @throws 500 if server error occurs
+ */
+export const linkSupplierWithPricing = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const supply = req.supply; // Supply is already attached by the middleware
+    const pricingData: SupplierPricingInput = {
+      ...req.body,
+      supplier: new mongoose.Types.ObjectId(req.body.supplier),
+    };
+
+    if (!supply) {
+      return sendError(res, 500, "Supply not found in request");
+    }
+
+    // Check if supplier exists
+    const supplier = await Supplier.findById(pricingData.supplier);
+    if (!supplier) {
+      return sendError(res, 404, "Supplier not found");
+    }
+
+    // Check if supplier pricing already exists
+    const existingPricing = supply.supplierPricing.find(
+      (pricing) =>
+        pricing.supplier.toString() === pricingData.supplier.toString(),
+    );
+
+    if (existingPricing) {
+      return sendError(
+        res,
+        400,
+        "Supplier pricing already exists for this supplier",
+      );
+    }
+
+    // Add the new supplier pricing using $push
+    const updatedSupply = await Supply.findOneAndUpdate(
+      { supplyID: supply.supplyID },
+      { $push: { supplierPricing: pricingData } },
+      { new: true },
+    );
+
+    if (!updatedSupply) {
+      return sendError(res, 500, "Failed to link supplier with pricing");
+    }
+
+    // Update supplier's supplies array
+    await Supplier.findByIdAndUpdate(pricingData.supplier, {
+      $addToSet: { supplies: updatedSupply.supplyID },
+    });
+
+    sendResponse(
+      res,
+      200,
+      "Supplier linked to supply with pricing successfully",
+      updatedSupply,
     );
   } catch (err: any) {
     sendError(res, 500, "Internal server error", err.message);
@@ -364,7 +471,7 @@ export const updateSupplierPricing = async (
  */
 export const removeSupplierPricing = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const supply = req.supply; // Supply is already attached by the middleware
@@ -376,7 +483,7 @@ export const removeSupplierPricing = async (
 
     // Check if supplier pricing exists
     const supplierPricingExists = supply.supplierPricing.some(
-      (pricing) => pricing.supplier.toString() === supplier
+      (pricing) => pricing.supplier.toString() === supplier,
     );
 
     if (!supplierPricingExists) {
@@ -387,18 +494,22 @@ export const removeSupplierPricing = async (
     const updatedSupply = await Supply.findOneAndUpdate(
       { supplyID: supply.supplyID },
       { $pull: { supplierPricing: { supplier } } },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedSupply) {
       return sendError(res, 500, "Failed to remove supplier pricing");
     }
 
+    await Supplier.findByIdAndUpdate(supplier, {
+      $pull: { supplies: updatedSupply.supplyID },
+    });
+
     sendResponse(
       res,
       200,
       "Supplier pricing removed successfully",
-      updatedSupply
+      updatedSupply,
     );
   } catch (err: any) {
     sendError(res, 500, "Internal server error", err.message);
@@ -418,7 +529,7 @@ export const removeSupplierPricing = async (
  */
 export const addSpecification = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { supplyID } = req.params;
@@ -430,7 +541,7 @@ export const addSpecification = async (
     }
     // Check if a specification with the same property exists
     const exists = supply.specifications.find(
-      (spec) => spec.specProperty === specProperty
+      (spec) => spec.specProperty === specProperty,
     );
     if (exists) {
       res
@@ -461,7 +572,7 @@ export const addSpecification = async (
  */
 export const updateSpecification = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { supplyID } = req.params;
@@ -472,7 +583,7 @@ export const updateSpecification = async (
       return;
     }
     const specIndex = supply.specifications.findIndex(
-      (spec) => spec.specProperty === specProperty
+      (spec) => spec.specProperty === specProperty,
     );
     if (specIndex === -1) {
       res.status(404).json({ message: "Specification not found" });
@@ -501,14 +612,14 @@ export const updateSpecification = async (
  */
 export const removeSpecification = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { supplyID, specProperty } = req.params;
     const supply = await Supply.findOneAndUpdate(
       { supplyID },
       { $pull: { specifications: { specProperty } } },
-      { new: true }
+      { new: true },
     );
     if (!supply) {
       res.status(404).json({ message: "Supply not found" });
@@ -535,7 +646,7 @@ export const removeSpecification = async (
  */
 export const addAttachment = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { supplyID } = req.params;
@@ -543,7 +654,7 @@ export const addAttachment = async (
     const supply = await Supply.findOneAndUpdate(
       { supplyID },
       { $addToSet: { attachments: attachment } },
-      { new: true }
+      { new: true },
     );
     if (!supply) {
       res.status(404).json({ message: "Supply not found" });
@@ -570,14 +681,14 @@ export const addAttachment = async (
  */
 export const removeAttachment = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { supplyID, attachment } = req.params;
     const supply = await Supply.findOneAndUpdate(
       { supplyID },
       { $pull: { attachments: attachment } },
-      { new: true }
+      { new: true },
     );
     if (!supply) {
       res.status(404).json({ message: "Supply not found" });

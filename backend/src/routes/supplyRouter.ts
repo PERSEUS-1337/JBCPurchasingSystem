@@ -11,6 +11,7 @@ import {
   addSupplierPricing,
   updateSupplierPricing,
   removeSupplierPricing,
+  linkSupplierWithPricing,
 } from "../controllers/supplyController";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import {
@@ -40,14 +41,14 @@ router.patch(
   authorizeJWT,
   checkSupplyExists,
   validateRequest(supplyUpdateSchema),
-  updateSupply
+  updateSupply,
 );
 router.delete("/:supplyID", authorizeJWT, checkSupplyExists, deleteSupply);
 router.patch(
   "/:supplyID/status",
   authorizeJWT,
   checkSupplyExists,
-  updateSupplyStatus
+  updateSupplyStatus,
 );
 
 // Supplier Pricing Management Routes
@@ -55,27 +56,34 @@ router.get(
   "/:supplyID/suppliers",
   authorizeJWT,
   checkSupplyExists,
-  getSuppliersOfSupply
+  getSuppliersOfSupply,
+);
+router.post(
+  "/:supplyID/link-supplier",
+  authorizeJWT,
+  checkSupplyExists,
+  validateRequest(supplierPricingSchema),
+  linkSupplierWithPricing,
 );
 router.post(
   "/:supplyID/supplier-pricing",
   authorizeJWT,
   checkSupplyExists,
   validateRequest(supplierPricingSchema),
-  addSupplierPricing
+  addSupplierPricing,
 );
 router.patch(
   "/:supplyID/supplier-pricing/:supplier",
   authorizeJWT,
   checkSupplyExists,
   validateRequest(supplierPricingUpdateSchema),
-  updateSupplierPricing
+  updateSupplierPricing,
 );
 router.delete(
   "/:supplyID/supplier-pricing/:supplier",
   authorizeJWT,
   checkSupplyExists,
-  removeSupplierPricing
+  removeSupplierPricing,
 );
 
 // Create Supply (No supplyID needed)

@@ -11,12 +11,12 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Spinner } from "@/components/ui/Spinner";
+import { LinkSupplyModal } from "@/components/LinkSupplyModal";
 import { HttpError } from "@/lib/api/client";
 import { getAllSupplies } from "@/lib/api/supplies";
 import {
   deleteSupplier,
   getSupplierById,
-  linkSupplyToSupplier,
   unlinkSupplyFromSupplier,
   updateSupplier,
   updateSupplierStatus,
@@ -69,7 +69,7 @@ export default function SupplierDetailPage() {
   const [tags, setTags] = useState("");
   const [documentation, setDocumentation] = useState("");
   const [contactPersons, setContactPersons] = useState<ContactPerson[]>([defaultContactPerson()]);
-  const [selectedSupplyID, setSelectedSupplyID] = useState("");
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
 
   useEffect(() => {
     const supplier = supplierQuery.data?.data;
@@ -89,13 +89,6 @@ export default function SupplierDetailPage() {
 
   const supplier = supplierQuery.data?.data;
 
-  const availableSupplies = useMemo(() => {
-    const allSupplies = suppliesQuery.data?.data ?? [];
-    const linked = new Set(supplier?.supplies ?? []);
-
-    return allSupplies.filter((supply) => !linked.has(supply.supplyID));
-  }, [suppliesQuery.data, supplier?.supplies]);
-
   const linkedSupplies = useMemo(() => {
     const allSupplies = suppliesQuery.data?.data ?? [];
     const linked = new Set(supplier?.supplies ?? []);
@@ -103,15 +96,7 @@ export default function SupplierDetailPage() {
     return allSupplies.filter((supply) => linked.has(supply.supplyID));
   }, [suppliesQuery.data, supplier?.supplies]);
 
-  useEffect(() => {
-    if (!selectedSupplyID && availableSupplies.length > 0) {
-      setSelectedSupplyID(availableSupplies[0].supplyID);
-    }
-
-    if (availableSupplies.length === 0) {
-      setSelectedSupplyID("");
-    }
-  }, [availableSupplies, selectedSupplyID]);
+  const linkedSupplyIds = useMemo(() => new Set(supplier?.supplies ?? []), [supplier?.supplies]);
 
   const invalidateSupplierQueries = () => {
     queryClient.invalidateQueries({ queryKey: ["supplier", supplierID] });
@@ -163,22 +148,6 @@ export default function SupplierDetailPage() {
     },
     onError: () => {
       toast.error("Failed to delete supplier");
-    },
-  });
-
-  const linkMutation = useMutation({
-    mutationFn: (supplyID: string) => linkSupplyToSupplier(supplierID, supplyID),
-    onSuccess: () => {
-      toast.success("Supply linked to supplier");
-      invalidateSupplierQueries();
-      queryClient.invalidateQueries({ queryKey: ["supplies"] });
-    },
-    onError: (error) => {
-      if (error instanceof HttpError) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to link supply");
-      }
     },
   });
 
@@ -427,34 +396,13 @@ export default function SupplierDetailPage() {
             </ul>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            <select
-              value={selectedSupplyID}
-              onChange={(event) => setSelectedSupplyID(event.target.value)}
-              className="min-w-[220px] rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-              disabled={!availableSupplies.length}
-            >
-              {availableSupplies.length === 0 ? (
-                <option value="">No available supplies to link</option>
-              ) : (
-                availableSupplies.map((supply) => (
-                  <option key={supply.supplyID} value={supply.supplyID}>
-                    {supply.supplyID} — {supply.name}
-                  </option>
-                ))
-              )}
-            </select>
-
-            <Button
-              type="button"
-              variant="secondary"
-              isLoading={linkMutation.isPending}
-              disabled={!selectedSupplyID}
-              onClick={() => linkMutation.mutate(selectedSupplyID)}
-            >
-              Link Supply
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setIsLinkModalOpen(true)}
+          >
+            Link Supply with Pricing
+          </Button>
         </section>
 
         <div className="flex flex-wrap gap-3">
@@ -471,6 +419,15 @@ export default function SupplierDetailPage() {
           </Button>
         </div>
       </form>
+
+      <LinkSupplyModal
+        isOpen={isLinkModalOpen}
+        supplierID={supplierID}
+        supplierObjectId={supplier?._id ?? ""}
+        linkedSupplies={linkedSupplyIds}
+        onClose={() => setIsLinkModalOpen(false)}
+        onSuccess={() => invalidateSupplierQueries()}
+      />
     </PageLayout>
   );
 }
