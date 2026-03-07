@@ -38,6 +38,7 @@ Core capabilities:
 - Update supply status
 - Delete supply items
 - Manage supplier pricing per supply item
+- Link suppliers to supplies with pricing in a single flow
 
 ---
 
@@ -49,6 +50,9 @@ Core capabilities:
 - Public health/probe endpoints in module routers:
   - `GET /api/supplier/hello`
   - `GET /api/supply/hello`
+
+Additional relation endpoint:
+- `POST /api/supply/:supplyID/link-supplier`
 
 ---
 
@@ -123,14 +127,15 @@ Key fields:
 | PATCH | `/:supplierID` | Yes | Update supplier profile | Implemented |
 | PATCH | `/:supplierID/status` | Yes | Update supplier status | Implemented |
 | DELETE | `/:supplierID` | Yes | Delete supplier | Implemented |
-| GET | `/:supplierID/supplies` | Yes | Get supplies of a supplier | Declared but not implemented |
-| POST | `/:supplierID/supplies` | Yes | Add supply to supplier | Declared but not implemented |
-| DELETE | `/:supplierID/supplies/:supplyID` | Yes | Remove supply from supplier | Declared but not implemented |
+| GET | `/:supplierID/supplies` | Yes | Get supplies of a supplier | Implemented |
+| POST | `/:supplierID/supplies` | Yes | Add supply to supplier | Implemented |
+| DELETE | `/:supplierID/supplies/:supplyID` | Yes | Remove supply from supplier | Implemented |
 
 Notes:
 - Duplicate `supplierID` on create returns `400`.
 - `GET /` returns `404` when no suppliers exist.
 - Search requires `query` string; missing query returns `400`.
+- Supplier-supply link endpoints validate both supplier and supply existence and return relationship-aware responses.
 
 ---
 
@@ -146,6 +151,7 @@ Notes:
 | PATCH | `/:supplyID/status` | Yes | Update supply status | Implemented |
 | DELETE | `/:supplyID` | Yes | Delete supply item | Implemented |
 | GET | `/:supplyID/suppliers` | Yes | List suppliers linked to supply | Implemented |
+| POST | `/:supplyID/link-supplier` | Yes | Link supplier to supply with pricing | Implemented |
 | POST | `/:supplyID/supplier-pricing` | Yes | Add supplier pricing record | Implemented |
 | PATCH | `/:supplyID/supplier-pricing/:supplier` | Yes | Update supplier pricing record | Implemented |
 | DELETE | `/:supplyID/supplier-pricing/:supplier` | Yes | Remove supplier pricing record | Implemented |
@@ -153,6 +159,7 @@ Notes:
 Notes:
 - `checkSupplyExists` middleware validates `:supplyID` and attaches `req.supply`.
 - Generic supply update rejects `supplyID` updates.
+- Creating/deleting supplies synchronizes reverse supplier linkage (`supplier.supplies`) from `supplierPricing` references.
 
 ---
 
@@ -182,11 +189,12 @@ Supplier controller responses are also JSON with `message`, usually with `data`.
 
 ## 9) Known Gaps / Current Limitations
 
-1. Supplier-supply nested endpoints under `/api/supplier/:supplierID/supplies` are currently placeholders and do not send responses.
-2. `PATCH /api/supply/:supplyID/status` does not use explicit request validation middleware in route layer.
-3. Search behavior differs between modules:
+1. `PATCH /api/supply/:supplyID/status` does not use explicit request validation middleware in route layer.
+2. Search behavior differs between modules:
    - Supplier search returns `400` when query is missing.
    - Supply search returns `200` with empty list when query is missing.
+3. Supply create still depends on caller-provided `supplyID`; frontend currently computes the next ID client-side.
+4. Supplier create still depends on caller-provided `supplierID`; frontend currently computes the next ID client-side.
 
 ---
 
@@ -258,3 +266,16 @@ Main implementation files:
 - `backend/src/models/supplyModel.ts`
 - `backend/src/validators/supplierValidator.ts`
 - `backend/src/validators/supplyValidator.ts`
+
+---
+
+## 12) Frontend Integration Notes (Current)
+
+Current frontend implementation in `frontend/` aligns with this module as follows:
+
+- Create forms auto-compute the next `supplierID` / `supplyID` and render those ID fields as read-only.
+- Supplier and supply list screens currently use in-memory client-side search/filter over fetched datasets.
+- Supplier detail shows linked supply context (`supplyID`, name, unit measure, status, and pricing values when available).
+- Supply detail pricing tables prioritize business identifiers (`supplierID` and supplier name) over raw MongoDB ObjectIds.
+- Linking modals require pricing fields (`unitQuantity`, `unitPrice`, computed `price`, and `priceValidity`) before submit.
+- Frontend keeps a safe fallback path for supplier-side link/unlink by patching `supplier.supplies` when nested route calls fail.
