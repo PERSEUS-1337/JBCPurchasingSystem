@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Spinner } from "@/components/ui/Spinner";
 import { Table } from "@/components/ui/Table";
 import { HttpError } from "@/lib/api/client";
-import { getAllSuppliers, searchSuppliers, updateSupplierStatus } from "@/lib/api/suppliers";
+import { getAllSuppliers, updateSupplierStatus } from "@/lib/api/suppliers";
 import { Supplier, SupplierStatus } from "@/lib/types/supplier";
 
 function getStatusTone(status?: SupplierStatus) {
@@ -22,19 +22,11 @@ function getStatusTone(status?: SupplierStatus) {
 export default function SuppliersPage() {
   const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    const handler = window.setTimeout(() => {
-      setSearchTerm(searchInput.trim());
-    }, 350);
-
-    return () => window.clearTimeout(handler);
-  }, [searchInput]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const suppliersQuery = useQuery({
-    queryKey: ["suppliers", searchTerm],
-    queryFn: () => (searchTerm ? searchSuppliers(searchTerm) : getAllSuppliers()),
+    queryKey: ["suppliers"],
+    queryFn: getAllSuppliers,
   });
 
   const statusMutation = useMutation({
@@ -60,6 +52,77 @@ export default function SuppliersPage() {
 
     return suppliersQuery.data.data;
   }, [suppliersQuery.data]);
+
+  const availableTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const supplier of suppliers) {
+      for (const tag of supplier.tags ?? []) {
+        if (tag.trim()) {
+          tagSet.add(tag.trim());
+        }
+      }
+    }
+
+    return Array.from(tagSet).sort((left, right) => left.localeCompare(right));
+  }, [suppliers]);
+
+  const matchesSupplierSearch = (supplier: Supplier, normalizedSearch: string) => {
+    if (!normalizedSearch) {
+      return true;
+    }
+
+    return [
+      supplier.supplierID,
+      supplier.name,
+      supplier.address,
+      supplier.primaryTag,
+      ...(supplier.tags ?? []),
+    ]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(normalizedSearch));
+  };
+
+  const filteredSuppliers = useMemo(() => {
+    const normalizedSearch = searchInput.trim().toLowerCase();
+
+    return suppliers.filter((supplier) => {
+      const matchesSearch = matchesSupplierSearch(supplier, normalizedSearch);
+
+      const matchesSelectedTags =
+        selectedTags.length === 0 || selectedTags.every((tag) => (supplier.tags ?? []).includes(tag));
+
+      return matchesSearch && matchesSelectedTags;
+    });
+  }, [searchInput, selectedTags, suppliers]);
+
+  const availableTagSelectionMap = useMemo(() => {
+    const normalizedSearch = searchInput.trim().toLowerCase();
+    const map = new Map<string, boolean>();
+
+    for (const tag of availableTags) {
+      if (selectedTags.includes(tag)) {
+        map.set(tag, true);
+        continue;
+      }
+
+      const hypotheticalTags = [...selectedTags, tag];
+      const hasResults = suppliers.some((supplier) => {
+        const matchesSearch = matchesSupplierSearch(supplier, normalizedSearch);
+        const matchesTags = hypotheticalTags.every((item) => (supplier.tags ?? []).includes(item));
+        return matchesSearch && matchesTags;
+      });
+
+      map.set(tag, hasResults);
+    }
+
+    return map;
+  }, [availableTags, searchInput, selectedTags, suppliers]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((previous) =>
+      previous.includes(tag) ? previous.filter((item) => item !== tag) : [...previous, tag],
+    );
+  };
 
   const isNotFound = suppliersQuery.error instanceof HttpError && suppliersQuery.error.status === 404;
 
@@ -93,16 +156,51 @@ export default function SuppliersPage() {
         <input
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
-          placeholder="Search by supplier name, tag, email, or contact"
+          placeholder="Search by supplier name, ID, tags, or address"
           className="w-full max-w-xl rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
         />
-        {searchTerm ? (
+        <details className="relative">
+          <summary className="cursor-pointer list-none rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700">
+            Filter Tags {selectedTags.length > 0 ? `(${selectedTags.length})` : ""}
+          </summary>
+          <div className="absolute z-20 mt-2 w-72 rounded-md border border-neutral-200 bg-white p-3 shadow-sm">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">Available Tags</p>
+            <div className="max-h-56 space-y-2 overflow-auto">
+              {availableTags.length === 0 ? (
+                <p className="text-xs text-neutral-500">No tags available.</p>
+              ) : (
+                availableTags.map((tag) => (
+                  <label key={tag} className="flex items-center gap-2 text-sm text-neutral-700">
+                    <input
+                      type="checkbox"
+                      checked={selectedTags.includes(tag)}
+                      onChange={() => toggleTag(tag)}
+                      disabled={!availableTagSelectionMap.get(tag)}
+                      className="h-4 w-4 rounded border-neutral-300"
+                    />
+                    <span className={!availableTagSelectionMap.get(tag) ? "text-neutral-400" : ""}>{tag}</span>
+                  </label>
+                ))
+              )}
+            </div>
+            {selectedTags.length > 0 ? (
+              <button
+                type="button"
+                className="mt-3 text-xs text-neutral-700 underline underline-offset-2"
+                onClick={() => setSelectedTags([])}
+              >
+                Clear tag filters
+              </button>
+            ) : null}
+          </div>
+        </details>
+        {searchInput || selectedTags.length > 0 ? (
           <Button
             type="button"
             variant="ghost"
             onClick={() => {
               setSearchInput("");
-              setSearchTerm("");
+              setSelectedTags([]);
             }}
           >
             Clear
@@ -211,12 +309,12 @@ export default function SuppliersPage() {
               },
             },
           ]}
-          data={suppliers}
+          data={filteredSuppliers}
           rowKey={(row) => row.supplierID}
           emptyContent={
             <EmptyState
-              title="No suppliers yet"
-              description="Create your first supplier to start building master data."
+              title="No suppliers found"
+              description="Try different search text or filter selections."
             />
           }
         />
