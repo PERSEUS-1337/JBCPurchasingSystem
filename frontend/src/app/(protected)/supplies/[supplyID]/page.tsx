@@ -10,6 +10,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SheetTable } from "@/components/ui/SheetTable";
 import { Spinner } from "@/components/ui/Spinner";
 import { LinkSupplierModal } from "@/components/LinkSupplierModal";
 import { HttpError } from "@/lib/api/client";
@@ -96,6 +97,16 @@ export default function SupplyDetailPage() {
     const map = new Map<string, string>();
     for (const supplier of suppliersQuery.data?.data ?? []) {
       map.set(supplier._id ?? "", `${supplier.supplierID} — ${supplier.name}`);
+    }
+    return map;
+  }, [suppliersQuery.data]);
+
+  const supplierRouteIdMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const supplier of suppliersQuery.data?.data ?? []) {
+      if (supplier._id) {
+        map.set(supplier._id, supplier.supplierID);
+      }
     }
     return map;
   }, [suppliersQuery.data]);
@@ -195,10 +206,6 @@ export default function SupplyDetailPage() {
     }
 
     updateMutation.mutate();
-  };
-
-  const updateEditablePricing = (index: number, value: Partial<PricingFormState>) => {
-    setEditablePricing((prev) => prev.map((item, idx) => (idx === index ? { ...item, ...value } : item)));
   };
 
   if (supplyQuery.isLoading) {
@@ -325,100 +332,126 @@ export default function SupplyDetailPage() {
         <section className="space-y-3 rounded-md border border-neutral-200 p-4">
           <h2 className="text-base font-semibold text-neutral-900">Supplier Pricing</h2>
 
-          {supply.supplierPricing.length === 0 ? (
+          {editablePricing.length === 0 ? (
             <EmptyState title="No supplier pricing" description="Add supplier pricing to make this supply purchasable." />
           ) : (
-            <ul className="space-y-2">
-              {editablePricing.map((pricing, index) => (
-                <li key={`${pricing.supplier}-${index}`} className="space-y-2 rounded-md border border-neutral-200 p-3">
-                  <p className="text-sm font-medium text-neutral-900">
-                    Supplier: {supplierNameMap.get(pricing.supplier) ?? "Unknown supplier"}
-                  </p>
-                  <p className="text-xs text-neutral-500">
-                    Supplier record linked by internal ID in pricing backend mapping.
-                  </p>
-                  <div className="grid gap-2 md:grid-cols-4">
-                    <label className="space-y-1 text-xs text-neutral-600">
-                      <span className="block">Unit Quantity</span>
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={pricing.unitQuantity}
-                        onChange={(event) =>
-                          updateEditablePricing(index, { unitQuantity: Number(event.target.value) })
-                        }
-                        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-                      />
-                    </label>
-                    <label className="space-y-1 text-xs text-neutral-600">
-                      <span className="block">Unit Price</span>
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={pricing.unitPrice}
-                        onChange={(event) => updateEditablePricing(index, { unitPrice: Number(event.target.value) })}
-                        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-                      />
-                    </label>
-                    <label className="space-y-1 text-xs text-neutral-600">
-                      <span className="block">Total Price</span>
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={pricing.price}
-                        onChange={(event) => updateEditablePricing(index, { price: Number(event.target.value) })}
-                        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-                      />
-                    </label>
-                    <label className="space-y-1 text-xs text-neutral-600">
-                      <span className="block">Price Validity Date</span>
-                      <input
-                        type="date"
-                        value={pricing.priceValidity.slice(0, 10)}
-                        onChange={(event) => updateEditablePricing(index, { priceValidity: event.target.value })}
-                        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-                      />
-                    </label>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      isLoading={updatePricingMutation.isPending}
-                      onClick={() => {
-                        if (pricing.price !== pricing.unitPrice * pricing.unitQuantity) {
-                          toast.error("Pricing must satisfy price = unitPrice × unitQuantity");
-                          return;
-                        }
+            <SheetTable
+              columns={[
+                {
+                  key: "supplier",
+                  header: "Supplier",
+                  render: (pricing) => (
+                    <div className="min-w-[220px]">
+                      <p className="font-medium text-neutral-900">{supplierNameMap.get(pricing.supplier) ?? "Unknown supplier"}</p>
+                      <p className="text-xs text-neutral-500">{pricing.supplier}</p>
+                    </div>
+                  ),
+                },
+                {
+                  key: "unitQuantity",
+                  header: "Qty",
+                  render: (pricing) => pricing.unitQuantity,
+                },
+                {
+                  key: "unitPrice",
+                  header: "Unit Price",
+                  render: (pricing) => pricing.unitPrice,
+                },
+                {
+                  key: "price",
+                  header: "Total Price",
+                  render: (pricing) => pricing.price,
+                },
+                {
+                  key: "priceValidity",
+                  header: "Valid Until",
+                  render: (pricing) => pricing.priceValidity.slice(0, 10),
+                },
+                {
+                  key: "actions",
+                  header: "Actions",
+                  render: (pricing) => {
+                    const supplierRouteId = supplierRouteIdMap.get(pricing.supplier) ?? pricing.supplier;
 
-                        updatePricingMutation.mutate({
-                          supplier: pricing.supplier,
-                          price: pricing.price,
-                          unitPrice: pricing.unitPrice,
-                          unitQuantity: pricing.unitQuantity,
-                          priceValidity: pricing.priceValidity,
-                        });
-                      }}
-                    >
-                      Update
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      isLoading={removePricingMutation.isPending}
-                      onClick={() => removePricingMutation.mutate(pricing.supplier)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                    return (
+                      <div className="flex min-w-[240px] flex-wrap gap-2">
+                        <Link href={`/suppliers/${supplierRouteId}`}>
+                          <Button type="button" size="sm" variant="ghost">Info</Button>
+                        </Link>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          isLoading={updatePricingMutation.isPending}
+                          onClick={() => {
+                            const nextUnitQuantityInput = window.prompt(
+                              "Enter unit quantity",
+                              `${pricing.unitQuantity}`,
+                            );
+                            if (nextUnitQuantityInput === null) {
+                              return;
+                            }
+
+                            const nextUnitPriceInput = window.prompt(
+                              "Enter unit price",
+                              `${pricing.unitPrice}`,
+                            );
+                            if (nextUnitPriceInput === null) {
+                              return;
+                            }
+
+                            const nextPriceValidityInput = window.prompt(
+                              "Enter price validity date (YYYY-MM-DD)",
+                              pricing.priceValidity.slice(0, 10),
+                            );
+                            if (nextPriceValidityInput === null) {
+                              return;
+                            }
+
+                            const nextUnitQuantity = Number.parseFloat(nextUnitQuantityInput);
+                            const nextUnitPrice = Number.parseFloat(nextUnitPriceInput);
+                            const nextPriceValidity = nextPriceValidityInput.trim();
+
+                            if (!Number.isFinite(nextUnitQuantity) || !Number.isFinite(nextUnitPrice)) {
+                              toast.error("Unit quantity and unit price must be valid numbers");
+                              return;
+                            }
+
+                            if (!nextPriceValidity) {
+                              toast.error("Price validity date is required");
+                              return;
+                            }
+
+                            const nextPrice = Number((nextUnitQuantity * nextUnitPrice).toFixed(2));
+
+                            updatePricingMutation.mutate({
+                              supplier: pricing.supplier,
+                              price: nextPrice,
+                              unitPrice: nextUnitPrice,
+                              unitQuantity: nextUnitQuantity,
+                              priceValidity: nextPriceValidity,
+                            });
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          isLoading={removePricingMutation.isPending}
+                          onClick={() => removePricingMutation.mutate(pricing.supplier)}
+                        >
+                          Unlink
+                        </Button>
+                      </div>
+                    );
+                  },
+                },
+              ]}
+              data={editablePricing}
+              rowKey={(row, index) => `${row.supplier}-${index}`}
+            />
           )}
 
           <Button

@@ -10,10 +10,11 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SheetTable } from "@/components/ui/SheetTable";
 import { Spinner } from "@/components/ui/Spinner";
 import { LinkSupplyModal } from "@/components/LinkSupplyModal";
 import { HttpError } from "@/lib/api/client";
-import { getAllSupplies } from "@/lib/api/supplies";
+import { getAllSupplies, updateSupplierPricing } from "@/lib/api/supplies";
 import {
   deleteSupplier,
   getSupplierById,
@@ -96,6 +97,24 @@ export default function SupplierDetailPage() {
     return allSupplies.filter((supply) => linked.has(supply.supplyID));
   }, [suppliesQuery.data, supplier?.supplies]);
 
+  const linkedSuppliesWithPricing = useMemo(() => {
+    const supplierObjectId = supplier?._id;
+
+    return linkedSupplies.map((linkedSupply) => {
+      const pricing = linkedSupply.supplierPricing.find(
+        (item) => item.supplier === supplierObjectId,
+      );
+
+      return {
+        ...linkedSupply,
+        linkedPrice: pricing?.price,
+        linkedUnitPrice: pricing?.unitPrice,
+        linkedUnitQuantity: pricing?.unitQuantity,
+        linkedPriceValidity: pricing?.priceValidity,
+      };
+    });
+  }, [linkedSupplies, supplier?._id]);
+
   const linkedSupplyIds = useMemo(() => new Set(supplier?.supplies ?? []), [supplier?.supplies]);
 
   const invalidateSupplierQueries = () => {
@@ -163,6 +182,47 @@ export default function SupplierDetailPage() {
         toast.error(error.message);
       } else {
         toast.error("Failed to unlink supply");
+      }
+    },
+  });
+
+  const updateLinkedSupplyPricingMutation = useMutation({
+    mutationFn: ({
+      supplyID,
+      unitQuantity,
+      unitPrice,
+      priceValidity,
+    }: {
+      supplyID: string;
+      unitQuantity: number;
+      unitPrice: number;
+      priceValidity: string;
+    }) => {
+      const supplierObjectId = supplier?._id;
+
+      if (!supplierObjectId) {
+        throw new Error("Supplier reference is missing");
+      }
+
+      const totalPrice = Number((unitQuantity * unitPrice).toFixed(2));
+
+      return updateSupplierPricing(supplyID, supplierObjectId, {
+        unitQuantity,
+        unitPrice,
+        priceValidity,
+        price: totalPrice,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Linked supply pricing updated");
+      invalidateSupplierQueries();
+      queryClient.invalidateQueries({ queryKey: ["supplies"] });
+    },
+    onError: (error) => {
+      if (error instanceof HttpError) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to update linked supply pricing");
       }
     },
   });
@@ -369,31 +429,116 @@ export default function SupplierDetailPage() {
               description="Select a supply below to start linking supplier and supply records."
             />
           ) : (
-            <ul className="space-y-2">
-              {linkedSupplies.map((linkedSupply) => (
-                <li key={linkedSupply.supplyID} className="rounded-md border border-neutral-200 px-3 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <Link href={`/supplies/${linkedSupply.supplyID}`} className="text-sm font-medium text-neutral-900 underline underline-offset-2">
-                        {linkedSupply.name}
+            <SheetTable
+              columns={[
+                { key: "supplyID", header: "ID", render: (row) => row.supplyID },
+                {
+                  key: "name",
+                  header: "Name",
+                  render: (row) => (
+                    <Link href={`/supplies/${row.supplyID}`} className="font-medium text-neutral-900 underline underline-offset-2">
+                      {row.name}
+                    </Link>
+                  ),
+                },
+                {
+                  key: "description",
+                  header: "Description",
+                  render: (row) => <span className="block max-w-[260px] whitespace-normal break-words">{row.description}</span>,
+                },
+                { key: "unit", header: "UOM", render: (row) => row.unitMeasure },
+                {
+                  key: "price",
+                  header: "Price",
+                  render: (row) => (row.linkedPrice === undefined ? "-" : row.linkedPrice),
+                },
+                {
+                  key: "status",
+                  header: "Status",
+                  render: (row) => <Badge tone={(row.status ?? "Active") === "Inactive" ? "muted" : "success"}>{row.status ?? "Active"}</Badge>,
+                },
+                {
+                  key: "actions",
+                  header: "Actions",
+                  render: (row) => (
+                    <div className="flex min-w-[240px] flex-wrap gap-2">
+                      <Link href={`/supplies/${row.supplyID}`}>
+                        <Button type="button" size="sm" variant="ghost">Info</Button>
                       </Link>
-                      <p className="text-xs text-neutral-600">
-                        Supply ID: {linkedSupply.supplyID} · Unit: {linkedSupply.unitMeasure} · Status: {linkedSupply.status ?? "Active"}
-                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        isLoading={updateLinkedSupplyPricingMutation.isPending}
+                        onClick={() => {
+                          const currentUnitQuantity = row.linkedUnitQuantity ?? 1;
+                          const currentUnitPrice = row.linkedUnitPrice ?? 0;
+                          const currentValidity = row.linkedPriceValidity?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
+
+                          const nextUnitQuantityInput = window.prompt(
+                            "Enter unit quantity",
+                            `${currentUnitQuantity}`,
+                          );
+                          if (nextUnitQuantityInput === null) {
+                            return;
+                          }
+
+                          const nextUnitPriceInput = window.prompt(
+                            "Enter unit price",
+                            `${currentUnitPrice}`,
+                          );
+                          if (nextUnitPriceInput === null) {
+                            return;
+                          }
+
+                          const nextValidityInput = window.prompt(
+                            "Enter price validity date (YYYY-MM-DD)",
+                            currentValidity,
+                          );
+                          if (nextValidityInput === null) {
+                            return;
+                          }
+
+                          const nextUnitQuantity = Number.parseFloat(nextUnitQuantityInput);
+                          const nextUnitPrice = Number.parseFloat(nextUnitPriceInput);
+                          const nextValidity = nextValidityInput.trim();
+
+                          if (!Number.isFinite(nextUnitQuantity) || !Number.isFinite(nextUnitPrice)) {
+                            toast.error("Unit quantity and unit price must be valid numbers");
+                            return;
+                          }
+
+                          if (!nextValidity) {
+                            toast.error("Price validity date is required");
+                            return;
+                          }
+
+                          updateLinkedSupplyPricingMutation.mutate({
+                            supplyID: row.supplyID,
+                            unitQuantity: nextUnitQuantity,
+                            unitPrice: nextUnitPrice,
+                            priceValidity: nextValidity,
+                          });
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        isLoading={unlinkMutation.isPending}
+                        onClick={() => unlinkMutation.mutate(row.supplyID)}
+                      >
+                        Unlink
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      isLoading={unlinkMutation.isPending}
-                      onClick={() => unlinkMutation.mutate(linkedSupply.supplyID)}
-                    >
-                      Unlink
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  ),
+                },
+              ]}
+              data={linkedSuppliesWithPricing}
+              rowKey={(row) => row.supplyID}
+            />
           )}
 
           <Button

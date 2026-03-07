@@ -21,6 +21,12 @@ type LinkSupplyModalProps = {
   onSuccess: () => void;
 };
 
+function getDefaultValidityDate() {
+  const date = new Date();
+  date.setDate(date.getDate() + 30);
+  return date.toISOString().slice(0, 10);
+}
+
 export function LinkSupplyModal({
   isOpen,
   supplierObjectId,
@@ -29,12 +35,11 @@ export function LinkSupplyModal({
   onSuccess,
 }: LinkSupplyModalProps) {
   const [selectedSupply, setSelectedSupply] = useState("");
-  const [price, setPrice] = useState(0);
   const [unitQuantity, setUnitQuantity] = useState(1);
   const [unitPrice, setUnitPrice] = useState(0);
-  const [priceValidity, setPriceValidity] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
+  const [priceValidity, setPriceValidity] = useState(getDefaultValidityDate());
+
+  const totalPrice = Number((unitQuantity * unitPrice).toFixed(2));
 
   const suppliesQuery = useQuery({
     queryKey: ["supplies", "for-linking"],
@@ -52,7 +57,7 @@ export function LinkSupplyModal({
     mutationFn: (supplyID: string) =>
       linkSupplierWithPricing(supplyID, {
         supplier: supplierObjectId,
-        price,
+        price: totalPrice,
         priceValidity,
         unitQuantity,
         unitPrice,
@@ -74,10 +79,9 @@ export function LinkSupplyModal({
 
   const handleReset = () => {
     setSelectedSupply("");
-    setPrice(0);
     setUnitQuantity(1);
     setUnitPrice(0);
-    setPriceValidity(new Date().toISOString().slice(0, 10));
+    setPriceValidity(getDefaultValidityDate());
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -85,11 +89,6 @@ export function LinkSupplyModal({
 
     if (!selectedSupply) {
       toast.error("Please select a supply");
-      return;
-    }
-
-    if (price !== unitPrice * unitQuantity) {
-      toast.error("Pricing must satisfy price = unitPrice × unitQuantity");
       return;
     }
 
@@ -132,6 +131,10 @@ export function LinkSupplyModal({
           </div>
         ) : (
           <>
+            <p className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
+              Default price validity is set to 30 days from today. You can still reduce or extend this date.
+            </p>
+
             <div>
               <label className="mb-1 block text-sm font-medium text-neutral-700">
                 Supply
@@ -197,10 +200,9 @@ export function LinkSupplyModal({
                   type="number"
                   min={0}
                   step="0.01"
-                  value={price}
-                  onChange={(event) => setPrice(Number(event.target.value))}
-                  required
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+                  value={totalPrice}
+                  disabled
+                  className="w-full rounded-md border border-neutral-200 bg-neutral-100 px-3 py-2 text-sm"
                 />
               </div>
 
@@ -218,9 +220,7 @@ export function LinkSupplyModal({
               </div>
             </div>
 
-            <p className="text-xs text-neutral-500">
-              Note: Total Price must equal Unit Price × Unit Quantity
-            </p>
+            <p className="text-xs text-neutral-500">Total Price is automatically computed as Unit Price × Unit Quantity.</p>
           </>
         )}
       </form>

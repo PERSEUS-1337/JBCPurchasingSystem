@@ -130,6 +130,61 @@ export default function SuppliersPage() {
             { key: "name", header: "Name", render: (row) => row.name },
             { key: "primaryTag", header: "Primary Tag", render: (row) => row.primaryTag },
             {
+              key: "tags",
+              header: "Tags",
+              cellClassName: "whitespace-normal",
+              render: (row) => (
+                <div className="flex max-w-[260px] flex-wrap gap-1">
+                  {(row.tags ?? []).map((tag) => (
+                    <span
+                      key={`${row.supplierID}-${tag}`}
+                      className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700 break-words"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ),
+            },
+            {
+              key: "address",
+              header: "Address",
+              cellClassName: "whitespace-normal",
+              render: (row) => <span className="block max-w-[260px] break-words">{row.address}</span>,
+            },
+            {
+              key: "contactNumbers",
+              header: "Contact Numbers",
+              cellClassName: "whitespace-normal",
+              render: (row) => (
+                <div className="max-w-[220px] space-y-1">
+                  {(row.contactNumbers ?? []).map((contact) => (
+                    <p key={`${row.supplierID}-${contact}`} className="break-words text-xs text-neutral-700">
+                      {contact}
+                    </p>
+                  ))}
+                </div>
+              ),
+            },
+            {
+              key: "emails",
+              header: "Emails",
+              cellClassName: "whitespace-normal",
+              render: (row) => (
+                <div className="max-w-[240px] space-y-1">
+                  {(row.emails ?? []).length === 0 ? (
+                    <p className="text-xs text-neutral-500">-</p>
+                  ) : (
+                    (row.emails ?? []).map((email) => (
+                      <p key={`${row.supplierID}-${email}`} className="break-words text-xs text-neutral-700">
+                        {email}
+                      </p>
+                    ))
+                  )}
+                </div>
+              ),
+            },
+            {
               key: "status",
               header: "Status",
               render: (row) => <Badge tone={getStatusTone(row.status)}>{row.status ?? "Active"}</Badge>,

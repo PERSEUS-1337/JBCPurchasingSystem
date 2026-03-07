@@ -138,16 +138,16 @@ Key fields:
 
 ## 6) Purchase Request API Endpoints
 
-| Method | Route                 | Auth | Description                                                   | Status      |
-| ------ | --------------------- | ---- | ------------------------------------------------------------- | ----------- |
-| GET    | `/`                   | Yes  | Get all PRs with optional filters (`status`, `requestedBy`, `projCode`, `page`, `limit`) | Implemented |
-| GET    | `/:prID`              | Yes  | Get PR by `prID`                                              | Implemented |
-| POST   | `/`                   | Yes  | Create PR                                                     | Implemented |
-| PUT    | `/:prID`              | Yes  | Update PR fields (except restricted fields)                  | Implemented |
-| PATCH  | `/:prID/status`       | Yes  | Update PR status with transition guardrails                   | Implemented |
-| PATCH  | `/:prID/cancel`       | Yes  | Cancel PR with required cancellation reason                   | Implemented |
-| DELETE | `/:prID`              | Yes  | Delete PR and associated PR items                            | Implemented |
-| GET    | `/hello`              | No   | Public route check                                            | Implemented |
+| Method | Route           | Auth | Description                                                                              | Status      |
+| ------ | --------------- | ---- | ---------------------------------------------------------------------------------------- | ----------- |
+| GET    | `/`             | Yes  | Get all PRs with optional filters (`status`, `requestedBy`, `projCode`, `page`, `limit`) | Implemented |
+| GET    | `/:prID`        | Yes  | Get PR by `prID`                                                                         | Implemented |
+| POST   | `/`             | Yes  | Create PR                                                                                | Implemented |
+| PUT    | `/:prID`        | Yes  | Update PR fields (except restricted fields)                                              | Implemented |
+| PATCH  | `/:prID/status` | Yes  | Update PR status with transition guardrails                                              | Implemented |
+| PATCH  | `/:prID/cancel` | Yes  | Cancel PR with required cancellation reason                                              | Implemented |
+| DELETE | `/:prID`        | Yes  | Delete PR and associated PR items                                                        | Implemented |
+| GET    | `/hello`        | No   | Public route check                                                                       | Implemented |
 
 Notes:
 
@@ -161,13 +161,13 @@ Notes:
 
 ## 7) PR Item API Endpoints (Nested under PR)
 
-| Method | Route              | Auth | Description                                | Status      |
-| ------ | ------------------ | ---- | ------------------------------------------ | ----------- |
-| GET    | `/:prID/items`     | Yes  | Get all items for a PR                     | Implemented |
-| POST   | `/:prID/items`     | Yes  | Add item to PR                             | Implemented |
-| PUT    | `/:prID/items/:itemID` | Yes  | Update one PR item by `prItemID`           | Implemented |
-| DELETE | `/:prID/items/:itemID` | Yes  | Remove one PR item by `prItemID`           | Implemented |
-| PUT    | `/:prID/items`     | Yes  | Bulk replace all items in a PR             | Implemented |
+| Method | Route                  | Auth | Description                      | Status      |
+| ------ | ---------------------- | ---- | -------------------------------- | ----------- |
+| GET    | `/:prID/items`         | Yes  | Get all items for a PR           | Implemented |
+| POST   | `/:prID/items`         | Yes  | Add item to PR                   | Implemented |
+| PUT    | `/:prID/items/:itemID` | Yes  | Update one PR item by `prItemID` | Implemented |
+| DELETE | `/:prID/items/:itemID` | Yes  | Remove one PR item by `prItemID` | Implemented |
+| PUT    | `/:prID/items`         | Yes  | Bulk replace all items in a PR   | Implemented |
 
 Notes:
 
@@ -217,16 +217,16 @@ List endpoint (`GET /api/pr`) currently returns:
 
 ## 9) Progress Snapshot vs `DOCS.md` (Section 4.2 PR Module)
 
-| Feature Code | Requirement (from `DOCS.md`) | Current Backend Status |
-| ------------ | ----------------------------- | ---------------------- |
-| `PR-101` | Create Purchase Request | **Implemented** (`POST /api/pr`) |
-| `PR-102` | Submit PR for Approval | **Implemented** (validated transition + item presence enforcement for submission) |
-| `PR-103` | Approval Workflow (recommended + approved path) | **Implemented (backend workflow guards)** (`recommendedBy`/`approvedBy` constraints + transition map) |
-| `PR-104` | Edit Pending PRs | **Implemented** (`PUT /api/pr/:prID` restricted to editable states) |
-| `PR-105` | Estimated Cost Control | **Implemented (backend derivation)** (`totalCost` kept in sync by item operations) |
-| `PR-106` | Item Proposal Flow (draft item review) | **Not Implemented** |
-| `PR-107` | PR Status Tracking + full audit trail | **Implemented (core backend audit trail)** (`changelog` for status/edit/item updates) |
-| `PR-108` | PO Linkback Notification | **Not Implemented** |
+| Feature Code | Requirement (from `DOCS.md`)                    | Current Backend Status                                                                                |
+| ------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `PR-101`     | Create Purchase Request                         | **Implemented** (`POST /api/pr`)                                                                      |
+| `PR-102`     | Submit PR for Approval                          | **Implemented** (validated transition + item presence enforcement for submission)                     |
+| `PR-103`     | Approval Workflow (recommended + approved path) | **Implemented (backend workflow guards)** (`recommendedBy`/`approvedBy` constraints + transition map) |
+| `PR-104`     | Edit Pending PRs                                | **Implemented** (`PUT /api/pr/:prID` restricted to editable states)                                   |
+| `PR-105`     | Estimated Cost Control                          | **Implemented (backend derivation)** (`totalCost` kept in sync by item operations)                    |
+| `PR-106`     | Item Proposal Flow (draft item review)          | **Not Implemented**                                                                                   |
+| `PR-107`     | PR Status Tracking + full audit trail           | **Implemented (core backend audit trail)** (`changelog` for status/edit/item updates)                 |
+| `PR-108`     | PO Linkback Notification                        | **Not Implemented**                                                                                   |
 
 ---
 

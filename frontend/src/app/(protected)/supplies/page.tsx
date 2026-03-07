@@ -120,6 +120,23 @@ export default function SuppliesPage() {
             ),
           },
           { key: "name", header: "Name", render: (row) => row.name },
+          {
+            key: "categories",
+            header: "Categories",
+            cellClassName: "whitespace-normal",
+            render: (row) => (
+              <div className="flex max-w-[260px] flex-wrap gap-1">
+                {(row.categories ?? []).map((category) => (
+                  <span
+                    key={`${row.supplyID}-${category}`}
+                    className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700 break-words"
+                  >
+                    {category}
+                  </span>
+                ))}
+              </div>
+            ),
+          },
           { key: "unitMeasure", header: "Unit", render: (row) => row.unitMeasure },
           {
             key: "status",
