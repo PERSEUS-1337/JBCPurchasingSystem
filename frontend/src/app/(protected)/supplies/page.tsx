@@ -113,13 +113,15 @@ export default function SuppliesPage() {
           {
             key: "supplyID",
             header: "Supply ID",
+            sortable: true,
+            sortValue: (row) => row.supplyID,
             render: (row) => (
               <Link href={`/supplies/${row.supplyID}`} className="text-neutral-900 underline underline-offset-2">
                 {row.supplyID}
               </Link>
             ),
           },
-          { key: "name", header: "Name", render: (row) => row.name },
+          { key: "name", header: "Name", sortable: true, sortValue: (row) => row.name, render: (row) => row.name },
           {
             key: "categories",
             header: "Categories",

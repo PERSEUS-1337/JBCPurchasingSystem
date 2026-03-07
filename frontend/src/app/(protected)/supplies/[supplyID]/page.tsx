@@ -93,10 +93,12 @@ export default function SupplyDetailPage() {
     );
   }, [supply]);
 
-  const supplierNameMap = useMemo(() => {
-    const map = new Map<string, string>();
+  const supplierDetailsMap = useMemo(() => {
+    const map = new Map<string, { supplierID: string; name: string }>();
     for (const supplier of suppliersQuery.data?.data ?? []) {
-      map.set(supplier._id ?? "", `${supplier.supplierID} — ${supplier.name}`);
+      if (supplier._id) {
+        map.set(supplier._id, { supplierID: supplier.supplierID, name: supplier.name });
+      }
     }
     return map;
   }, [suppliersQuery.data]);
@@ -338,28 +340,42 @@ export default function SupplyDetailPage() {
             <SheetTable
               columns={[
                 {
-                  key: "supplier",
-                  header: "Supplier",
+                  key: "supplierID",
+                  header: "Supplier ID",
+                  sortable: true,
+                  sortValue: (pricing) => supplierDetailsMap.get(pricing.supplier)?.supplierID ?? pricing.supplier,
+                  render: (pricing) => supplierDetailsMap.get(pricing.supplier)?.supplierID ?? "Unknown",
+                },
+                {
+                  key: "supplierName",
+                  header: "Supplier Name",
+                  sortable: true,
+                  sortValue: (pricing) => supplierDetailsMap.get(pricing.supplier)?.name ?? "",
                   render: (pricing) => (
-                    <div className="min-w-[220px]">
-                      <p className="font-medium text-neutral-900">{supplierNameMap.get(pricing.supplier) ?? "Unknown supplier"}</p>
-                      <p className="text-xs text-neutral-500">{pricing.supplier}</p>
-                    </div>
+                    <span className="font-medium text-neutral-900">
+                      {supplierDetailsMap.get(pricing.supplier)?.name ?? "Unknown supplier"}
+                    </span>
                   ),
                 },
                 {
                   key: "unitQuantity",
                   header: "Qty",
+                  sortable: true,
+                  sortValue: (pricing) => pricing.unitQuantity,
                   render: (pricing) => pricing.unitQuantity,
                 },
                 {
                   key: "unitPrice",
                   header: "Unit Price",
+                  sortable: true,
+                  sortValue: (pricing) => pricing.unitPrice,
                   render: (pricing) => pricing.unitPrice,
                 },
                 {
                   key: "price",
                   header: "Total Price",
+                  sortable: true,
+                  sortValue: (pricing) => pricing.price,
                   render: (pricing) => pricing.price,
                 },
                 {

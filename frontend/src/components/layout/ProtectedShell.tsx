@@ -23,11 +23,11 @@ export function ProtectedShell({ children }: ProtectedShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 md:flex">
+    <div className="min-h-screen bg-neutral-50 md:flex overflow-x-hidden">
       <Sidebar />
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <Header />
-        <main className="flex-1 px-4 py-6 md:px-8">{children}</main>
+        <main className="flex-1 min-w-0 overflow-x-hidden px-4 py-6 md:px-8">{children}</main>
       </div>
     </div>
   );

@@ -431,25 +431,44 @@ export default function SupplierDetailPage() {
           ) : (
             <SheetTable
               columns={[
-                { key: "supplyID", header: "ID", render: (row) => row.supplyID },
+                {
+                  key: "supplyID",
+                  header: "ID",
+                  sortable: true,
+                  sortValue: (row) => row.supplyID,
+                  render: (row) => row.supplyID,
+                },
                 {
                   key: "name",
                   header: "Name",
+                  sortable: true,
+                  sortValue: (row) => row.name,
                   render: (row) => (
                     <Link href={`/supplies/${row.supplyID}`} className="font-medium text-neutral-900 underline underline-offset-2">
                       {row.name}
                     </Link>
                   ),
                 },
-                {
-                  key: "description",
-                  header: "Description",
-                  render: (row) => <span className="block max-w-[260px] whitespace-normal break-words">{row.description}</span>,
-                },
                 { key: "unit", header: "UOM", render: (row) => row.unitMeasure },
                 {
+                  key: "qty",
+                  header: "Qty",
+                  sortable: true,
+                  sortValue: (row) => row.linkedUnitQuantity ?? 0,
+                  render: (row) => (row.linkedUnitQuantity === undefined ? "-" : row.linkedUnitQuantity),
+                },
+                {
+                  key: "unitPrice",
+                  header: "Unit Price",
+                  sortable: true,
+                  sortValue: (row) => row.linkedUnitPrice ?? 0,
+                  render: (row) => (row.linkedUnitPrice === undefined ? "-" : row.linkedUnitPrice),
+                },
+                {
                   key: "price",
-                  header: "Price",
+                  header: "Total Price",
+                  sortable: true,
+                  sortValue: (row) => row.linkedPrice ?? 0,
                   render: (row) => (row.linkedPrice === undefined ? "-" : row.linkedPrice),
                 },
                 {
