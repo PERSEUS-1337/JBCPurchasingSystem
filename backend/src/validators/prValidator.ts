@@ -54,7 +54,7 @@ const dateSchema = z
     },
     {
       message: "Invalid date format",
-    }
+    },
   )
   .transform((val) => (typeof val === "string" ? new Date(val) : val));
 
@@ -64,15 +64,17 @@ const basePRSchema = z.object({
   projCode: z.string().trim().min(1, "Project code is required"),
   projName: z.string().trim().min(1, "Project name is required"),
   projClient: z.string().trim().min(1, "Project client is required"),
-  dateRequested: dateSchema,
+  dateRequested: dateSchema.optional(),
   dateRequired: dateSchema,
   requestedBy: z.string().trim().min(1, "Requested by is required"),
   recommendedBy: z.string().trim().optional(),
-  approvedBy: z.string().trim().min(1, "Approved by is required"),
+  approvedBy: z.string().trim().optional(),
   prStatus: z.enum(prStatusEnums),
   itemsRequested: z.array(objectIdSchema).optional(),
   totalCost: z.number().min(0, "Total cost must be non-negative"),
   justification: z.string().trim().optional(),
+  rejectionReason: z.string().trim().optional(),
+  cancellationReason: z.string().trim().optional(),
 });
 
 // Full PR schema

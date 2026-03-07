@@ -2,6 +2,17 @@ import { Request, Response } from "express";
 import PurchaseRequest, { IPurchaseRequest } from "../models/prModel";
 import PRItem, { IPRItem } from "../models/prItemModel";
 import { sendResponse, sendError } from "../utils/responseUtils";
+import {
+  canDeletePR,
+  canEditPR,
+  PR_STATUS,
+  PRStatus,
+  validateStatusUpdateRules,
+} from "../validators/prStatusValidator";
+
+const getActorID = (req: Request): string => {
+  return req.user?.userID || req.user?.sub || "system";
+};
 
 // ===== PURCHASE REQUEST CONTROLLERS =====
 
@@ -10,7 +21,7 @@ import { sendResponse, sendError } from "../utils/responseUtils";
  */
 export const getAllPurchaseRequests = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { status, requestedBy, projCode, page = 1, limit = 10 } = req.query;
@@ -49,7 +60,7 @@ export const getAllPurchaseRequests = async (
       res,
       500,
       "Internal server error",
-      error instanceof Error ? error.message : "Unknown error"
+      error instanceof Error ? error.message : "Unknown error",
     );
   }
 };
@@ -59,7 +70,7 @@ export const getAllPurchaseRequests = async (
  */
 export const getPurchaseRequestByID = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     // Purchase request is already attached by the middleware
@@ -74,14 +85,14 @@ export const getPurchaseRequestByID = async (
       res,
       200,
       "Purchase request retrieved successfully",
-      populatedPR
+      populatedPR,
     );
   } catch (error) {
     sendError(
       res,
       500,
       "Internal server error",
-      error instanceof Error ? error.message : "Unknown error"
+      error instanceof Error ? error.message : "Unknown error",
     );
   }
 };
@@ -91,14 +102,14 @@ export const getPurchaseRequestByID = async (
  */
 export const createPurchaseRequest = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const purchaseRequestData: Partial<IPurchaseRequest> = req.body;
 
     // Check for duplicate prID
     const isDuplicate = await PurchaseRequest.checkDuplicatePR(
-      purchaseRequestData.prID!
+      purchaseRequestData.prID!,
     );
     if (isDuplicate) {
       sendError(res, 409, "Purchase request with this ID already exists");
@@ -115,7 +126,7 @@ export const createPurchaseRequest = async (
       res,
       500,
       "Internal server error",
-      error instanceof Error ? error.message : "Unknown error"
+      error instanceof Error ? error.message : "Unknown error",
     );
   }
 };
@@ -125,7 +136,7 @@ export const createPurchaseRequest = async (
  */
 export const updatePurchaseRequest = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const updateData = req.body;
@@ -137,10 +148,40 @@ export const updatePurchaseRequest = async (
       return;
     }
 
+    if (!canEditPR(purchaseRequest.prStatus as PRStatus)) {
+      sendError(
+        res,
+        400,
+        `Purchase request in status ${purchaseRequest.prStatus} is not editable`,
+      );
+      return;
+    }
+
+    const actorID = getActorID(req);
+
+    const previousValue: Record<string, unknown> = {};
+    Object.keys(updateData).forEach((key) => {
+      previousValue[key] = (purchaseRequest as any)[key];
+    });
+
+    const updateOperation: any = { $set: updateData };
+    if (purchaseRequest.prStatus !== PR_STATUS.DRAFT) {
+      updateOperation.$push = {
+        changelog: {
+          timestamp: new Date(),
+          changedBy: actorID,
+          changeType: "edit",
+          previousValue,
+          newValue: updateData,
+          description: "PR fields updated after submission",
+        },
+      };
+    }
+
     const updatedPR = await PurchaseRequest.findOneAndUpdate(
       { prID: purchaseRequest.prID },
-      updateData,
-      { new: true, runValidators: true }
+      updateOperation,
+      { new: true, runValidators: true },
     ).populate("itemsRequested");
 
     if (!updatedPR) {
@@ -154,7 +195,7 @@ export const updatePurchaseRequest = async (
       res,
       500,
       "Internal server error",
-      error instanceof Error ? error.message : "Unknown error"
+      error instanceof Error ? error.message : "Unknown error",
     );
   }
 };
@@ -164,20 +205,78 @@ export const updatePurchaseRequest = async (
  */
 export const updatePurchaseRequestStatus = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
-    const { prStatus, recommendedBy, approvedBy } = req.body;
+    const {
+      prStatus,
+      recommendedBy,
+      approvedBy,
+      rejectionReason,
+      cancellationReason,
+      changedBy,
+    } = req.body;
     const purchaseRequest = req.purchaseRequest!; // Purchase request is already attached by the middleware
+
+    const statusValidation = validateStatusUpdateRules(
+      purchaseRequest.prStatus as PRStatus,
+      {
+        prStatus,
+        recommendedBy,
+        approvedBy,
+        rejectionReason,
+        cancellationReason,
+        changedBy,
+      },
+      purchaseRequest.recommendedBy,
+    );
+
+    if (!statusValidation.valid) {
+      sendError(
+        res,
+        400,
+        statusValidation.error || "Invalid status transition",
+      );
+      return;
+    }
+
+    if (
+      prStatus === PR_STATUS.SUBMITTED &&
+      (!purchaseRequest.itemsRequested ||
+        purchaseRequest.itemsRequested.length === 0)
+    ) {
+      sendError(
+        res,
+        400,
+        "Purchase request must have at least one item before submission",
+      );
+      return;
+    }
 
     const updateData: any = { prStatus };
     if (recommendedBy) updateData.recommendedBy = recommendedBy;
     if (approvedBy) updateData.approvedBy = approvedBy;
+    if (rejectionReason) updateData.rejectionReason = rejectionReason;
+    if (cancellationReason) updateData.cancellationReason = cancellationReason;
+
+    const actorID = changedBy || getActorID(req);
 
     const updatedPR = await PurchaseRequest.findOneAndUpdate(
       { prID: purchaseRequest.prID },
-      updateData,
-      { new: true, runValidators: true }
+      {
+        $set: updateData,
+        $push: {
+          changelog: {
+            timestamp: new Date(),
+            changedBy: actorID,
+            changeType: "status",
+            previousValue: { prStatus: purchaseRequest.prStatus },
+            newValue: { prStatus, recommendedBy, approvedBy },
+            description: `Status changed from ${purchaseRequest.prStatus} to ${prStatus}`,
+          },
+        },
+      },
+      { new: true, runValidators: true },
     );
 
     if (!updatedPR) {
@@ -189,14 +288,89 @@ export const updatePurchaseRequestStatus = async (
       res,
       200,
       "Purchase request status updated successfully",
-      updatedPR
+      updatedPR,
     );
   } catch (error) {
     sendError(
       res,
       500,
       "Internal server error",
-      error instanceof Error ? error.message : "Unknown error"
+      error instanceof Error ? error.message : "Unknown error",
+    );
+  }
+};
+
+/**
+ * Cancel Purchase Request with mandatory reason
+ */
+export const cancelPurchaseRequest = async (req: Request, res: Response) => {
+  try {
+    const { cancellationReason, cancelledBy } = req.body;
+    const purchaseRequest = req.purchaseRequest!;
+
+    if (!cancellationReason || typeof cancellationReason !== "string") {
+      sendError(res, 400, "Cancellation reason is required");
+      return;
+    }
+
+    const statusValidation = validateStatusUpdateRules(
+      purchaseRequest.prStatus as PRStatus,
+      {
+        prStatus: PR_STATUS.CANCELLED,
+        cancellationReason,
+        changedBy: cancelledBy,
+      },
+      purchaseRequest.recommendedBy,
+    );
+
+    if (!statusValidation.valid) {
+      sendError(res, 400, statusValidation.error || "Invalid cancellation");
+      return;
+    }
+
+    const actorID = cancelledBy || getActorID(req);
+
+    const updatedPR = await PurchaseRequest.findOneAndUpdate(
+      { prID: purchaseRequest.prID },
+      {
+        $set: {
+          prStatus: PR_STATUS.CANCELLED,
+          cancellationReason,
+        },
+        $push: {
+          changelog: {
+            timestamp: new Date(),
+            changedBy: actorID,
+            changeType: "status",
+            previousValue: { prStatus: purchaseRequest.prStatus },
+            newValue: {
+              prStatus: PR_STATUS.CANCELLED,
+              cancellationReason,
+            },
+            description: `Purchase request cancelled from ${purchaseRequest.prStatus} status`,
+          },
+        },
+      },
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedPR) {
+      sendError(res, 500, "Internal server error");
+      return;
+    }
+
+    sendResponse(
+      res,
+      200,
+      "Purchase request cancelled successfully",
+      updatedPR,
+    );
+  } catch (error) {
+    sendError(
+      res,
+      500,
+      "Internal server error",
+      error instanceof Error ? error.message : "Unknown error",
     );
   }
 };
@@ -208,6 +382,15 @@ export const deletePurchaseRequest = async (req: Request, res: Response) => {
   try {
     const purchaseRequest = req.purchaseRequest!; // Purchase request is already attached by the middleware
 
+    if (!canDeletePR(purchaseRequest.prStatus as PRStatus)) {
+      sendError(
+        res,
+        400,
+        "Purchase request cannot be deleted once submitted; cancel it instead",
+      );
+      return;
+    }
+
     // Delete associated PR items first
     await PRItem.deleteMany({ prID: purchaseRequest.prID });
 
@@ -217,14 +400,14 @@ export const deletePurchaseRequest = async (req: Request, res: Response) => {
     sendResponse(
       res,
       200,
-      "Purchase request and associated items deleted successfully"
+      "Purchase request and associated items deleted successfully",
     );
   } catch (error) {
     sendError(
       res,
       500,
       "Internal server error",
-      error instanceof Error ? error.message : "Unknown error"
+      error instanceof Error ? error.message : "Unknown error",
     );
   }
 };
@@ -245,14 +428,14 @@ export const getPurchaseRequestItems = async (req: Request, res: Response) => {
       res,
       200,
       "Purchase request items retrieved successfully",
-      items
+      items,
     );
   } catch (error) {
     sendError(
       res,
       500,
       "Internal server error",
-      error instanceof Error ? error.message : "Unknown error"
+      error instanceof Error ? error.message : "Unknown error",
     );
   }
 };
@@ -263,6 +446,7 @@ export const getPurchaseRequestItems = async (req: Request, res: Response) => {
 export const addItemToPurchaseRequest = async (req: Request, res: Response) => {
   try {
     const purchaseRequest = req.purchaseRequest!; // Purchase request is already attached by the middleware
+
     const itemData: Partial<IPRItem> = {
       ...req.body,
       prID: purchaseRequest.prID,
@@ -272,27 +456,43 @@ export const addItemToPurchaseRequest = async (req: Request, res: Response) => {
     const newItem = new PRItem(itemData);
     const savedItem = await newItem.save();
 
+    const updateOperation: any = {
+      $push: { itemsRequested: savedItem._id },
+      $inc: { totalCost: savedItem.totalPrice },
+    };
+
+    if (purchaseRequest.prStatus !== PR_STATUS.DRAFT) {
+      updateOperation.$push = {
+        ...updateOperation.$push,
+        changelog: {
+          timestamp: new Date(),
+          changedBy: getActorID(req),
+          changeType: "item",
+          previousValue: null,
+          newValue: { prItemID: savedItem.prItemID },
+          description: "PR item added after submission",
+        },
+      };
+    }
+
     // Add item reference to purchase request
     await PurchaseRequest.findOneAndUpdate(
       { prID: purchaseRequest.prID },
-      {
-        $push: { itemsRequested: savedItem._id },
-        $inc: { totalCost: savedItem.totalPrice },
-      }
+      updateOperation,
     );
 
     sendResponse(
       res,
       201,
       "Item added to purchase request successfully",
-      savedItem
+      savedItem,
     );
   } catch (error) {
     sendError(
       res,
       500,
       "Internal server error",
-      error instanceof Error ? error.message : "Unknown error"
+      error instanceof Error ? error.message : "Unknown error",
     );
   }
 };
@@ -302,7 +502,7 @@ export const addItemToPurchaseRequest = async (req: Request, res: Response) => {
  */
 export const updatePurchaseRequestItem = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { itemID } = req.params;
@@ -321,11 +521,15 @@ export const updatePurchaseRequestItem = async (
 
     const oldTotalPrice = currentItem.totalPrice;
 
+    const nextQuantity = updateData.quantity ?? currentItem.quantity;
+    const nextUnitPrice = updateData.unitPrice ?? currentItem.unitPrice;
+    updateData.totalPrice = nextQuantity * nextUnitPrice;
+
     // Update the item
     const updatedItem = await PRItem.findOneAndUpdate(
       { prItemID: itemID, prID: purchaseRequest.prID },
       updateData,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!updatedItem) {
@@ -337,7 +541,33 @@ export const updatePurchaseRequestItem = async (
     const costDifference = updatedItem.totalPrice - oldTotalPrice;
     await PurchaseRequest.findOneAndUpdate(
       { prID: purchaseRequest.prID },
-      { $inc: { totalCost: costDifference } }
+      {
+        $inc: { totalCost: costDifference },
+        ...(purchaseRequest.prStatus !== PR_STATUS.DRAFT
+          ? {
+              $push: {
+                changelog: {
+                  timestamp: new Date(),
+                  changedBy: getActorID(req),
+                  changeType: "item",
+                  previousValue: {
+                    prItemID: itemID,
+                    quantity: currentItem.quantity,
+                    unitPrice: currentItem.unitPrice,
+                    totalPrice: oldTotalPrice,
+                  },
+                  newValue: {
+                    prItemID: updatedItem.prItemID,
+                    quantity: updatedItem.quantity,
+                    unitPrice: updatedItem.unitPrice,
+                    totalPrice: updatedItem.totalPrice,
+                  },
+                  description: "PR item updated after submission",
+                },
+              },
+            }
+          : {}),
+      },
     );
 
     sendResponse(res, 200, "Item updated successfully", updatedItem);
@@ -346,7 +576,7 @@ export const updatePurchaseRequestItem = async (
       res,
       500,
       "Internal server error",
-      error instanceof Error ? error.message : "Unknown error"
+      error instanceof Error ? error.message : "Unknown error",
     );
   }
 };
@@ -356,7 +586,7 @@ export const updatePurchaseRequestItem = async (
  */
 export const removeItemFromPurchaseRequest = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { itemID } = req.params;
@@ -379,7 +609,21 @@ export const removeItemFromPurchaseRequest = async (
       {
         $pull: { itemsRequested: deletedItem._id },
         $inc: { totalCost: -deletedItem.totalPrice },
-      }
+        ...(purchaseRequest.prStatus !== PR_STATUS.DRAFT
+          ? {
+              $push: {
+                changelog: {
+                  timestamp: new Date(),
+                  changedBy: getActorID(req),
+                  changeType: "item",
+                  previousValue: { prItemID: deletedItem.prItemID },
+                  newValue: null,
+                  description: "PR item removed after submission",
+                },
+              },
+            }
+          : {}),
+      },
     );
 
     sendResponse(res, 200, "Item removed from purchase request successfully");
@@ -388,7 +632,7 @@ export const removeItemFromPurchaseRequest = async (
       res,
       500,
       "Internal server error",
-      error instanceof Error ? error.message : "Unknown error"
+      error instanceof Error ? error.message : "Unknown error",
     );
   }
 };
@@ -398,7 +642,7 @@ export const removeItemFromPurchaseRequest = async (
  */
 export const bulkUpdatePurchaseRequestItems = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     const purchaseRequest = req.purchaseRequest!; // Purchase request is already attached by the middleware
@@ -411,13 +655,14 @@ export const bulkUpdatePurchaseRequestItems = async (
     const newItems = items.map((item) => ({
       ...item,
       prID: purchaseRequest.prID,
+      totalPrice: (item.quantity || 0) * (item.unitPrice || 0),
     }));
     const savedItems = await PRItem.insertMany(newItems);
 
     // Calculate new total cost
     const newTotalCost = savedItems.reduce(
       (sum, item) => sum + (item.totalPrice || 0),
-      0
+      0,
     );
 
     // Update purchase request with new item references and total cost
@@ -426,7 +671,21 @@ export const bulkUpdatePurchaseRequestItems = async (
       {
         itemsRequested: savedItems.map((item) => item._id),
         totalCost: newTotalCost,
-      }
+        ...(purchaseRequest.prStatus !== PR_STATUS.DRAFT
+          ? {
+              $push: {
+                changelog: {
+                  timestamp: new Date(),
+                  changedBy: getActorID(req),
+                  changeType: "item",
+                  previousValue: "all items",
+                  newValue: savedItems.map((item) => item.prItemID),
+                  description: "PR items bulk replaced after submission",
+                },
+              },
+            }
+          : {}),
+      },
     );
 
     sendResponse(res, 200, "Items updated successfully", savedItems);
@@ -435,7 +694,7 @@ export const bulkUpdatePurchaseRequestItems = async (
       res,
       500,
       "Internal server error",
-      error instanceof Error ? error.message : "Unknown error"
+      error instanceof Error ? error.message : "Unknown error",
     );
   }
 };
