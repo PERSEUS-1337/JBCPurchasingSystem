@@ -21,7 +21,7 @@ type SheetTableProps<T> = {
 };
 
 export function SheetTable<T>({ columns, data, rowKey, emptyContent }: SheetTableProps<T>) {
-  const sortableColumns = useMemo(() => columns.filter((column) => column.sortable), [columns]);
+  // const sortableColumns = useMemo(() => columns.filter((column) => column.sortable), [columns]);
   const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(
     null,
   );
