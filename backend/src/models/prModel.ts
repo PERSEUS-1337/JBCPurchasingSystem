@@ -23,6 +23,16 @@ export interface IPurchaseRequest extends Document {
   itemsRequested: mongoose.Types.ObjectId[];
   totalCost: number;
   justification?: string;
+  rejectionReason?: string;
+  cancellationReason?: string;
+  changelog: {
+    timestamp: Date;
+    changedBy: string;
+    changeType: "status" | "edit" | "item";
+    previousValue?: any;
+    newValue?: any;
+    description: string;
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,16 +63,34 @@ const PurchaseRequestSchema = new Schema<IPurchaseRequest>(
     },
     totalCost: { type: Number, required: true },
     justification: { type: String },
-    // logs: { type: [Schema.Types.Mixed], default: [] },
+    rejectionReason: { type: String },
+    cancellationReason: { type: String },
+    changelog: {
+      type: [
+        {
+          timestamp: { type: Date, default: Date.now },
+          changedBy: { type: String, required: true },
+          changeType: {
+            type: String,
+            enum: ["status", "edit", "item"],
+            required: true,
+          },
+          previousValue: { type: Schema.Types.Mixed },
+          newValue: { type: Schema.Types.Mixed },
+          description: { type: String, required: true },
+        },
+      ],
+      default: [],
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 /**
  * Static method to check for duplicate purchase request by prID.
  */
 PurchaseRequestSchema.statics.checkDuplicatePR = async function (
-  prID: string
+  prID: string,
 ): Promise<boolean> {
   const exists = await this.exists({ prID });
   return !!exists;
@@ -75,8 +103,8 @@ PurchaseRequestSchema.pre("save", function (next) {
   if (this.prStatus === "Approved" && this.recommendedBy === undefined) {
     return next(
       new Error(
-        "Purchase request must be recommended before it can be approved."
-      )
+        "Purchase request must be recommended before it can be approved.",
+      ),
     );
   }
 
@@ -89,8 +117,8 @@ PurchaseRequestSchema.pre("save", function (next) {
   ) {
     return next(
       new Error(
-        "Purchase request must have itemsRequested before it can be submitted for approval"
-      )
+        "Purchase request must have itemsRequested before it can be submitted for approval",
+      ),
     );
   }
 
@@ -100,7 +128,7 @@ PurchaseRequestSchema.pre("save", function (next) {
 const PurchaseRequest = mongoose.model<IPurchaseRequest, IPurchaseRequestModel>(
   "PurchaseRequest",
   PurchaseRequestSchema,
-  "purchase_requests"
+  "purchase_requests",
 );
 
 export default PurchaseRequest;

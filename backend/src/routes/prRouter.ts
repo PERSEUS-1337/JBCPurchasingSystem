@@ -5,8 +5,13 @@ import { checkPRExists } from "../middlewares/prMiddleware";
 import { prSchema, prUpdateSchema } from "../validators/prValidator";
 import {
   prItemSchema,
+  prItemBulkReplaceSchema,
   prItemUpdateSchema,
 } from "../validators/prItemValidator";
+import {
+  prCancellationSchema,
+  prStatusUpdateSchema,
+} from "../validators/prStatusValidator";
 import {
   // Purchase Request Controllers
   getAllPurchaseRequests,
@@ -15,6 +20,7 @@ import {
   updatePurchaseRequest,
   deletePurchaseRequest,
   updatePurchaseRequestStatus,
+  cancelPurchaseRequest,
 
   // PR Item Controllers
   getPurchaseRequestItems,
@@ -41,7 +47,7 @@ router.post(
   "/",
   authorizeJWT,
   validateRequest(prSchema),
-  createPurchaseRequest
+  createPurchaseRequest,
 );
 
 // Purchase Request-specific Routes (Require prID)
@@ -51,13 +57,21 @@ router.put(
   authorizeJWT,
   checkPRExists,
   validateRequest(prUpdateSchema),
-  updatePurchaseRequest
+  updatePurchaseRequest,
 );
 router.patch(
   "/:prID/status",
   authorizeJWT,
   checkPRExists,
-  updatePurchaseRequestStatus
+  validateRequest(prStatusUpdateSchema),
+  updatePurchaseRequestStatus,
+);
+router.patch(
+  "/:prID/cancel",
+  authorizeJWT,
+  checkPRExists,
+  validateRequest(prCancellationSchema),
+  cancelPurchaseRequest,
 );
 router.delete("/:prID", authorizeJWT, checkPRExists, deletePurchaseRequest);
 
@@ -68,7 +82,7 @@ router.get(
   "/:prID/items",
   authorizeJWT,
   checkPRExists,
-  getPurchaseRequestItems
+  getPurchaseRequestItems,
 );
 
 // Add item to Purchase Request
@@ -77,7 +91,7 @@ router.post(
   authorizeJWT,
   checkPRExists,
   validateRequest(prItemSchema),
-  addItemToPurchaseRequest
+  addItemToPurchaseRequest,
 );
 
 // Update specific item in Purchase Request
@@ -86,7 +100,7 @@ router.put(
   authorizeJWT,
   checkPRExists,
   validateRequest(prItemUpdateSchema),
-  updatePurchaseRequestItem
+  updatePurchaseRequestItem,
 );
 
 // Remove item from Purchase Request
@@ -94,7 +108,7 @@ router.delete(
   "/:prID/items/:itemID",
   authorizeJWT,
   checkPRExists,
-  removeItemFromPurchaseRequest
+  removeItemFromPurchaseRequest,
 );
 
 // Bulk update/replace all items in Purchase Request
@@ -102,7 +116,8 @@ router.put(
   "/:prID/items",
   authorizeJWT,
   checkPRExists,
-  bulkUpdatePurchaseRequestItems
+  validateRequest(prItemBulkReplaceSchema),
+  bulkUpdatePurchaseRequestItems,
 );
 
 export default router;

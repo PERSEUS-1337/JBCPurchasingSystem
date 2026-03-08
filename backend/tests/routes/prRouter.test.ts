@@ -1,4 +1,5 @@
 import request from "supertest";
+import mongoose from "mongoose";
 import {
   describe,
   it,
@@ -40,6 +41,7 @@ import {
 const apiPurchaseRequestItems = (prID: string) => `/api/pr/${prID}/items`;
 const apiPurchaseRequestItemID = (prID: string, itemID: string) =>
   `/api/pr/${prID}/items/${itemID}`;
+const apiPurchaseRequestCancel = (prID: string) => `/api/pr/${prID}/cancel`;
 
 describe("Purchase Request Routes", () => {
   let validToken: string;
@@ -79,7 +81,7 @@ describe("Purchase Request Routes", () => {
 
         expect(response.status).toBe(200);
         expect(response.body.message).toBe(
-          "This is the public purchase request route"
+          "This is the public purchase request route",
         );
       });
     });
@@ -229,7 +231,7 @@ describe("Purchase Request Routes", () => {
 
         expect(response.status).toBe(201);
         expect(response.body.message).toBe(
-          "Purchase request created successfully"
+          "Purchase request created successfully",
         );
         expect(response.body.data.prID).toBe(validPRComplete.prID);
       });
@@ -242,7 +244,7 @@ describe("Purchase Request Routes", () => {
 
         expect(response.status).toBe(201);
         expect(response.body.message).toBe(
-          "Purchase request created successfully"
+          "Purchase request created successfully",
         );
         expect(response.body.data.prID).toBe(validPRMinimum.prID);
       });
@@ -268,7 +270,7 @@ describe("Purchase Request Routes", () => {
 
         expect(response.status).toBe(409);
         expect(response.body.message).toBe(
-          "Purchase request with this ID already exists"
+          "Purchase request with this ID already exists",
         );
       });
 
@@ -303,7 +305,7 @@ describe("Purchase Request Routes", () => {
   describe(`PUT ${apiPurchaseRequestID(":prID")}`, () => {
     describe("Success Cases: Update purchase request", () => {
       it("Updates an existing purchase request with valid update data and token", async () => {
-        validPRID = await createValidPR();
+        validPRID = await createValidPR(validPRMinimum);
 
         const response = await request(app)
           .put(apiPurchaseRequestID(validPRID))
@@ -312,7 +314,7 @@ describe("Purchase Request Routes", () => {
 
         expect(response.status).toBe(200);
         expect(response.body.message).toBe(
-          "Purchase request updated successfully"
+          "Purchase request updated successfully",
         );
         expect(response.body.data.projName).toBe(validPRUpdate.projName);
       });
@@ -345,7 +347,7 @@ describe("Purchase Request Routes", () => {
             throw new Error("Database error");
           });
 
-        validPRID = await createValidPR();
+        validPRID = await createValidPR(validPRMinimum);
 
         const response = await request(app)
           .put(apiPurchaseRequestID(validPRID))
@@ -361,10 +363,13 @@ describe("Purchase Request Routes", () => {
   describe(`PATCH ${apiPurchaseRequestStatus(":prID")}`, () => {
     describe("Success Cases: Update purchase request status", () => {
       it("Updates purchase request status successfully with a valid token", async () => {
-        validPRID = await createValidPR();
+        validPRID = await createValidPR({
+          ...validPRMinimum,
+          itemsRequested: [new mongoose.Types.ObjectId()],
+          totalCost: 100,
+        });
         const statusUpdate = {
           prStatus: "Submitted",
-          recommendedBy: "Manager1",
         };
 
         const response = await request(app)
@@ -374,13 +379,24 @@ describe("Purchase Request Routes", () => {
 
         expect(response.status).toBe(200);
         expect(response.body.message).toBe(
-          "Purchase request status updated successfully"
+          "Purchase request status updated successfully",
         );
         expect(response.body.data.prStatus).toBe(statusUpdate.prStatus);
       });
     });
 
     describe("Failure Cases: Update purchase request status", () => {
+      it("Returns 400 for invalid status transition", async () => {
+        validPRID = await createValidPR(validPRComplete); // Approved
+
+        const response = await request(app)
+          .patch(apiPurchaseRequestStatus(validPRID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ prStatus: "Submitted" });
+
+        expect(response.status).toBe(400);
+      });
+
       it("Returns 404 if the purchase request is not found", async () => {
         const response = await request(app)
           .patch(apiPurchaseRequestStatus("non-existing-id"))
@@ -407,7 +423,11 @@ describe("Purchase Request Routes", () => {
             throw new Error("Database error");
           });
 
-        validPRID = await createValidPR();
+        validPRID = await createValidPR({
+          ...validPRMinimum,
+          itemsRequested: [new mongoose.Types.ObjectId()],
+          totalCost: 100,
+        });
 
         const response = await request(app)
           .patch(apiPurchaseRequestStatus(validPRID))
@@ -423,7 +443,7 @@ describe("Purchase Request Routes", () => {
   describe(`DELETE ${apiPurchaseRequestID(":prID")}`, () => {
     describe("Success Cases: Delete purchase request", () => {
       it("Deletes an existing purchase request with valid token and prID", async () => {
-        validPRID = await createValidPR();
+        validPRID = await createValidPR(validPRMinimum);
 
         const response = await request(app)
           .delete(apiPurchaseRequestID(validPRID))
@@ -431,7 +451,7 @@ describe("Purchase Request Routes", () => {
 
         expect(response.status).toBe(200);
         expect(response.body.message).toBe(
-          "Purchase request and associated items deleted successfully"
+          "Purchase request and associated items deleted successfully",
         );
 
         // Verify deletion
@@ -441,9 +461,19 @@ describe("Purchase Request Routes", () => {
     });
 
     describe("Failure Cases: Delete purchase request", () => {
+      it("Returns 400 when trying to delete a submitted/approved PR", async () => {
+        validPRID = await createValidPR(validPRComplete);
+
+        const response = await request(app)
+          .delete(apiPurchaseRequestID(validPRID))
+          .set("Authorization", `Bearer ${validToken}`);
+
+        expect(response.status).toBe(400);
+      });
+
       it("Returns 401 when no token is provided", async () => {
         const response = await request(app).delete(
-          apiPurchaseRequestID("anyid")
+          apiPurchaseRequestID("anyid"),
         );
 
         expect(response.status).toBe(401);
@@ -460,7 +490,7 @@ describe("Purchase Request Routes", () => {
       });
 
       it("Returns 500 when there's a server error", async () => {
-        validPRID = await createValidPR();
+        validPRID = await createValidPR(validPRMinimum);
 
         jest.spyOn(PurchaseRequest, "findOne").mockImplementationOnce(() => {
           throw new Error("Database error");
@@ -472,6 +502,50 @@ describe("Purchase Request Routes", () => {
 
         expect(response.status).toBe(500);
         expect(response.body.message).toBe("Internal server error");
+      });
+    });
+  });
+
+  describe(`PATCH ${apiPurchaseRequestCancel(":prID")}`, () => {
+    describe("Success Cases: Cancel purchase request", () => {
+      it("Cancels a draft PR with a reason", async () => {
+        validPRID = await createValidPR(validPRMinimum);
+
+        const response = await request(app)
+          .patch(apiPurchaseRequestCancel(validPRID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({
+            cancellationReason: "Request no longer needed",
+            cancelledBy: "User2",
+          });
+
+        expect(response.status).toBe(200);
+        expect(response.body.data.prStatus).toBe("Cancelled");
+      });
+    });
+
+    describe("Failure Cases: Cancel purchase request", () => {
+      it("Returns 400 when cancellation reason is missing", async () => {
+        validPRID = await createValidPR(validPRMinimum);
+
+        const response = await request(app)
+          .patch(apiPurchaseRequestCancel(validPRID))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({ cancelledBy: "User2" });
+
+        expect(response.status).toBe(400);
+      });
+
+      it("Returns 404 when PR is not found", async () => {
+        const response = await request(app)
+          .patch(apiPurchaseRequestCancel("unknown-pr"))
+          .set("Authorization", `Bearer ${validToken}`)
+          .send({
+            cancellationReason: "No longer needed",
+            cancelledBy: "User2",
+          });
+
+        expect(response.status).toBe(404);
       });
     });
   });
@@ -521,7 +595,7 @@ describe("Purchase Request Routes", () => {
 
       it("Returns 401 when no token is provided", async () => {
         const response = await request(app).get(
-          apiPurchaseRequestItems("anyid")
+          apiPurchaseRequestItems("anyid"),
         );
 
         expect(response.status).toBe(401);
@@ -556,7 +630,7 @@ describe("Purchase Request Routes", () => {
 
         expect(response.status).toBe(201);
         expect(response.body.message).toBe(
-          "Item added to purchase request successfully"
+          "Item added to purchase request successfully",
         );
         expect(response.body.data.prItemID).toBe(itemData.prItemID);
       });
@@ -631,7 +705,7 @@ describe("Purchase Request Routes", () => {
         expect(response.status).toBe(200);
         expect(response.body.message).toBe("Item updated successfully");
         expect(response.body.data.itemDescription).toBe(
-          validPRItemUpdate.itemDescription
+          validPRItemUpdate.itemDescription,
         );
       });
     });
@@ -647,7 +721,7 @@ describe("Purchase Request Routes", () => {
 
         expect(response.status).toBe(404);
         expect(response.body.message).toBe(
-          "Item not found in this purchase request"
+          "Item not found in this purchase request",
         );
       });
 
@@ -699,7 +773,7 @@ describe("Purchase Request Routes", () => {
 
         expect(response.status).toBe(200);
         expect(response.body.message).toBe(
-          "Item removed from purchase request successfully"
+          "Item removed from purchase request successfully",
         );
 
         // Verify deletion
@@ -714,7 +788,7 @@ describe("Purchase Request Routes", () => {
     describe("Failure Cases: Remove item from purchase request", () => {
       it("Returns 401 when no token is provided", async () => {
         const response = await request(app).delete(
-          apiPurchaseRequestItemID("anyid", "anyitem")
+          apiPurchaseRequestItemID("anyid", "anyitem"),
         );
 
         expect(response.status).toBe(401);
@@ -730,7 +804,7 @@ describe("Purchase Request Routes", () => {
 
         expect(response.status).toBe(404);
         expect(response.body.message).toBe(
-          "Item not found in this purchase request"
+          "Item not found in this purchase request",
         );
       });
 
@@ -784,8 +858,8 @@ describe("Purchase Request Routes", () => {
         expect(response.body.data).toHaveLength(2);
         expect(
           response.body.data.some(
-            (item: any) => item.prItemID === "PRI-NEW-001"
-          )
+            (item: any) => item.prItemID === "PRI-NEW-001",
+          ),
         ).toBe(true);
       });
     });

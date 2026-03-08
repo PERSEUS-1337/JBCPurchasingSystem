@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Supplier, { ISupplier } from "../models/supplierModel";
+import Supply from "../models/supplyModel";
 import { SupplierInput } from "../validators/supplierValidator";
 import { supplierStatusEnums } from "../constants";
 
@@ -13,7 +14,7 @@ import { supplierStatusEnums } from "../constants";
  */
 export const getSupplierByID = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { supplierID } = req.params;
@@ -45,10 +46,10 @@ export const getSupplierByID = async (
  */
 export const getAllSuppliers = async (
   _req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
-    const suppliers = await Supplier.find({}, { _id: 0, __v: 0 });
+    const suppliers = await Supplier.find({}, { __v: 0 });
 
     if (suppliers.length === 0) {
       res.status(404).json({ message: "No suppliers found", data: [] });
@@ -76,7 +77,7 @@ export const getAllSuppliers = async (
  */
 export const searchSuppliers = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { query } = req.query;
@@ -130,13 +131,13 @@ export const searchSuppliers = async (
  */
 export const createSupplier = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const newSupplierData: SupplierInput = req.body;
     // Check if supplier with the same supplierID already exists
     const isDuplicate = await Supplier.checkDuplicateSupplier(
-      newSupplierData.supplierID
+      newSupplierData.supplierID,
     );
 
     if (isDuplicate) {
@@ -174,7 +175,7 @@ export const createSupplier = async (
  */
 export const updateSupplier = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { supplierID } = req.params;
@@ -227,7 +228,7 @@ export const updateSupplier = async (
  */
 export const updateSupplierStatus = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { supplierID } = req.params;
@@ -273,7 +274,7 @@ export const updateSupplierStatus = async (
  */
 export const deleteSupplier = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { supplierID } = req.params;
@@ -302,9 +303,124 @@ export const removeEmail = async (): Promise<void> => {};
 export const addContactPerson = async (): Promise<void> => {};
 export const updateContactPerson = async (): Promise<void> => {};
 export const removeContactPerson = async (): Promise<void> => {};
-export const getSuppliesOfSupplier = async (): Promise<void> => {};
-export const addSupply = async (): Promise<void> => {};
-export const removeSupply = async (): Promise<void> => {};
+export const getSuppliesOfSupplier = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { supplierID } = req.params;
+
+    const supplier = await Supplier.findOne({ supplierID }).lean();
+    if (!supplier) {
+      res.status(404).json({ message: "Supplier not found", data: null });
+      return;
+    }
+
+    const linkedSupplyIDs = supplier.supplies ?? [];
+    if (linkedSupplyIDs.length === 0) {
+      res.status(200).json({
+        message: "No linked supplies found",
+        data: [],
+      });
+      return;
+    }
+
+    const supplies = await Supply.find(
+      { supplyID: { $in: linkedSupplyIDs } },
+      { __v: 0 },
+    ).lean();
+
+    res.status(200).json({
+      message: "Linked supplies retrieved successfully",
+      data: supplies,
+    });
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+  }
+};
+
+export const addSupply = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { supplierID } = req.params;
+    const { supplyID } = req.body ?? {};
+
+    if (!supplyID || typeof supplyID !== "string") {
+      res.status(400).json({ message: "supplyID is required" });
+      return;
+    }
+
+    const supplier = await Supplier.findOne({ supplierID });
+    if (!supplier) {
+      res.status(404).json({ message: "Supplier not found", data: null });
+      return;
+    }
+
+    const supply = await Supply.findOne({ supplyID }).lean();
+    if (!supply) {
+      res.status(404).json({ message: "Supply not found", data: null });
+      return;
+    }
+
+    const existing = supplier.supplies ?? [];
+    if (existing.includes(supplyID)) {
+      res.status(200).json({
+        message: "Supply already linked to supplier",
+        data: supplier,
+      });
+      return;
+    }
+
+    supplier.supplies = [...existing, supplyID];
+    await supplier.save();
+
+    res.status(200).json({
+      message: "Supply linked to supplier successfully",
+      data: supplier,
+    });
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+  }
+};
+
+export const removeSupply = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { supplierID, supplyID } = req.params;
+
+    const supplier = await Supplier.findOne({ supplierID });
+    if (!supplier) {
+      res.status(404).json({ message: "Supplier not found", data: null });
+      return;
+    }
+
+    const existing = supplier.supplies ?? [];
+    if (!existing.includes(supplyID)) {
+      res.status(404).json({
+        message: "Supply link not found for supplier",
+        data: supplier,
+      });
+      return;
+    }
+
+    supplier.supplies = existing.filter((id) => id !== supplyID);
+    await supplier.save();
+
+    res.status(200).json({
+      message: "Supply unlinked from supplier successfully",
+      data: supplier,
+    });
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+  }
+};
 export const addDocs = async (): Promise<void> => {};
 export const removeDocs = async (): Promise<void> => {};
 

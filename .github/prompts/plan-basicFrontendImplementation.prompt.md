@@ -12,8 +12,8 @@ Use this section as your running tracker. Only mark a phase complete after its e
 | ----- | ----------------------------- | -------------- | ----- | ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | 0     | Platform Foundation           | ✅ Done        | Dev   | 2026-03-06 | 2026-03-07 | Providers, API client, types, UI primitives implemented and build-verified                                                        |
 | 1     | User + Auth                   | ✅ Done        | Dev   | 2026-03-07 | 2026-03-07 | Auth/user services, context, login, protected layout, profile and users screens implemented; phase gate validated end-to-end      |
-| 2     | Suppliers + Supplies          | 🟨 In Progress | Dev   | 2026-03-07 |            | Active phase after Phase 1 completion                                                                                              |
-| 3     | Purchase Requests             | ⬜ Not Started |       |            |            |                                                                                                                                   |
+| 2     | Suppliers + Supplies          | ✅ Done        | Dev   | 2026-03-07 | 2026-03-08 | Supplier/supply CRUD, linking flows, pricing management, and phase-gate workflows validated end-to-end                           |
+| 3     | Purchase Requests             | 🟨 In Progress | Dev   | 2026-03-08 |            | Active phase after Phase 2 completion                                                                                              |
 | 4     | Dashboard + Integration       | ⬜ Not Started |       |            |            |                                                                                                                                   |
 | 5     | Hardening + Release Readiness | ⬜ Not Started |       |            |            |                                                                                                                                   |
 
@@ -152,10 +152,10 @@ Create `frontend/src/context/AuthContext.tsx`:
 
 ### Checklist
 
-- [ ] Implement supplier APIs + screens
-- [ ] Implement supply APIs + screens
-- [ ] Implement linking between suppliers and supplies
-- [ ] Add master-data validation and error handling
+- [x] Implement supplier APIs + screens
+- [x] Implement supply APIs + screens
+- [x] Implement linking between suppliers and supplies
+- [x] Add master-data validation and error handling
 
 ### 2.1 Supplier module
 
@@ -172,6 +172,12 @@ Screens under `frontend/src/app/(protected)/suppliers/`:
 - `new/page.tsx` — create (contacts, emails, tags, contact persons)
 - `[supplierID]/page.tsx` — detail/edit + linked supplies
 
+Implementation notes:
+
+- Supplier IDs are now auto-generated on create and rendered read-only (not user-editable)
+- Supplier list search is currently client-side over fetched supplier data
+- Linked supplies in supplier detail show meaningful context (name + supply ID + unit + status)
+
 ### 2.2 Supply module
 
 Service: `frontend/src/lib/api/supplies.ts`
@@ -187,11 +193,25 @@ Screens under `frontend/src/app/(protected)/supplies/`:
 - `new/page.tsx` — create with specifications + supplier pricing
 - `[supplyID]/page.tsx` — detail/edit + supplier pricing management
 
+Implementation notes:
+
+- Supply IDs are now auto-generated on create and rendered read-only (not user-editable)
+- Supply list search is currently client-side over fetched supply data
+- Supplier-pricing entries include explicit field labels (supplier, unit quantity, unit price, total price, validity date)
+- Linked supplier context in pricing views prioritizes supplier business identifiers (supplierID/name) over raw MongoDB `_id`
+
 ### 2.3 Master-data UX quality
 
 - form validation for ID formats (`SUP-*`, `SPL-*`)
 - clear empty states and actionable errors
 - optimistic UI only for safe toggles (status), otherwise server-confirmed updates
+
+Additional UX refinements completed:
+
+- create forms now prevent manual ID edits via auto-filled read-only IDs
+- list search/filter behavior is immediate client-side over loaded datasets
+- linked relationship displays now include richer contextual fields for readability
+- supplier-side linking includes a fallback patch path if nested link endpoints are unavailable
 
 ### Deliverables
 
@@ -201,8 +221,8 @@ Screens under `frontend/src/app/(protected)/supplies/`:
 
 **Phase Gate (must pass before Phase 3):**
 
-- At least one supplier and one supply can be created and linked
-- Supplier and supply details can be edited without breaking relations
+- ✅ At least one supplier and one supply can be created and linked
+- ✅ Supplier and supply details can be edited without breaking relations
 
 ---
 
@@ -329,6 +349,8 @@ Sidebar order should follow business flow:
 | ---------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | 2026-03-07 | 0     | Installed deps, wired providers, added API client/types/UI primitives, and passed build                                                                    | React 19 RC peer resolution required `--legacy-peer-deps`                     | Implement Phase 1 auth services/context/routes                        |
 | 2026-03-07 | 1     | Implemented auth/user API services, `AuthContext`, login page, protected layout, sidebar/header shell, profile page, users list/detail pages; build passed | None after validation                                                         | Start Phase 2 supplier and supply implementation                      |
+| 2026-03-07 | 2     | Implemented supplier/supply API services and screens for list/create/detail, including status updates, supplier-supply linking fallback, supplier pricing management, auto-filled read-only IDs, client-side search/filter UX, and richer linked-entry labels; build passed | None critical; client-side ID generation and local search retained as intentional interim approach | Validate live workflows and finalize Phase 2 phase-gate evidence      |
+| 2026-03-08 | 2     | Completed Phase 2 gate validation: create/edit/link/unlink workflows for supplier/supply passed; backend nested supplier-supply endpoints and supply link endpoint verified and reflected in docs | No blocker for Phase 3 kickoff                                                 | Start Phase 3 PR service and screens (`/pr`, `/pr/new`, `/pr/[prID]`) |
 
 ---
 
@@ -420,6 +442,7 @@ Mark overall plan complete only when all are true:
 | `PATCH`  | `/api/supply/:supplyID`                            | ✅ JWT |
 | `DELETE` | `/api/supply/:supplyID`                            | ✅ JWT |
 | `PATCH`  | `/api/supply/:supplyID/status`                     | ✅ JWT |
+| `POST`   | `/api/supply/:supplyID/link-supplier`              | ✅ JWT |
 | `POST`   | `/api/supply/:supplyID/supplier-pricing`           | ✅ JWT |
 | `PATCH`  | `/api/supply/:supplyID/supplier-pricing/:supplier` | ✅ JWT |
 | `DELETE` | `/api/supply/:supplyID/supplier-pricing/:supplier` | ✅ JWT |

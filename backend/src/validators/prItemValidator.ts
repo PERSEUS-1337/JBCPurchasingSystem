@@ -69,5 +69,10 @@ export const prItemUpdateSchema = z
     }
   });
 
+export const prItemBulkReplaceSchema = z.object({
+  items: z.array(prItemSchema).min(1, "At least one item is required"),
+});
+
 export type PRItemInput = z.infer<typeof prItemSchema>;
 export type PRItemUpdateInput = z.infer<typeof prItemUpdateSchema>;
+export type PRItemBulkReplaceInput = z.infer<typeof prItemBulkReplaceSchema>;

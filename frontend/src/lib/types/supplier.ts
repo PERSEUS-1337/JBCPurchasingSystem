@@ -8,6 +8,7 @@ export type ContactPerson = {
 };
 
 export type Supplier = {
+  _id?: string;
   supplierID: string;
   name: string;
   contactNumbers: string[];

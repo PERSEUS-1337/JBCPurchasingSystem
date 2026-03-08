@@ -422,6 +422,31 @@ const options: swaggerJSDoc.Options = {
             },
             totalCost: { type: "number", minimum: 0 },
             justification: { type: "string" },
+            rejectionReason: { type: "string" },
+            cancellationReason: { type: "string" },
+            changelog: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  timestamp: { type: "string", format: "date-time" },
+                  changedBy: { type: "string" },
+                  changeType: {
+                    type: "string",
+                    enum: ["status", "edit", "item"],
+                  },
+                  previousValue: {},
+                  newValue: {},
+                  description: { type: "string" },
+                },
+                required: [
+                  "timestamp",
+                  "changedBy",
+                  "changeType",
+                  "description",
+                ],
+              },
+            },
             createdAt: { type: "string", format: "date-time" },
             updatedAt: { type: "string", format: "date-time" },
           },
@@ -433,13 +458,46 @@ const options: swaggerJSDoc.Options = {
             "dateRequested",
             "dateRequired",
             "requestedBy",
-            "approvedBy",
             "prStatus",
             "totalCost",
           ],
         },
         PRCreateRequest: {
-          $ref: "#/components/schemas/PR",
+          type: "object",
+          properties: {
+            prID: { type: "string", minLength: 1 },
+            projCode: { type: "string", minLength: 1 },
+            projName: { type: "string", minLength: 1 },
+            projClient: { type: "string", minLength: 1 },
+            dateRequested: { type: "string", format: "date-time" },
+            dateRequired: { type: "string", format: "date-time" },
+            requestedBy: { type: "string", minLength: 1 },
+            recommendedBy: { type: "string" },
+            approvedBy: { type: "string" },
+            prStatus: { $ref: "#/components/schemas/PRStatus" },
+            itemsRequested: {
+              type: "array",
+              items: {
+                type: "string",
+                pattern: "^[a-fA-F0-9]{24}$",
+              },
+            },
+            totalCost: { type: "number", minimum: 0 },
+            justification: { type: "string" },
+            rejectionReason: { type: "string" },
+            cancellationReason: { type: "string" },
+          },
+          required: [
+            "prID",
+            "projCode",
+            "projName",
+            "projClient",
+            "dateRequired",
+            "requestedBy",
+            "prStatus",
+            "totalCost",
+          ],
+          additionalProperties: false,
         },
         PRUpdateRequest: {
           type: "object",
@@ -464,8 +522,32 @@ const options: swaggerJSDoc.Options = {
             prStatus: { $ref: "#/components/schemas/PRStatus" },
             recommendedBy: { type: "string" },
             approvedBy: { type: "string" },
+            rejectionReason: { type: "string" },
+            cancellationReason: { type: "string" },
+            changedBy: { type: "string" },
           },
           required: ["prStatus"],
+          additionalProperties: false,
+        },
+        PRCancelRequest: {
+          type: "object",
+          properties: {
+            cancellationReason: { type: "string", minLength: 1 },
+            cancelledBy: { type: "string", minLength: 1 },
+          },
+          required: ["cancellationReason", "cancelledBy"],
+          additionalProperties: false,
+        },
+        PRItemsBulkReplaceRequest: {
+          type: "object",
+          properties: {
+            items: {
+              type: "array",
+              minItems: 1,
+              items: { $ref: "#/components/schemas/PRItem" },
+            },
+          },
+          required: ["items"],
           additionalProperties: false,
         },
         PRItemUpdateRequest: {
@@ -556,6 +638,14 @@ const options: swaggerJSDoc.Options = {
               type: "array",
               items: { $ref: "#/components/schemas/PRItem" },
             },
+          },
+          required: ["message"],
+        },
+        DataPRItemResponse: {
+          type: "object",
+          properties: {
+            message: { type: "string" },
+            data: { $ref: "#/components/schemas/PRItem" },
           },
           required: ["message"],
         },
@@ -1864,7 +1954,8 @@ const options: swaggerJSDoc.Options = {
       "/api/pr/{prID}/status": {
         patch: {
           tags: ["Purchase Requests"],
-          summary: "Update purchase request status",
+          summary:
+            "Update purchase request status with workflow transition checks",
           security: [{ bearerAuth: [] }],
           parameters: [
             {
@@ -1890,6 +1981,73 @@ const options: swaggerJSDoc.Options = {
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/DataPRResponse" },
+                },
+              },
+            },
+            "400": {
+              description: "Invalid transition or workflow rule violation",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "404": {
+              description: "Not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/pr/{prID}/cancel": {
+        patch: {
+          tags: ["Purchase Requests"],
+          summary: "Cancel purchase request with mandatory reason",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "prID",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/PRCancelRequest",
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "Cancelled",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/DataPRResponse" },
+                },
+              },
+            },
+            "400": {
+              description: "Validation error or invalid cancellation",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "404": {
+              description: "Not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
                 },
               },
             },
@@ -1945,7 +2103,7 @@ const options: swaggerJSDoc.Options = {
               description: "Created",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/DataPRResponse" },
+                  schema: { $ref: "#/components/schemas/DataPRItemResponse" },
                 },
               },
             },
@@ -1976,8 +2134,7 @@ const options: swaggerJSDoc.Options = {
             content: {
               "application/json": {
                 schema: {
-                  type: "array",
-                  items: { $ref: "#/components/schemas/PRItem" },
+                  $ref: "#/components/schemas/PRItemsBulkReplaceRequest",
                 },
               },
             },
@@ -1987,7 +2144,15 @@ const options: swaggerJSDoc.Options = {
               description: "Updated",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/DataPRResponse" },
+                  schema: { $ref: "#/components/schemas/DataPRItemsResponse" },
+                },
+              },
+            },
+            "400": {
+              description: "Validation error",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
                 },
               },
             },
@@ -2028,7 +2193,7 @@ const options: swaggerJSDoc.Options = {
               description: "Updated",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/DataPRResponse" },
+                  schema: { $ref: "#/components/schemas/DataPRItemResponse" },
                 },
               },
             },
@@ -2065,7 +2230,7 @@ const options: swaggerJSDoc.Options = {
               description: "Deleted",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/DataPRResponse" },
+                  schema: { $ref: "#/components/schemas/MessageResponse" },
                 },
               },
             },
